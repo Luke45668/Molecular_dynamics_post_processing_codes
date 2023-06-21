@@ -179,30 +179,6 @@ def Mom_organiser_and_reader(mom_data,count_mom,realisation_name_Mom,no_SRD_key,
     return mom_data,error_count_mom,failed_list_realisations
 
 # this bit needs turning to multi solution version
-def mom_data_averaging_and_flux_calc(number_of_solutions,swap_number,truncation_timestep,swap_rate,scaled_timestep,no_timesteps,box_side_length_scaled,mom_data):
-    mom_data_realisation_averaged=()
-    number_swaps_before_truncation=(np.ceil(truncation_timestep/swap_rate)).astype(int)
-    mom_data_realisation_averaged_truncated=()
-    flux_x_momentum_z_direction=np.zeros((number_of_solutions,swap_number.size,swap_rate.size))
-    total_run_time=scaled_timestep* no_timesteps
-    box_area_nd=np.array(box_size_key)
-    flux_ready_for_plotting=np.zeros((number_of_solutions,swap_number.size,swap_rate.size))
-    for z in range(0,number_of_solutions):    
-        for i in range(0,swap_rate.size):
-            mom_data_realisation_averaged=mom_data_realisation_averaged+(np.mean(mom_data[i],axis=2),)
-
-
-        #for i in range(0,swap_rate.size):
-
-            mom_data_realisation_averaged_truncated=mom_data_realisation_averaged_truncated+(mom_data_realisation_averaged[i][:,:,number_swaps_before_truncation[i]:],)
-
-
-        # now apply the MP formula 
-            mom_difference= mom_data_realisation_averaged_truncated[i][z,:,-1]-mom_data_realisation_averaged_truncated[i][z,:,0]
-            flux_x_momentum_z_direction[z,:,i]=(mom_difference)/(2*total_run_time*float(box_area_nd[z]))
-            
-    flux_ready_for_plotting=np.abs(flux_x_momentum_z_direction)
-    return flux_x_momentum_z_direction,flux_ready_for_plotting
 
 
 
@@ -224,6 +200,8 @@ def VP_data_averaging_and_stat_test_data(VP_z_data_upper,VP_z_data_lower,no_time
     pearson_coeff_lower= np.zeros((number_of_solutions,swap_rate.size,swap_number.size,VP_data_lower_realisation_averaged.shape[4]))
     shear_rate_upper= np.zeros((number_of_solutions,swap_rate.size,swap_number.size,VP_data_upper_realisation_averaged.shape[4]))    
     shear_rate_lower= np.zeros((number_of_solutions,swap_rate.size,swap_number.size,VP_data_lower_realisation_averaged.shape[4]))
+    shear_rate_upper_error= np.zeros((number_of_solutions,swap_rate.size,swap_number.size,VP_data_upper_realisation_averaged.shape[4]))    
+    shear_rate_lower_error= np.zeros((number_of_solutions,swap_rate.size,swap_number.size,VP_data_lower_realisation_averaged.shape[4]))
     timestep_points=np.array([[[np.linspace(1,VP_data_upper.shape[4],int(float(no_timesteps)/float(VP_ave_freq)))]]])*VP_ave_freq
     timestep_points=np.repeat(timestep_points, number_of_solutions,axis=0)
     timestep_points=np.repeat(timestep_points, swap_rate.size,axis=1)     
@@ -238,17 +216,21 @@ def VP_data_averaging_and_stat_test_data(VP_z_data_upper,VP_z_data_lower,no_time
                         
                         pearson_coeff_upper[z,m,k,i] =scipy.stats.pearsonr(y_u[z,:,i],x_u[z,m,k,:,i] )[0]
                         shear_rate_upper[z,m,k,i]= scipy.stats.linregress(y_u[z,:,i],x_u[z,m,k,:,i] ).slope
+                        shear_rate_upper_error[z,m,k,i]= scipy.stats.linregress(y_u[z,:,i],x_u[z,m,k,:,i] ).stderr
                         pearson_coeff_lower[z,m,k,i] =scipy.stats.pearsonr(y_l[z,:,i],x_l[z,m,k,:,i] )[0]
                         shear_rate_lower[z,m,k,i]= scipy.stats.linregress(y_l[z,:,i],x_l[z,m,k,:,i] ).slope  
+                        shear_rate_lower_error[z,m,k,i]= scipy.stats.linregress(y_l[z,:,i],x_l[z,m,k,:,i] ).stderr 
      
-    return pearson_coeff_upper,shear_rate_upper,pearson_coeff_lower,shear_rate_lower,timestep_points,VP_data_lower_realisation_averaged,VP_data_upper_realisation_averaged
+    return pearson_coeff_upper,shear_rate_upper,pearson_coeff_lower,shear_rate_lower,timestep_points,VP_data_lower_realisation_averaged,VP_data_upper_realisation_averaged,shear_rate_upper_error,shear_rate_lower_error
         
 
     
-def truncation_step_and_SS_average_of_VP_and_stat_tests(timestep_points,pearson_coeff_lower,pearson_coeff_upper,shear_rate_upper,shear_rate_lower,VP_ave_freq,truncation_timestep,VP_data_lower_realisation_averaged,VP_data_upper_realisation_averaged):
+def truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,shear_rate_lower_error,timestep_points,pearson_coeff_lower,pearson_coeff_upper,shear_rate_upper,shear_rate_lower,VP_ave_freq,truncation_timestep,VP_data_lower_realisation_averaged,VP_data_upper_realisation_averaged):
     truncation_index=int(truncation_timestep/VP_ave_freq)
     shear_rate_upper=shear_rate_upper[:,:,:,truncation_index:]
+    shear_rate_upper_error=shear_rate_upper_error[:,:,:,truncation_index:]
     shear_rate_lower=shear_rate_lower[:,:,:,truncation_index:]
+    shear_rate_lower_error=shear_rate_lower_error[:,:,:,truncation_index:]
     pearson_coeff_upper=pearson_coeff_upper[:,:,:,truncation_index:]
     pearson_coeff_lower=pearson_coeff_lower[:,:,:,truncation_index:]
     timestep_points=timestep_points[:,:,:,truncation_index:]
@@ -259,16 +241,45 @@ def truncation_step_and_SS_average_of_VP_and_stat_tests(timestep_points,pearson_
     VP_steady_state_data_upper_truncated_time_averaged=np.mean(VP_steady_state_data_upper_truncated,axis=4)
     shear_rate_upper_steady_state_mean = np.mean(shear_rate_upper, axis=3)
     shear_rate_lower_steady_state_mean = np.mean(shear_rate_lower, axis=3)
+    shear_rate_upper_steady_state_mean_error = np.mean(shear_rate_upper_error, axis=3)
+    shear_rate_lower_steady_state_mean_error = np.mean(shear_rate_lower_error, axis=3)
     pearson_coeff_lower_mean_SS=np.mean(pearson_coeff_lower,axis=3)
     pearson_coeff_upper_mean_SS=np.mean(pearson_coeff_upper,axis=3) 
+    
     
     standard_deviation_upper_SS=np.std(pearson_coeff_upper,axis=3)
     standard_deviation_lower_SS=np.std(pearson_coeff_lower,axis=3)
     standard_deviation_upper_error=standard_deviation_upper_SS/ pearson_coeff_lower_mean_SS
     standard_deviation_lower_error=standard_deviation_lower_SS/pearson_coeff_lower_mean_SS
 
-    return standard_deviation_upper_error,standard_deviation_lower_error,pearson_coeff_upper_mean_SS,pearson_coeff_lower_mean_SS,shear_rate_lower_steady_state_mean,shear_rate_upper_steady_state_mean,VP_steady_state_data_lower_truncated_time_averaged,VP_steady_state_data_upper_truncated_time_averaged
+    return standard_deviation_upper_error,standard_deviation_lower_error,pearson_coeff_upper_mean_SS,pearson_coeff_lower_mean_SS,shear_rate_lower_steady_state_mean,shear_rate_upper_steady_state_mean,VP_steady_state_data_lower_truncated_time_averaged,VP_steady_state_data_upper_truncated_time_averaged,shear_rate_upper_steady_state_mean_error,shear_rate_lower_steady_state_mean_error
     
+def mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,swap_number,truncation_timestep,swap_rate,scaled_timestep,no_timesteps,box_side_length_scaled,mom_data):
+    mom_data_realisation_averaged=()
+    number_swaps_before_truncation=(np.ceil(truncation_timestep/swap_rate)).astype(int)
+    mom_data_realisation_averaged_truncated=()
+    flux_x_momentum_z_direction=np.zeros((number_of_solutions,swap_number.size,swap_rate.size))
+    total_run_time=scaled_timestep* no_timesteps
+    box_area_nd=np.array(box_size_key)
+    flux_ready_for_plotting=np.zeros((number_of_solutions,swap_number.size,swap_rate.size))
+    for z in range(0,number_of_solutions):    
+        for i in range(0,swap_rate.size):
+            mom_data_realisation_averaged=mom_data_realisation_averaged+(np.mean(mom_data[i],axis=2),)
+
+
+        #for i in range(0,swap_rate.size):
+
+            mom_data_realisation_averaged_truncated=mom_data_realisation_averaged_truncated+(mom_data_realisation_averaged[i][:,:,number_swaps_before_truncation[i]:],)
+
+
+        # now apply the MP formula 
+            mom_difference= mom_data_realisation_averaged_truncated[i][z,:,-1]-mom_data_realisation_averaged_truncated[i][z,:,0]
+            flux_x_momentum_z_direction[z,:,i]=(mom_difference)/(2*total_run_time*float(box_area_nd[z]))
+            
+    flux_ready_for_plotting=np.log((np.abs(flux_x_momentum_z_direction)))
+    
+    return flux_ready_for_plotting
+
     
 
 ###### Plotting section
@@ -298,41 +309,45 @@ def plotting_SS_velocity_profiles_with_all_swap_numbers(width_plot,height_plot,s
     plt.show()
     
     
-def plotting_SS_velocity_profiles_for_4_swap_numbers(labelpad,fontsize,number_of_solutions,swap_number_choice_index,width_plot,height_plot,swap_number,swap_rate,VP_ave_freq,no_timesteps,VP_steady_state_data_lower_truncated_time_averaged,VP_steady_state_data_upper_truncated_time_averaged,VP_z_data_lower,VP_z_data_upper):
+# to change the number or sepcfic velocity profiles change the swap rate vector.     
+def plotting_SS_velocity_profiles(swap_rate_index_start,swap_rate_index_end,legend_x_pos, legend_y_pos,labelpadx,labelpady,fontsize,number_of_solutions,swap_number_choice_index,width_plot,height_plot,swap_number,swap_rate,VP_ave_freq,no_timesteps,VP_steady_state_data_lower_truncated_time_averaged,VP_steady_state_data_upper_truncated_time_averaged,VP_z_data_lower,VP_z_data_upper):
     for z in range(0,number_of_solutions):
         fig=plt.figure(figsize=(width_plot,height_plot))
-        gs=GridSpec(nrows=2,ncols=1)
+        gs=GridSpec(nrows=1,ncols=1)
 
         ax1= fig.add_subplot(gs[0,0])
-        ax2= fig.add_subplot(gs[1,0])
+        #ax2= fig.add_subplot(gs[1,0])
         k=swap_number_choice_index
 
 
 
-        x_1=VP_steady_state_data_lower_truncated_time_averaged[z,:,:]
-        x_2=VP_steady_state_data_upper_truncated_time_averaged[z,:,:]
+        x_1=VP_steady_state_data_lower_truncated_time_averaged[z]
+        x_2=VP_steady_state_data_upper_truncated_time_averaged[z]
         y_1=VP_z_data_lower[z,:]
         y_2=VP_z_data_upper[z,:]
 
-        no_vps=int(no_timesteps/VP_ave_freq)
-        #for k in range(0,swap_number.size):
-        for i in range(0,swap_rate.size):
-
-            ax1.plot(x_1[i,k,:],y_1[:],label='$f_p=${}'.format(swap_rate[i]))
-           # ax1.set_xlabel('$v_{x}\ [\\frac{\\tau}{\ell}]$',labelpad=labelpad, fontsize=fontsize)
-            ax1.set_ylabel('$L_{z}\ [\ell^{-1}]$',rotation=0,labelpad=labelpad,fontsize=fontsize)
-            ax2.plot(x_2[i,k,:],y_2[:],label='$f_p=${}'.format(swap_rate[i]))
-            ax1.legend(frameon=False,loc='right')
-            ax2.set_xlabel('$v_{x}\ [\\frac{\\tau}{\ell}]$',fontsize=fontsize)
-            ax2.set_ylabel('$L_{z}\ [\ell^{-1}]$',rotation=0,labelpad=labelpad,fontsize=fontsize)
-            ax2.legend(frameon=False,loc='right')
+        
             
+        for i in range(swap_rate_index_start,swap_rate_index_end):
+           
+                
+
+                ax1.plot(y_1[:],x_1[i,k,:],label='$f_p=${}'.format(swap_rate[i]),marker='x')
+                ax1.set_ylabel('$v_{x}\ [\\frac{\\tau}{\ell}]$',rotation=0,labelpad=labelpady, fontsize=fontsize)
+                ax1.set_xlabel('$L_{z}\ [\ell^{-1}]$',rotation=0,labelpad=labelpadx,fontsize=fontsize)
+                #ax2.plot(x_2[i,k,:],y_2[:],label='$f_p=${}'.format(swap_rate[i]))
+                ax1.legend(frameon=False,loc=0,bbox_to_anchor=(legend_x_pos, legend_y_pos),fontsize=fontsize-4)
+                #ax2.set_xlabel('$v_{x}\ [\\frac{\\tau}{\ell}]$',fontsize=fontsize)
+                #ax2.set_ylabel('$L_{z}\ [\ell^{-1}]$',rotation=0,labelpad=labelpad,fontsize=fontsize)
+                #ax2.legend(frameon=False,loc='right')
+                
         plt.show()
 
-def plot_shear_rate_to_asses_SS(no_timesteps,phi,lengthscale,timestep_points,scaled_temp,number_of_solutions,swap_rate,swap_number,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd):
+
+def plot_shear_rate_to_asses_SS(swap_number_index_end,swap_number_index_start,swap_rate_index_start,swap_rate_index_end,no_timesteps,phi,lengthscale,timestep_points,scaled_temp,number_of_solutions,swap_rate,swap_number,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd):
     for z in range(0,number_of_solutions): 
-        for m in range(0,swap_rate.size):
-            for k in range(0,swap_number.size):
+        for m in range(swap_rate_index_start,swap_rate_index_end):
+            for k in range(swap_number_index_start,swap_number_index_end):
                 plt.plot(timestep_points[0,1,1,:],shear_rate_upper[z,m,k,:])
                 plt.plot(timestep_points[0,1,1,:],shear_rate_lower[z,m,k,:])
                 plt.xlabel('$N_{t}[-]$')
@@ -348,40 +363,41 @@ def plot_shear_rate_to_asses_SS(no_timesteps,phi,lengthscale,timestep_points,sca
 
 
 
-def plotting_flux_vs_shear_rate(box_side_length_scaled,number_of_solutions,shear_rate_lower_steady_state_mean,shear_rate_upper_steady_state_mean,flux_ready_for_plotting,swap_number):
-    # for z in range(0,number_of_solutions):
-    #     shear_rate_mean_of_both_cells=((np.abs(shear_rate_lower_steady_state_mean)+np.abs(shear_rate_upper_steady_state_mean))*0.5)
-
-    #     x=shear_rate_mean_of_both_cells
-    #     y=flux_ready_for_plotting
-    #     for i in range(0,swap_number.size):
-                
-    #             # need to add legend to this 
-    #             plt.plot(x[0,:,i],y[i,:],label='N={}'.format(swap_number[i]))
-    #             plt.xscale('log')
-    #             plt.xlabel('$\dot{\gamma}\ [\\tau]$')
-    #             plt.yscale('log')
-    #             plt.ylabel('$J_{z}(p_{x})\ [\\frac{\\tau^{3}}{\mu}]$',rotation=0,labelpad=25)
-    #             plt.legend()
-                
-    #     plt.show() 
+def plotting_flux_vs_shear_rate(func4,labelpadx,labelpady,params,fontsize,box_side_length_scaled,number_of_solutions,flux_ready_for_plotting,swap_number_index,shear_rate_mean_of_both_cells):
+    
     for z in range(0,number_of_solutions):
-        shear_rate_mean_of_both_cells=((np.abs(shear_rate_lower_steady_state_mean)+np.abs(shear_rate_upper_steady_state_mean))*0.5)
-
+        
+        
         x=shear_rate_mean_of_both_cells[z,:,:]
         y=flux_ready_for_plotting[z,:,:]
-        #for i in range(0,swap_number.size):
+        for i in range(0,swap_number_index):
         
-        for i in range(0,1):
+        #for i in range(0,1):
+            if z==0:
+                j=i
                 
                 # need to add legend to this 
-                plt.plot(x[:,i],y[i,:],label='$L=${}'.format(np.around(box_side_length_scaled[0,z]),decimals=0))
-                plt.xscale('log')
-                plt.xlabel('$\dot{\gamma}\ [\\tau]$')
-                plt.yscale('log')
-                plt.ylabel('$J_{z}(p_{x})\ [\\frac{\\tau^{3}}{\mu}]$',rotation=0,labelpad=25)
+                plt.scatter(x[:,i],y[i,:],label='$L=${}'.format(np.around(box_side_length_scaled[0,z]),decimals=0))
+                plt.plot(x[:,i],func4(x[:,i],params[j][0][0],params[j][0][1]))
+                #plt.xscale('log')
+                plt.xlabel('log($\dot{\gamma}\ [\\tau]$)', labelpad=labelpadx,fontsize=fontsize)
+                #plt.yscale('log')
+                plt.ylabel('log($J_{z}(p_{x})$$\ [\\frac{\\tau^{3}}{\mu}]$)',rotation=0,labelpad=labelpady,fontsize=fontsize)
                 plt.legend()
-plt.show() 
+            else: 
+                j=z*(i+4)
+                plt.scatter(x[:,i],y[i,:],label='$L=${}'.format(np.around(box_side_length_scaled[0,z]),decimals=0))
+                plt.plot(x[:,i],func4(x[:,i],params[j][0][0],params[j][0][1]))
+                #plt.xscale('log')
+                plt.xlabel('log($\dot{\gamma}\ [\\tau]$)', labelpad=labelpadx,fontsize=fontsize)
+                #plt.yscale('log')
+                plt.ylabel('log($J_{z}(p_{x})$$\ [\\frac{\\tau^{3}}{\mu}]$)',rotation=0,labelpad=labelpady,fontsize=fontsize)
+                plt.legend()
+                 
+    plt.show() 
+  
+                
+    
 
 
         
