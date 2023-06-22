@@ -6,7 +6,6 @@ This file will read log.lammps files and output a numpy array containing each th
 import os
 import mmap
 import re 
-import numba
 import time
 import numpy as np
 import matplotlib.pyplot as plt

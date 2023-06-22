@@ -101,6 +101,39 @@ def VP_organiser_and_reader(loc_no_SRD,loc_EF,loc_SN,loc_Realisation_index,box_s
     VP_z_data_lower =np.array([ VP_z_data[11:].astype('float64') ])* box_side_length_scaled.T
     return VP_data_upper,VP_data_lower,error_count,filename,VP_z_data_upper,VP_z_data_lower
 
+def single_VP_reader(loc_no_SRD,loc_EF,loc_SN,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,swap_number,swap_rate,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP):
+    from velP2numpy import velP2numpy_f
+    marker=-1
+    error_count=0 
+    VP_data_upper=np.zeros((number_of_solutions,swap_rate.size,swap_number.size,9,int(no_timesteps/VP_ave_freq),j_))
+    VP_data_lower=np.zeros((number_of_solutions,swap_rate.size,swap_number.size,9,int(no_timesteps/VP_ave_freq),j_))
+
+    for i in range(0,count_VP):
+        filename=realisation_name_VP[i].split('_')
+        marker=marker+1
+        no_SRD=filename[loc_no_SRD]
+        z=no_SRD_key.index(no_SRD)
+        realisation_index=filename[loc_Realisation_index]
+        j=int(float(realisation_index))
+        EF=int(filename[loc_EF])
+        m=np.where(swap_rate==EF)
+        SN=int(filename[loc_SN])
+        k=np.where(swap_number==SN)
+        realisation_name=realisation_name_VP[i]
+        try: 
+            VP_data = velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave_freq,no_SRD,no_timesteps,VP_output_col_count)[0]
+            VP_data_upper= VP_data[1:10,:]
+            VP_data_lower= VP_data[11:,:]
+            
+        except Exception as e:
+            print('Velocity Profile Data faulty')
+            error_count=error_count+1 
+            continue
+    VP_z_data = velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave_freq,no_SRD,no_timesteps,VP_output_col_count)[1]     
+
+    VP_z_data_upper = np.array([VP_z_data[1:10].astype('float64')])* box_side_length_scaled.T    
+    VP_z_data_lower =np.array([ VP_z_data[11:].astype('float64') ])* box_side_length_scaled.T
+    return VP_data_upper,VP_data_lower,error_count,filename,VP_z_data_upper,VP_z_data_lower
 
 def mom_file_data_size_reader(j_,number_of_solutions,count_mom,realisation_name_Mom,no_SRD_key,swap_rate,swap_number,Path_2_mom_file):
     from mom2numpy import mom2numpy_f
@@ -259,11 +292,12 @@ def mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,swap_numbe
     number_swaps_before_truncation=(np.ceil(truncation_timestep/swap_rate)).astype(int)
     mom_data_realisation_averaged_truncated=()
     flux_x_momentum_z_direction=np.zeros((number_of_solutions,swap_number.size,swap_rate.size))
-    total_run_time=scaled_timestep* no_timesteps
-    box_area_nd=np.array(box_size_key)
+    total_run_time=scaled_timestep* (no_timesteps-truncation_timestep)
+    
     flux_ready_for_plotting=np.zeros((number_of_solutions,swap_number.size,swap_rate.size))
     for z in range(0,number_of_solutions):    
         for i in range(0,swap_rate.size):
+            box_area_nd=float(box_size_key[z])**2
             mom_data_realisation_averaged=mom_data_realisation_averaged+(np.mean(mom_data[i],axis=2),)
 
 
@@ -274,11 +308,11 @@ def mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,swap_numbe
 
         # now apply the MP formula 
             mom_difference= mom_data_realisation_averaged_truncated[i][z,:,-1]-mom_data_realisation_averaged_truncated[i][z,:,0]
-            flux_x_momentum_z_direction[z,:,i]=(mom_difference)/(2*total_run_time*float(box_area_nd[z]))
+            flux_x_momentum_z_direction[z,:,i]=(mom_difference)/(2*total_run_time*float(box_area_nd))
             
     flux_ready_for_plotting=np.log((np.abs(flux_x_momentum_z_direction)))
     
-    return flux_ready_for_plotting
+    return flux_ready_for_plotting,mom_data_realisation_averaged_truncated
 
     
 
