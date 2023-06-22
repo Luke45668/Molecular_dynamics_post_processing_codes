@@ -43,24 +43,27 @@ j_=3
 
 swap_rate = np.array([3,7,15,30,60,150,300,600,900,1200]) # values chosen from original mp paper
 swap_number = np.array([1,10,100,1000])
+swap_number = np.array([1])
+swap_rate= np.array([7])
 equilibration_timesteps= 2000 # number of steps to do equilibration with 
+#equilibration_timesteps=1000
 VP_ave_freq =1000
 chunk = 20
 
 dump_freq=1000 # if you change the timestep rememebr to chaneg this 
 thermo_freq = 10000
 scaled_temp=1
-scaled_timestep=0.01
+scaled_timestep=0.001
 realisation=np.array([0.0,1.0,2.0])
 VP_output_col_count = 4 
-r_particle =50e-6
-phi=0.0005
+r_particle =10e-6
+phi=0.005
 N=2
 Vol_box_at_specified_phi=(N* (4/3)*np.pi*r_particle**3 )/phi
 box_side_length=np.cbrt(Vol_box_at_specified_phi)
-fluid_name='Ar'
+fluid_name='H20'
 run_number='2_2e6'
-no_timesteps= 10000000 # rememebr to change this depending on run 
+no_timesteps=1000000 # rememebr to change this depending on run 
 
 #%% grabbing file names 
 #vel.Ar_579862_mom_output__no_rescale_851961_2.0_61516_11877.258268303078_0.01_197_1000_10000_500000_T_1.0_lbda_1.3517157706256893_SR_450_SN_10
@@ -75,7 +78,8 @@ Mom_general_name_string='mom.'+fluid_name+'*_no_tstat_*_no_rescale_*'
 #filepath='N_phi_0.005_0.00005_data_T_1'
 filepath='T_1_phi_'+str(phi)+'_data/'+fluid_name+'_data_T_1_phi_'+str(phi)+'/run_'+str(run_number)+'/'
 filepath='T_1_compiled_data_all_phi'
-filepath='T_1_phi_0.0005_solid_inc_data/Ar_data/run_631918'
+filepath='T_1_phi_0.005_data/H20_data_T_1_phi_0.0005/run_952534'
+filepath='Test_data_solid/phi_0.005'
 
 realisation_name_info=VP_and_momentum_data_realisation_name_grabber(j_,swap_number,swap_rate,VP_general_name_string,Mom_general_name_string,filepath)
 realisation_name_Mom=realisation_name_info[0]
@@ -86,7 +90,6 @@ number_of_solutions=realisation_name_info[4]
 
 ##LEARN HOW TO USE DEBUGGER
 
-#%%
 
 # checking the number of different solutions used in the run 
 # locations of key info when string name is split by undescores
@@ -146,9 +149,48 @@ if error_count != 0:
 else:
     print('Velocity profile data success')
 
+box_size_loc=9
+lengthscale=box_side_length/float(filename[box_size_loc])
+
+#%% to analyse one file 
+from velP2numpy import velP2numpy_f
+marker=-1
+error_count=0 
+VP_data_upper=np.zeros((number_of_solutions,swap_rate.size,swap_number.size,9,int(no_timesteps/VP_ave_freq),j_))
+VP_data_lower=np.zeros((number_of_solutions,swap_rate.size,swap_number.size,9,int(no_timesteps/VP_ave_freq),j_))
+
+for i in range(0,count_VP):
+    filename=realisation_name_VP[i].split('_')
+    marker=marker+1
+    no_SRD=filename[loc_no_SRD]
+    z=no_SRD_key.index(no_SRD)
+    realisation_index=filename[loc_Realisation_index]
+    j=int(float(realisation_index))
+    EF=int(filename[loc_EF])
+    m=np.where(swap_rate==EF)
+    SN=int(filename[loc_SN])
+    k=np.where(swap_number==SN)
+    realisation_name=realisation_name_VP[i]
+    try: 
+        VP_data = velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave_freq,no_SRD,no_timesteps,VP_output_col_count)[0]
+        VP_data_upper= VP_data[1:10,:]
+        VP_data_lower= VP_data[11:,:]
+        
+    except Exception as e:
+        print('Velocity Profile Data faulty')
+        error_count=error_count+1 
+        continue
+VP_z_data = velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave_freq,no_SRD,no_timesteps,VP_output_col_count)[1]     
+
+VP_z_data_upper = np.array([VP_z_data[1:10].astype('float64')])* box_side_length_scaled.T    
+VP_z_data_lower =np.array([ VP_z_data[11:].astype('float64') ])* box_side_length_scaled.T
+
 
 box_size_loc=9
 lengthscale=box_side_length/float(filename[box_size_loc])
+
+
+
  #%% saving VP data as function is very slow 
 # np.save(fluid_name+'_VP_data_upper_'+str(box_side_length_scaled)+'_no_timesteps_'+str(no_timesteps)+'VP_ave_freq'+str(VP_ave_freq),VP_data_upper)    
 # np.save(fluid_name+'_VP_data_lower_'+str(box_side_length_scaled)+'_no_timesteps_'+str(no_timesteps)+'VP_ave_freq'+str(VP_ave_freq),VP_data_lower)   
@@ -199,79 +241,95 @@ VP_data_lower_realisation_averaged=VP_shear_rate_and_stat_data[5]
 VP_data_upper_realisation_averaged=VP_shear_rate_and_stat_data[6]
 shear_rate_upper_error=VP_shear_rate_and_stat_data[7]
 shear_rate_lower_error=VP_shear_rate_and_stat_data[8]
+#%% Averaging for one file 
+
+VP_z_data_upper_repeated= np.repeat(VP_z_data_upper.T,VP_data_upper.shape[1],axis=1)
+VP_z_data_lower_repeated= np.repeat(VP_z_data_lower.T,VP_data_lower.shape[1],axis=1)
+pearson_coeff_upper= np.zeros(VP_data_upper.shape[1])
+pearson_coeff_lower= np.zeros(VP_data_lower.shape[1])
+shear_rate_upper= np.zeros(VP_data_upper.shape[1])    
+shear_rate_lower= np.zeros(VP_data_lower.shape[1])
+shear_rate_upper_error= np.zeros(VP_data_upper.shape[1]) 
+shear_rate_lower_error= np.zeros(VP_data_lower.shape[1])
+
+for i in range(0,VP_data_upper.shape[1]):
+    pearson_coeff_upper[i]=scipy.stats.pearsonr(VP_data_upper[:,i],VP_z_data_upper_repeated[:,i])[0]
+    shear_rate_upper[i]= scipy.stats.linregress(VP_z_data_upper_repeated[:,i],VP_data_upper[:,i]).slope
+    shear_rate_upper_error[i]= scipy.stats.linregress(VP_data_upper[:,i],VP_z_data_upper_repeated[:,i] ).stderr
+    pearson_coeff_lower[i] =scipy.stats.pearsonr(VP_data_lower[:,i],VP_z_data_lower_repeated[:,i] )[0]
+    shear_rate_lower[i]= scipy.stats.linregress(VP_z_data_lower_repeated[:,i] ,VP_data_lower[:,i]).slope  
+    shear_rate_lower_error[i]= scipy.stats.linregress(VP_data_lower[:,i],VP_z_data_lower_repeated [:,i] ).stderr 
+timestep_points=np.array([[[np.linspace(1,VP_data_upper.shape[1],int(float(no_timesteps)/float(VP_ave_freq)))]]])*VP_ave_freq
+
+plt.plot(timestep_points[0,0,0,:],shear_rate_upper[:])
+plt.plot(timestep_points[0,0,0,:],shear_rate_lower[:])
+plt.xlabel('$N_{t}[-]$')
+plt.ylabel('$\dot{\gamma}[\\tau]$',rotation='horizontal')
+plt.title(fluid_name+" simulation run with all $f_{v,x}$ and $N_{v,x}$, $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
+
+plt.show()
 #%%
-VP_data_lower_realisation_averaged = np.mean(VP_data_lower,axis=5) 
-VP_data_upper_realisation_averaged = np.mean(VP_data_upper,axis=5) 
-x_u= np.array(VP_data_upper_realisation_averaged)
-x_l= np.array(VP_data_lower_realisation_averaged)
-y_u=np.zeros((number_of_solutions,VP_z_data_upper.shape[1],VP_data_upper.shape[4]))
-y_l=np.zeros((number_of_solutions,VP_z_data_upper.shape[1],VP_data_upper.shape[4]))
+import log2numpy
+Path_2_log='/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/Test_data_solid/logs'
+realisation_name='log.H20_solid396988_inc_mom_output_no_rescale_243550_0.0_9112_118.77258268303078_0.001_1781_1000_10000_1000000_T_1.0_lbda_1.3166259218664098_SR_7_SN_1_rparticle_10.0'
+thermo_vars='         KinEng          Temp          TotEng'
+log_data= log2numpy.log2numpy(Path_2_log,thermo_vars,realisation_name)[0]
+fontsize=15
+labelpad=20
+#plotting temp vs time 
+plt.plot(log_data[:,0],log_data[:,2])
+temp=1
+x=np.repeat(temp,log_data[:,0].shape[0])
+plt.plot(log_data[:,0],x[:])
+plt.xlabel('$N_{t}[-]$',fontsize=fontsize)
+plt.ylabel('$T[\\frac{T k_{B}}{\\varepsilon}]$', rotation=0,fontsize=fontsize,labelpad=labelpad)
+plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+", $f_{v,x}=$"+str(swap_rate[0])+", $N_{v,x}=$"+str(swap_number[0])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
+                
+plt.show()
 
-for z in range(number_of_solutions):
-    y_u[z,:,:]= np.reshape(np.repeat(VP_z_data_upper[z,:],VP_data_upper.shape[4],axis=0),(VP_z_data_upper.shape[1],VP_data_upper.shape[4]))
-
-    y_l[z,:,:]= np.reshape(np.repeat(VP_z_data_lower[z,:],VP_data_lower.shape[4],axis=0),(VP_z_data_lower.shape[1],VP_data_lower.shape[4]))
-
-pearson_coeff_upper= np.zeros((number_of_solutions,swap_rate.size,swap_number.size,VP_data_upper_realisation_averaged.shape[4]))
-pearson_coeff_lower= np.zeros((number_of_solutions,swap_rate.size,swap_number.size,VP_data_lower_realisation_averaged.shape[4]))
-shear_rate_upper= np.zeros((number_of_solutions,swap_rate.size,swap_number.size,VP_data_upper_realisation_averaged.shape[4]))    
-shear_rate_lower= np.zeros((number_of_solutions,swap_rate.size,swap_number.size,VP_data_lower_realisation_averaged.shape[4]))
-shear_rate_upper_error= np.zeros((number_of_solutions,swap_rate.size,swap_number.size,VP_data_upper_realisation_averaged.shape[4]))    
-shear_rate_lower_error= np.zeros((number_of_solutions,swap_rate.size,swap_number.size,VP_data_lower_realisation_averaged.shape[4]))
-timestep_points=np.array([[[np.linspace(1,VP_data_upper.shape[4],int(float(no_timesteps)/float(VP_ave_freq)))]]])*VP_ave_freq
-timestep_points=np.repeat(timestep_points, number_of_solutions,axis=0)
-timestep_points=np.repeat(timestep_points, swap_rate.size,axis=1)     
-timestep_points=np.repeat(timestep_points, swap_number.size,axis=2)   
+#plotting energy vs time 
+plt.plot(log_data[:,0],log_data[:,3])
+plt.xlabel('$N_{t}[-]$',fontsize=fontsize)
+plt.ylabel('$E_{t}[\\frac{\\tau^{2}}{\mu \ell^{2}}]$', rotation=0,fontsize=fontsize,labelpad=labelpad)
+plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+", $f_{v,x}=$"+str(swap_rate[0])+", $N_{v,x}=$"+str(swap_number[0])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
+     
+plt.show()
 
 
 
-for z in range(0,number_of_solutions): 
-    for m in range(0,swap_rate.size):
-        for k in range(0,swap_number.size):
-            for i in range(0,VP_data_upper.shape[4]):
-                    
-                    pearson_coeff_upper[z,m,k,i] =scipy.stats.pearsonr(y_u[z,:,i],x_u[z,m,k,:,i] )[0]
-                    shear_rate_upper[z,m,k,i]= scipy.stats.linregress(y_u[z,:,i],x_u[z,m,k,:,i] ).slope
-                    shear_rate_upper_error[z,m,k,i]= scipy.stats.linregress(y_u[z,:,i],x_u[z,m,k,:,i] ).stderr
-                    pearson_coeff_lower[z,m,k,i] =scipy.stats.pearsonr(y_l[z,:,i],x_l[z,m,k,:,i] )[0]
-                    shear_rate_lower[z,m,k,i]= scipy.stats.linregress(y_l[z,:,i],x_l[z,m,k,:,i] ).slope  
-                    shear_rate_lower_error[z,m,k,i]= scipy.stats.linregress(y_l[z,:,i],x_l[z,m,k,:,i] ).stderr
-    
+
+# need to fix log file removing warning messages
+
 # %%
 import sigfig
 lengthscale= sigfig.round(lengthscale,sigfigs=3)
 box_size_nd= box_side_length_scaled
-# plt.rcParams.update({
-#     "text.usetex": True,
-#     "font.family": "Helvetica"
-# })
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "Helvetica"
+})
 
-#plot_shear_rate_to_asses_SS(no_timesteps,phi,lengthscale,timestep_points,scaled_temp,number_of_solutions,swap_rate,swap_number,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd)
-# this needs to go into a new plot function with name save in could have a plot one to check 
-# then have a one that just plots and saves
-#plt.savefig(fluid_name+'_simulation_full_shear_rate_data_untruncated_T_'+str(scaled_temp)+'_box_size_'+str(box_side_length_scaled)+'.png')
-
-#%% plotting shear rate with excluded swap rates
 swap_rate_index_start=0
 swap_rate_index_end=10
 swap_number_index_start=0
-swap_number_index_end=4
+swap_number_index_end=1
 def plot_shear_rate_to_asses_SS(swap_number_index_end,swap_number_index_start,swap_rate_index_start,swap_rate_index_end,no_timesteps,phi,lengthscale,timestep_points,scaled_temp,number_of_solutions,swap_rate,swap_number,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd):
     for z in range(0,number_of_solutions): 
-        for m in range(swap_rate_index_start,swap_rate_index_end):
-            for k in range(swap_number_index_start,swap_number_index_end):
-                plt.plot(timestep_points[0,1,1,:],shear_rate_upper[z,m,k,:])
-                plt.plot(timestep_points[0,1,1,:],shear_rate_lower[z,m,k,:])
+        for k in range(swap_number_index_start,swap_number_index_end):
+            for m in range(swap_rate_index_start,swap_rate_index_end):
+            
+                plt.plot(timestep_points[0,1,0,:],shear_rate_upper[z,m,k,:])
+                plt.plot(timestep_points[0,1,0,:],shear_rate_lower[z,m,k,:])
                 plt.xlabel('$N_{t}[-]$')
                 plt.ylabel('$\dot{\gamma}[\\tau]$',rotation='horizontal')
                 plt.title(fluid_name+" simulation run with all $f_{v,x}$ and $N_{v,x}$, $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
                 
-        plt.show()
-        plot_save=input("save figure?, YES/NO")
-        if plot_save=='YES':
-            plt.savefig(fluid_name+'_T_'+str(scaled_temp)+'_length_scale_'+str(lengthscale)+'_phi_'+str(phi)+'_no_timesteps_'+str(no_timesteps)+'.png')
-        else:
-            print('Thanks for checking steady state')
+            plt.show()
+        #plot_save=input("save figure?, YES/NO")
+        # if plot_save=='YES':
+        #     plt.savefig(fluid_name+'_T_'+str(scaled_temp)+'_length_scale_'+str(lengthscale)+'_phi_'+str(phi)+'_no_timesteps_'+str(no_timesteps)+'.png')
+        # else:
+        #     print('Thanks for checking steady state')
 
 plot_shear_rate_to_asses_SS(swap_number_index_end,swap_number_index_start,swap_rate_index_start,swap_rate_index_end,no_timesteps,phi,lengthscale,timestep_points,scaled_temp,number_of_solutions,swap_rate,swap_number,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd)
 # need to save this plot 
@@ -281,7 +339,7 @@ plot_shear_rate_to_asses_SS(swap_number_index_end,swap_number_index_start,swap_r
 
 
 # %%
-truncation_timestep=6000000
+truncation_timestep=5000000
 truncation_and_SS_averaging_data=  truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,shear_rate_lower_error,timestep_points,pearson_coeff_lower,pearson_coeff_upper,shear_rate_upper,shear_rate_lower,VP_ave_freq,truncation_timestep,VP_data_lower_realisation_averaged,VP_data_upper_realisation_averaged)
 standard_deviation_upper_error=truncation_and_SS_averaging_data[0]
 standard_deviation_lower_error=truncation_and_SS_averaging_data[1]
@@ -302,8 +360,8 @@ gradient_tolerance= 1e-9
 for z in range(0,number_of_solutions): 
         for m in range(swap_rate_index_start,swap_rate_index_end):
             for k in range(swap_number_index_start,swap_number_index_end):
-                slope_shear_rate_upper[z,m,k]=np.polyfit(timestep_points[0,1,1,:],shear_rate_upper[z,m,k,:],1)[0]
-                slope_shear_rate_lower[z,m,k]=np.polyfit(timestep_points[0,1,1,:],shear_rate_upper[z,m,k,:],1)[0]
+                slope_shear_rate_upper[z,m,k]=np.polyfit(timestep_points[0,1,0,:],shear_rate_upper[z,m,k,:],1)[0]
+                slope_shear_rate_lower[z,m,k]=np.polyfit(timestep_points[0,1,0,:],shear_rate_upper[z,m,k,:],1)[0]
                 if np.abs(slope_shear_rate_upper[z,m,k]) < gradient_tolerance:
                     slope_shear_rate_upper[z,m,k] =slope_shear_rate_upper[z,m,k] 
                 else: 
@@ -316,11 +374,21 @@ for z in range(0,number_of_solutions):
                     print('FAILED run, exclude from data ')
 print("if no fail statements, data can be considered steady")
 
+#%% plotting gradient of the shear vs time plot 
+for z in range(0,number_of_solutions): 
+    for k in range(swap_number_index_start,swap_number_index_end):
+         plt.yscale('log')
+         plt.scatter(swap_rate[:],slope_shear_rate_upper[z,:,k])
+         plt.scatter(swap_rate[:],slope_shear_rate_lower[z,:,k])
+    
+plt.show
+
 # is this sufficient ?? 
 
 
 # need to save this plot 
 ##%% save to debug 
+#%%
 np.save(fluid_name+'_standard_deviation_upper_error_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),standard_deviation_upper_error)    
 np.save(fluid_name+'_standard_deviation_lower_error_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),standard_deviation_lower_error)    
 np.save(fluid_name+'_pearson_coeff_upper_mean_SS_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),pearson_coeff_upper_mean_SS)    
@@ -352,10 +420,44 @@ truncation_timestep=150000
 
 
 #%% mom_data_averaging_and_flux_calc
+
 from post_MPCD_MP_processing_module import *
  
-flux_ready_for_plotting=mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,swap_number,truncation_timestep,swap_rate,scaled_timestep,no_timesteps,box_side_length_scaled[0,0],mom_data)
+flux_ready_for_plotting=mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,swap_number,truncation_timestep,swap_rate,scaled_timestep,no_timesteps,box_side_length_scaled[0,0],mom_data)[0]
+mom_data_realisation_averaged_truncated=mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,swap_number,truncation_timestep,swap_rate,scaled_timestep,no_timesteps,box_side_length_scaled[0,0],mom_data)[1]
 #(1,4,10)
+#%% importin momentum after steady state
+def mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,swap_number,truncation_timestep,swap_rate,scaled_timestep,no_timesteps,box_side_length_scaled,mom_data):
+    mom_data_realisation_averaged=()
+    number_swaps_before_truncation=(np.ceil(truncation_timestep/swap_rate)).astype(int)
+    mom_data_realisation_averaged_truncated=()
+    flux_x_momentum_z_direction=np.zeros((number_of_solutions,swap_number.size,swap_rate.size))
+    total_run_time=scaled_timestep* (no_timesteps-truncation_timestep)
+    
+    flux_ready_for_plotting=np.zeros((number_of_solutions,swap_number.size,swap_rate.size))
+    for z in range(0,number_of_solutions):    
+        for i in range(0,swap_rate.size):
+            box_area_nd=float(box_size_key[z])**2
+            mom_data_realisation_averaged=mom_data_realisation_averaged+(np.mean(mom_data[i],axis=2),)
+
+
+        #for i in range(0,swap_rate.size):
+
+            mom_data_realisation_averaged_truncated=mom_data_realisation_averaged_truncated+(mom_data_realisation_averaged[i][:,:,number_swaps_before_truncation[i]:],)
+
+
+        # now apply the MP formula 
+            mom_difference= mom_data_realisation_averaged_truncated[i][z,:,-1]-mom_data_realisation_averaged_truncated[i][z,:,0]
+            flux_x_momentum_z_direction[z,:,i]=(mom_difference)/(2*total_run_time*float(box_area_nd))
+            
+    flux_ready_for_plotting=np.log((np.abs(flux_x_momentum_z_direction)))
+    
+    return flux_ready_for_plotting,mom_data_realisation_averaged_truncated
+
+
+#%%
+flux_ready_for_plotting=mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,swap_number,truncation_timestep,swap_rate,scaled_timestep,no_timesteps,box_side_length_scaled[0,0],mom_data)[0]
+mom_data_realisation_averaged_truncated=mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,swap_number,truncation_timestep,swap_rate,scaled_timestep,no_timesteps,box_side_length_scaled[0,0],mom_data)[1]
 # flux vs shear regression line 
 shear_rate_mean_of_both_cells=(((np.abs(shear_rate_lower_steady_state_mean)+np.abs(shear_rate_upper_steady_state_mean))*0.5))
 shear_rate_mean_error_of_both_cells=(np.abs(shear_rate_lower_steady_state_mean_error)+np.abs(shear_rate_upper_steady_state_mean_error))*0.5
@@ -393,16 +495,55 @@ for z in range(0,number_of_solutions):
 
 params=flux_vs_shear_regression_line_params 
 
-
+#%%
  #calculating error of flux
-flux_from_fit=np.zeros((number_of_solutions,swap_number.size,swap_rate.size))
+# plot cumulative momentum exchange vs time 
+# fit to linear grad and take error 
+# need to calculate number of swaps done, plot that as time axes 
+
+#total_number_of_swaps_after_SS=(np.floor( (no_timesteps-truncation_timestep)/swap_rate))
+swap_timestep_vector=()
+total_run_time=scaled_timestep* (no_timesteps-truncation_timestep)
+for z in range(swap_rate_index_start,swap_rate_index_end):
+    total_number_of_swaps_after_SS=mom_data_realisation_averaged_truncated[z].shape[2]
+    final_swap_step= truncation_timestep +(total_number_of_swaps_after_SS*swap_rate[z])
+    #print(final_swap_step)
+    swap_timestep_vector= swap_timestep_vector+ (np.arange(truncation_timestep,final_swap_step,int(swap_rate[z])),)
+
+slope_momentum_vector_error=()
+slope_momentum_vector_mean_abs_error= np.zeros((number_of_solutions,swap_number_index_end,swap_rate_index_end))
+slope_flux_abs_error=np.zeros((number_of_solutions,swap_number_index_end,swap_rate_index_end))
 for z in range(0,number_of_solutions):
-    for i in range(0,swap_number.size):
-        for j in range(0,swap_rate.size):
-          flux_from_fit[z,i,j]=func4(shear_rate_mean_of_both_cells[z,j,i],params[i][0],params[i][1])
+    box_area_nd=float(box_size_key[z])**2
+    for k in range(swap_number_index_start,swap_number_index_end):
+            for m in range(swap_rate_index_start,swap_rate_index_end):
+                plt.scatter(swap_timestep_vector[m],-mom_data_realisation_averaged_truncated[m][z,k,:],label='$f_v=${}'.format(swap_rate[m]),marker='x', s=0.00005)
+                plt.legend()
+                plt.ylabel('$P_x$',rotation=0)
+                plt.xlabel('$N_t$')
+                
+                slope_momentum_vector_error=slope_momentum_vector_error + (np.polyfit(swap_timestep_vector[m],-mom_data_realisation_averaged_truncated[m][z,k,:],1,full=True)[1],)
+                slope_momentum_vector_mean_abs_error[z,k,m]= np.sqrt(slope_momentum_vector_error[m][0]/mom_data_realisation_averaged_truncated[m][z,k,:].shape)
+                slope_flux_abs_error[z,k,m]=slope_momentum_vector_mean_abs_error[z,k,m]/(2*total_run_time*float(box_area_nd))
+                #print(swap_timestep_vector[m].shape,mom_data_realisation_averaged_truncated[m][z,k,:].shape)
+plt.show()
+#%%
+flux_relative_error= slope_flux_abs_error/10**(flux_ready_for_plotting)
+
+#NOTE this section needs to be finished.
 
 
-abs_error_in_flux= flux_from_fit-flux_ready_for_plotting
+#%%
+
+ 
+# flux_from_fit=np.zeros((number_of_solutions,swap_number.size,swap_rate.size))
+# for z in range(0,number_of_solutions):
+#     for i in range(0,swap_number.size):
+#         for j in range(0,swap_rate.size):
+#           flux_from_fit[z,i,j]=func4(shear_rate_mean_of_both_cells[z,j,i],params[i][0],params[i][1])
+
+
+# abs_error_in_flux= flux_from_fit-flux_ready_for_plotting
 
 #msq_error_in_flux= 
 
