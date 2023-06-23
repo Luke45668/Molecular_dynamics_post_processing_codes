@@ -44,7 +44,7 @@ j_=3
 swap_rate = np.array([3,7,15,30,60,150,300,600,900,1200]) # values chosen from original mp paper
 swap_number = np.array([1,10,100,1000])
 swap_number = np.array([1])
-swap_rate= np.array([7])
+#swap_rate= np.array([7])
 equilibration_timesteps= 2000 # number of steps to do equilibration with 
 #equilibration_timesteps=1000
 VP_ave_freq =1000
@@ -57,13 +57,13 @@ scaled_timestep=0.001
 realisation=np.array([0.0,1.0,2.0])
 VP_output_col_count = 4 
 r_particle =10e-6
-phi=0.005
+phi=0.0005
 N=2
 Vol_box_at_specified_phi=(N* (4/3)*np.pi*r_particle**3 )/phi
 box_side_length=np.cbrt(Vol_box_at_specified_phi)
 fluid_name='H20'
 run_number='2_2e6'
-no_timesteps=1000000 # rememebr to change this depending on run 
+no_timesteps=2500000 # rememebr to change this depending on run 
 
 #%% grabbing file names 
 #vel.Ar_579862_mom_output__no_rescale_851961_2.0_61516_11877.258268303078_0.01_197_1000_10000_500000_T_1.0_lbda_1.3517157706256893_SR_450_SN_10
@@ -80,6 +80,9 @@ filepath='T_1_phi_'+str(phi)+'_data/'+fluid_name+'_data_T_1_phi_'+str(phi)+'/run
 filepath='T_1_compiled_data_all_phi'
 filepath='T_1_phi_0.005_data/H20_data_T_1_phi_0.0005/run_952534'
 filepath='Test_data_solid/phi_0.005'
+filepath='T_1_phi_0.005_solid_inc_data/H20_data/run_208958'
+filepath= 'T_1_phi_0.0005_solid_inc_data/H20_data/run_484692'  
+
 
 realisation_name_info=VP_and_momentum_data_realisation_name_grabber(j_,swap_number,swap_rate,VP_general_name_string,Mom_general_name_string,filepath)
 realisation_name_Mom=realisation_name_info[0]
@@ -339,7 +342,7 @@ plot_shear_rate_to_asses_SS(swap_number_index_end,swap_number_index_start,swap_r
 
 
 # %%
-truncation_timestep=5000000
+truncation_timestep=1000000
 truncation_and_SS_averaging_data=  truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,shear_rate_lower_error,timestep_points,pearson_coeff_lower,pearson_coeff_upper,shear_rate_upper,shear_rate_lower,VP_ave_freq,truncation_timestep,VP_data_lower_realisation_averaged,VP_data_upper_realisation_averaged)
 standard_deviation_upper_error=truncation_and_SS_averaging_data[0]
 standard_deviation_lower_error=truncation_and_SS_averaging_data[1]
@@ -351,6 +354,20 @@ VP_steady_state_data_lower_truncated_time_averaged=truncation_and_SS_averaging_d
 VP_steady_state_data_upper_truncated_time_averaged=truncation_and_SS_averaging_data[7]
 shear_rate_upper_steady_state_mean_error=truncation_and_SS_averaging_data[8]
 shear_rate_lower_steady_state_mean_error=truncation_and_SS_averaging_data[9]
+
+# could probably vectorise this or use a method 
+error_count = 0
+for z in range(0,number_of_solutions):
+    for k in range(swap_number_index_start,swap_number_index_end):
+            for m in range(swap_rate_index_start,swap_rate_index_end):
+                 if pearson_coeff_upper_mean_SS[z,m,k]<0.7:
+                     print('Non-linear simulation run please inspect')
+                     error_count=error_count +1 
+                 else:
+                     print('Great success')
+                     
+print('Non-linear simulation count: ',error_count)
+                
 #%% assess gradient of truncated shear rate data to determine steady state
 # can then truncate again 
 slope_shear_rate_upper=  np.zeros((number_of_solutions,swap_rate.size,swap_number.size))
@@ -365,12 +382,12 @@ for z in range(0,number_of_solutions):
                 if np.abs(slope_shear_rate_upper[z,m,k]) < gradient_tolerance:
                     slope_shear_rate_upper[z,m,k] =slope_shear_rate_upper[z,m,k] 
                 else: 
-                    slope_shear_rate_upper[z,m,k]='NaN'
+                    #slope_shear_rate_upper[z,m,k]='NaN'
                     print('FAILED run, exclude from data ')
                 if np.abs(slope_shear_rate_lower[z,m,k]) < gradient_tolerance:
                     slope_shear_rate_lower[z,m,k] =slope_shear_rate_lower[z,m,k] 
                 else: 
-                    slope_shear_rate_lower[z,m,k]='NaN'
+                    #slope_shear_rate_lower[z,m,k]='NaN'
                     print('FAILED run, exclude from data ')
 print("if no fail statements, data can be considered steady")
 
@@ -378,6 +395,8 @@ print("if no fail statements, data can be considered steady")
 for z in range(0,number_of_solutions): 
     for k in range(swap_number_index_start,swap_number_index_end):
          plt.yscale('log')
+         plt.ylabel('grad $\dot{\gamma}$')
+         plt.xlabel('$f_{v,x}$')
          plt.scatter(swap_rate[:],slope_shear_rate_upper[z,:,k])
          plt.scatter(swap_rate[:],slope_shear_rate_lower[z,:,k])
     
@@ -511,6 +530,8 @@ for z in range(swap_rate_index_start,swap_rate_index_end):
     swap_timestep_vector= swap_timestep_vector+ (np.arange(truncation_timestep,final_swap_step,int(swap_rate[z])),)
 
 slope_momentum_vector_error=()
+slope_momentum_vector_error_1=()
+pearson_coeff_momentum=()
 slope_momentum_vector_mean_abs_error= np.zeros((number_of_solutions,swap_number_index_end,swap_rate_index_end))
 slope_flux_abs_error=np.zeros((number_of_solutions,swap_number_index_end,swap_rate_index_end))
 for z in range(0,number_of_solutions):
@@ -522,13 +543,22 @@ for z in range(0,number_of_solutions):
                 plt.ylabel('$P_x$',rotation=0)
                 plt.xlabel('$N_t$')
                 
-                slope_momentum_vector_error=slope_momentum_vector_error + (np.polyfit(swap_timestep_vector[m],-mom_data_realisation_averaged_truncated[m][z,k,:],1,full=True)[1],)
-                slope_momentum_vector_mean_abs_error[z,k,m]= np.sqrt(slope_momentum_vector_error[m][0]/mom_data_realisation_averaged_truncated[m][z,k,:].shape)
-                slope_flux_abs_error[z,k,m]=slope_momentum_vector_mean_abs_error[z,k,m]/(2*total_run_time*float(box_area_nd))
+                #slope_momentum_vector_error=slope_momentum_vector_error + (np.polyfit(swap_timestep_vector[m],-mom_data_realisation_averaged_truncated[m][z,k,:],1,full=True)[1],)
+                #slope_momentum_vector_error_1=slope_momentum_vector_error_1 + (scipy.stats.linregress(swap_timestep_vector[m],-mom_data_realisation_averaged_truncated[m][z,k,:] ).stderr,)
+                pearson_coeff_momentum=pearson_coeff_momentum+ (scipy.stats.pearsonr(swap_timestep_vector[m],-mom_data_realisation_averaged_truncated[m][z,k,:])[0],)
+                if pearson_coeff_momentum[m]  > 0.9999:
+                    print('All pearson coeffs are perfectly linear, therefore there is no error in the total momentum')
+                else:
+                    print('Cumulative total momentum is not linear in time, please check data is has reached SS')
+                #scipy.stats.linregress(swap_timestep_vector[m],-mom_data_realisation_averaged_truncated[m][z,k,:] ).stderr
+                # print(mom_data_realisation_averaged_truncated[m][z,k,:].shape[0])
+                # slope_momentum_vector_mean_abs_error[z,k,m]= np.sqrt(slope_momentum_vector_error[m][0]/mom_data_realisation_averaged_truncated[m][z,k,:].shape[0])
+                # slope_flux_abs_error[z,k,m]=slope_momentum_vector_mean_abs_error[z,k,m]/(2*total_run_time*float(box_area_nd))
                 #print(swap_timestep_vector[m].shape,mom_data_realisation_averaged_truncated[m][z,k,:].shape)
 plt.show()
-#%%
-flux_relative_error= slope_flux_abs_error/10**(flux_ready_for_plotting)
+
+
+
 
 #NOTE this section needs to be finished.
 
@@ -600,7 +630,12 @@ def plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelp
     
 
 plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelpadx,labelpady,params,fontsize,box_side_length_scaled,number_of_solutions,flux_ready_for_plotting,swap_number_index,shear_rate_mean_of_both_cells)    
+# need to adjust this so we get the visocsities of both plots 
+shear_viscosity=10** (params[0][1])
+print('Dimensionless_shear_viscosity:',shear_viscosity)
+# to get the error in viscosity need to look whether we take the mean of the relative or absolute errors. 
 
+#dimensionful_shear_viscosity= shear_viscosity * mass_scale / lengthscale*timescale
 #%% plotting qll 4 SS V_Ps
 
 # need to fix legend location 
