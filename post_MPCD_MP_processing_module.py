@@ -27,13 +27,16 @@ import scipy.stats
 from datetime import datetime
 import glob 
 
-def VP_and_momentum_data_realisation_name_grabber(j_,swap_number,swap_rate,VP_general_name_string,Mom_general_name_string,filepath):
+def VP_and_momentum_data_realisation_name_grabber(log_general_name_string,j_,swap_number,swap_rate,VP_general_name_string,Mom_general_name_string,filepath):
     #os.chdir('/Users/lukedebono/Documents/LAMMPS_projects_mac_book/OneDrive_1_24-02-2023/MYRIAD_lammps_runs/'+filepath)
     os.chdir('/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/'+filepath)
     count_VP=0
     realisation_name_VP = []   
     count_mom=0
     realisation_name_Mom=[]  
+    count_log=0 
+    realisation_name_log=[]
+    
 
     for name in glob.glob(VP_general_name_string):
    
@@ -45,15 +48,21 @@ def VP_and_momentum_data_realisation_name_grabber(j_,swap_number,swap_rate,VP_ge
     
         count_mom=count_mom+1    
         realisation_name_Mom.append(name)
+        
+    for name in glob.glob(log_general_name_string):
+        
+        count_log=count_log+1    
+        realisation_name_log.append(name)
     
-    if count_VP!=count_mom:
+    if count_VP!=count_mom!=count_log:
        breakpoint()
     else:
         print('VP and Mom data consistent')
     
     number_of_solutions= int(count_VP/(j_*swap_number.size*swap_rate.size))
         
-    return realisation_name_Mom,realisation_name_VP,count_mom,count_VP,number_of_solutions
+    return realisation_name_Mom,realisation_name_VP,count_mom,count_VP,number_of_solutions,realisation_name_log,count_log
+
 
 
 def SRD_counter_solution_grabber_duplicate_remover(loc_no_SRD,count_VP,realisation_name_VP):

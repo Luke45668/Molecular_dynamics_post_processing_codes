@@ -72,10 +72,16 @@ VP_general_name_string='vel.'+fluid_name+'*_mom_output_*_no_rescale_*'
 #VP_general_name_string='vel.profile_mom_output__no_rescale_*'
 #mom.Nitrogen_no_tstat_no810908_no_rescale_400902_0.0_48384_3755.9188485904992
 Mom_general_name_string='mom.'+fluid_name+'*_no_tstat_*_no_rescale_*'
+
 #mom.Nitrogen_no_tstat__no_rescale_
 #Mom_general_name_string='mom.'+fluid_name+'_*_tstat__no_rescale_*'
+log_general_name_string='log.'+fluid_name+'_*_inc_mom_output_no_rescale_*'
+#log.H20_solid484692_inc_mom_output_no_rescale_1527_2.0_45733_255.88777235700172_0.001_3473_1000_10000_2500000_T_1.0_lbda_1.8151416549641417_SR_600_SN_1_rparticle_10.0
+                                       #_1527_2.0_45733_255.88777235700172_0.001_3473_1000_10000_2500000_T_1.0_lbda_1.8151416549641417_SR_600_SN_1
+#mom.H20_no_tstat_solid484692_no_rescale_1527_2.0_45733_255.88777235700172_0.001_3473_1000_10000_2500000_T_1.0_lbda_1.8151416549641417_SR_600_SN_1_10.0
+#vel.H20_mom_output_solid484692_no_rescale_1527_2.0_45733_255.88777235700172_0.001_3473_1000_10000_2500000_T_1.0_lbda_1.8151416549641417_SR_600_SN_1_10
 
-#filepath='N_phi_0.005_0.00005_data_T_1'
+
 filepath='T_1_phi_'+str(phi)+'_data/'+fluid_name+'_data_T_1_phi_'+str(phi)+'/run_'+str(run_number)+'/'
 filepath='T_1_compiled_data_all_phi'
 filepath='T_1_phi_0.005_data/H20_data_T_1_phi_0.0005/run_952534'
@@ -84,15 +90,21 @@ filepath='T_1_phi_0.005_solid_inc_data/H20_data/run_208958'
 filepath= 'T_1_phi_0.0005_solid_inc_data/H20_data/run_484692'  
 
 
-realisation_name_info=VP_and_momentum_data_realisation_name_grabber(j_,swap_number,swap_rate,VP_general_name_string,Mom_general_name_string,filepath)
+realisation_name_info=VP_and_momentum_data_realisation_name_grabber(log_general_name_string,j_,swap_number,swap_rate,VP_general_name_string,Mom_general_name_string,filepath)
 realisation_name_Mom=realisation_name_info[0]
 realisation_name_VP=realisation_name_info[1]
 count_mom=realisation_name_info[2]
 count_VP=realisation_name_info[3]
 number_of_solutions=realisation_name_info[4]
+realisation_name_log=realisation_name_info[5]
+count_log=realisation_name_info[6]
 
-##LEARN HOW TO USE DEBUGGER
 
+
+
+
+##LEARN HOW TO USE DEBUGGE
+#%%
 
 # checking the number of different solutions used in the run 
 # locations of key info when string name is split by undescores
@@ -107,6 +119,7 @@ loc_EF=20
 loc_SN=22
 loc_Realisation_index= 7
 loc_box_size=9
+
 # 
 no_SRD=[]
 box_size=[]
@@ -155,6 +168,39 @@ else:
 box_size_loc=9
 lengthscale=box_side_length/float(filename[box_size_loc])
 
+#%%log file reader and organiser
+log_EF=21
+log_SN=23
+log_realisation_index=8
+#def log_file_reader_and_organiser(count_log,):
+log_file_col_count=4
+log_file_row_count=((no_timesteps)/thermo_freq) +2 # to fit full log file  not sure on it 
+log_file_tuple=()
+Path_2_log='/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/T_1_phi_0.0005_solid_inc_data/H20_data/run_484692/'
+thermo_vars='         KinEng          Temp          TotEng    '
+from log2numpy import * 
+for i in range(0,count_log):
+    log_3d_array_with_all_realisations=np.zeros((j_,int(log_file_row_count),4))
+    log_file_tuple=log_file_tuple+(log_3d_array_with_all_realisations,)
+for i in range(0,count_log):
+    
+    realisation_index=int(float(realisation_name_log[i].split('_')[log_realisation_index]))
+    print(realisation_index)
+    swap_rate_org=int(realisation_name_log[i].split('_')[log_EF])
+    print(swap_rate_org)
+    swap_number_org=int(realisation_name_log[i].split('_')[log_SN])
+    print(swap_number_org)
+    print(realisation_name_log[i])
+    log_file_tuple[np.where(swap_rate==swap_rate_org)[0][0]][realisation_index,:,:]=log2numpy_reader(realisation_name_log[i],Path_2_log,thermo_vars)
+    
+#%%
+for i in range(0,count_log):
+    print(realisation_name_log[i])
+    log2numpy_reader(realisation_name_log[i],Path_2_log,thermo_vars)
+   
+    
+    
+    
 #%% to analyse one file 
 from velP2numpy import velP2numpy_f
 marker=-1
