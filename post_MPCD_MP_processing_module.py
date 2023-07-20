@@ -54,10 +54,13 @@ def VP_and_momentum_data_realisation_name_grabber(log_general_name_string,j_,swa
         count_log=count_log+1    
         realisation_name_log.append(name)
     
+    
     if count_VP!=count_mom!=count_log:
        breakpoint()
     else:
         print('VP and Mom data consistent')
+        
+        
     
     number_of_solutions= int(count_VP/(j_*swap_number.size*swap_rate.size))
         
@@ -234,9 +237,9 @@ def VP_data_averaging_and_stat_test_data(VP_z_data_upper,VP_z_data_lower,no_time
     y_l=np.zeros((number_of_solutions,VP_z_data_upper.shape[1],VP_data_upper.shape[4]))
 
     for z in range(number_of_solutions):
-        y_u[z,:,:]= np.reshape(np.repeat(VP_z_data_upper[z,:],VP_data_upper.shape[4],axis=0),(VP_z_data_upper.shape[1],VP_data_upper.shape[4]))
+        y_u[z,:,:]= np.reshape(np.repeat(VP_z_data_upper[0,:],VP_data_upper.shape[4],axis=0),(VP_z_data_upper.shape[1],VP_data_upper.shape[4]))
 
-        y_l[z,:,:]= np.reshape(np.repeat(VP_z_data_lower[z,:],VP_data_lower.shape[4],axis=0),(VP_z_data_lower.shape[1],VP_data_lower.shape[4]))
+        y_l[z,:,:]= np.reshape(np.repeat(VP_z_data_lower[0,:],VP_data_lower.shape[4],axis=0),(VP_z_data_lower.shape[1],VP_data_lower.shape[4]))
 
     pearson_coeff_upper= np.zeros((number_of_solutions,swap_rate.size,swap_number.size,VP_data_upper_realisation_averaged.shape[4]))
     pearson_coeff_lower= np.zeros((number_of_solutions,swap_rate.size,swap_number.size,VP_data_lower_realisation_averaged.shape[4]))
