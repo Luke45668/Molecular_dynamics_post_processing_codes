@@ -50,7 +50,7 @@ equilibration_timesteps= 2000 # number of steps to do equilibration with
 #equilibration_timesteps=1000
 VP_ave_freq =1000
 chunk = 20
-dump_freq=1000 # if you change the timestep rememebr to chaneg this 
+dump_freq=10000 # if you change the timestep rememebr to chaneg this 
 thermo_freq = 10000
 scaled_temp=1
 scaled_timestep=0.01
@@ -61,9 +61,9 @@ phi=0.005
 N=2
 Vol_box_at_specified_phi=(N* (4/3)*np.pi*r_particle**3 )/phi
 box_side_length=np.cbrt(Vol_box_at_specified_phi)
-fluid_name='Nitrogen'
+fluid_name='Ar'
 run_number=''
-no_timesteps=6000000 # rememebr to change this depending on run 
+no_timesteps=8000000 # rememebr to change this depending on run 
 
 #%% grabbing file names 
 
@@ -518,65 +518,80 @@ def dump2numpy_f(dump_start_line,Path_2_dump,dump_realisation_name,number_of_par
             dump_one_timestep[i]=float(dump_one_timestep[i])
             
         
-        print(len(dump_one_timestep))
-        particle_sorted_array= np.zeros((count,(len(dump_start_line.split()) -2) *number_of_particles_per_dump))    
+        #print(len(dump_one_timestep))
+        particle_sorted_array_1=[]  #np.zeros((1,len(dump_start_line.split()) -2)) #*number_of_particles_per_dump))    
+        particle_sorted_array_2=[] 
         total_number_of_readouts_for_run=count
-        print(total_number_of_readouts_for_run)
-        # need to extend this loop for more particles and generalise it if you want N particles
-        for i in range(0,total_number_of_readouts_for_run):
-            for k in range(1,number_of_particles_per_dump+1):
-                loop_count=0
-            
-                if i==0:
-                    if dump_one_timestep[i]==1:
-                        particle_sorted_array[i,0:11]=dump_one_timestep[i:i+11]
-                        loop_count=loop_count+1
-                    else:
-                        particle_sorted_array[i,11:]=dump_one_timestep[i:i+11]
-                        loop_count=loop_count+1
-                else:
-                    k=k+11
-                    j=(i*11)
-                    
-                    if dump_one_timestep[j]==1:
-                        particle_sorted_array[i,0:11]=dump_one_timestep[j:j+11]
-                        loop_count=loop_count+1
-                    else:
-                        particle_sorted_array[i,11:]=dump_one_timestep[:j+11]
-                        loop_count=loop_count+1
-                
-                
-                    
-            #print(j)
+        #print(total_number_of_readouts_for_run)
         
-                
-        dump_file=particle_sorted_array
-            
-        #number_cols_dump = (len(dump_start_line.split()) -2) #*number_of_particles_per_dump  # minus one to remove item: 
-        #number_rows_dump= count *number_of_particles_per_dump 
+        number_cols_dump = (len(dump_start_line.split()) -2) #*number_of_particles_per_dump  # minus one to remove item: 
+        number_rows_dump= count *number_of_particles_per_dump 
 
-        #dump_file=np.reshape(np.array(dump_one_timestep),(number_rows_dump,number_cols_dump))
+        dump_file_unsorted=np.reshape(np.array(dump_one_timestep),(number_rows_dump,number_cols_dump))
+        #particle_sorted_array=np.array([[]])
+        # need to extend this loop for more particles and generalise it if you want N particles
+        j=0
+        # particle 1
+        for i in range(0,number_rows_dump):
+                
+                
+                if dump_file_unsorted[i,0]=='1.0':
+                        #insert_point==[j+1,0:11]
+                        particle_sorted_array_1.append(dump_file_unsorted[i,:])
+                        #print(np.append(dump_file_unsorted[i,:],particle_sorted_array_1[0,0:11],axis=0))
+                        #print(dump_file_unsorted[i,:])
+                elif dump_file_unsorted[i,0]=='1':   
+                        #insert_point=[j+1,0:11]
+                        particle_sorted_array_1.append(dump_file_unsorted[i,:])
+                        #print(dump_file_unsorted[i,:])
+                else:
+                     continue
+        #particle 2
+        for i in range(0,number_rows_dump):
+                
+                
+                if dump_file_unsorted[i,0]=='2.0':
+                        #insert_point==[j+1,0:11]
+                        particle_sorted_array_2.append(dump_file_unsorted[i,:])
+                        #print(np.append(dump_file_unsorted[i,:],particle_sorted_array_1[0,0:11],axis=0))
+                        #print(dump_file_unsorted[i,:])
+                elif dump_file_unsorted[i,0]=='2':   
+                        #insert_point=[j+1,0:11]
+                        particle_sorted_array_2.append(dump_file_unsorted[i,:])
+                        #print(dump_file_unsorted[i,:])
+                else:
+                     continue
         
-        return dump_file,dump_one_timestep
+        dump_file_1=np.stack(particle_sorted_array_1)
+        dump_file_2=np.stack(particle_sorted_array_2)
+       
+       
+        
+        return dump_file_1,dump_file_2,dump_file_unsorted
+#%%
 org_var_dump_1=swap_rate
 loc_org_var_dump_1=19
 org_var_dump_2=spring_constant
 loc_org_var_dump_2=23
-dump_file_tuple=()
+
 dump_start_line='ITEM: ATOMS id type x y z vx vy vz omegax omegay omegaz'
 dump_realisation_name_size_check=realisation_name_dump[0]
 Path_2_dump="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/"+filepath
 number_of_particles_per_dump=2 # only loooking at the solids
-dump_file_test=dump2numpy_f(dump_start_line,Path_2_dump,dump_realisation_name_size_check,number_of_particles_per_dump)[0]
-dump_one_timestep=dump2numpy_f(dump_start_line,Path_2_dump,dump_realisation_name_size_check,number_of_particles_per_dump)[1]
+dump_file_test_1=dump2numpy_f(dump_start_line,Path_2_dump,dump_realisation_name_size_check,number_of_particles_per_dump)[0]
+dump_file_test_2=dump2numpy_f(dump_start_line,Path_2_dump,dump_realisation_name_size_check,number_of_particles_per_dump)[1]
+# dump_one_timestep=dump2numpy_f(dump_start_line,Path_2_dump,dump_realisation_name_size_check,number_of_particles_per_dump)[1]
 
-#%%
+dump_file_tuple_1=()
+dump_file_tuple_2=()
+# particle 1
 for i in range(0,org_var_dump_1.size):
-    dump_file_array=np.zeros((org_var_dump_2.size,j_,dump_file_test.shape[0],dump_file_test.shape[1]))
-    dump_file_tuple=dump_file_tuple+(dump_file_array,)
+    dump_file_array=np.zeros((org_var_dump_2.size,j_,dump_file_test_1.shape[0],dump_file_test_1.shape[1]))
+    dump_file_tuple_1=dump_file_tuple_1+(dump_file_array,)
+    #dump_file_tuple_2=dump_file_tuple_2+(dump_file_array,)
 
-#%%
 for i in range(0,count_dump):
+        dump_file=dump2numpy_f(dump_start_line,Path_2_dump,realisation_name_dump[i],number_of_particles_per_dump)
         filename=realisation_name_dump[i].split('_')
     
         
@@ -596,10 +611,48 @@ for i in range(0,count_dump):
             org_var_dump_2_find_in_name=float(filename[loc_org_var_dump_2][:-5])
             array_index_1= np.where(org_var_dump_2==org_var_dump_2_find_in_name)[0][0] 
         
-        dump_file_tuple[tuple_index][array_index_1,j,:,:]=dump2numpy_f(dump_start_line,Path_2_dump,realisation_name_dump[i],number_of_particles_per_dump)
+        dump_file_1=dump_file[0]
+        #print(dump_file_1)
+        dump_file_tuple_1[tuple_index][array_index_1,j,:,:]=dump_file_1
+       # print(dump_file_tuple_1[tuple_index][array_index_1,j,:,:])
+        
 
+        # dump_file_2=dump_file[1]
+        # print(dump_file_2)
+        # dump_file_tuple_2[tuple_index][array_index_1,j,:,:]=dump_file_2
+        # print(dump_file_tuple_2[tuple_index][array_index_1,j,:,:])
+  
+# particle 2
+for i in range(0,org_var_dump_1.size):
+    dump_file_array=np.zeros((org_var_dump_2.size,j_,dump_file_test_1.shape[0],dump_file_test_1.shape[1]))
+    dump_file_tuple_2=dump_file_tuple_2+(dump_file_array,)
+
+for i in range(0,count_dump):
+        dump_file=dump2numpy_f(dump_start_line,Path_2_dump,realisation_name_dump[i],number_of_particles_per_dump)
+        filename=realisation_name_dump[i].split('_')
+    
         
+        realisation_index=filename[6]
+        j=int(float(realisation_index))
+        if isinstance(filename[loc_org_var_dump_1],int):
+            org_var_dump_1_find_in_name=int(filename[loc_org_var_dump_1])
+            tuple_index=np.where(org_var_dump_1==org_var_dump_1_find_in_name)[0][0]
+        else:
+            org_var_dump_1_find_in_name=float(filename[loc_org_var_dump_1])
+            tuple_index=np.where(org_var_dump_1==org_var_dump_1_find_in_name)[0][0]
+        #[:-5] is due to the final number being attached to .dump eg. 0.01.dump
+        if isinstance(filename[loc_org_var_dump_2],int):
+            org_var_dump_2_find_in_name=int(filename[loc_org_var_dump_2][:-5])
+            array_index_1= np.where(org_var_dump_2==org_var_dump_2_find_in_name)[0][0] 
+        else:
+            org_var_dump_2_find_in_name=float(filename[loc_org_var_dump_2][:-5])
+            array_index_1= np.where(org_var_dump_2==org_var_dump_2_find_in_name)[0][0] 
         
+        dump_file_2=dump_file[1]
+       # print(dump_file_2)
+        dump_file_tuple_2[tuple_index][array_index_1,j,:,:]=dump_file_2
+
+       # print(dump_file_tuple_2[tuple_index][array_index_1,j,:,:])
     
 #%% Now assess the steady state of the VP data 
 org_var_1=swap_rate
@@ -1197,4 +1250,43 @@ np.save(fluid_name+'_VP_z_data_lower_'+str(run_number)+'_phi_'+str(phi)+'_'+str(
 np.save(fluid_name+'_VP_z_data_upper_'+str(run_number)+'_phi_'+str(phi)+'_'+str(np.round(box_side_length_scaled[0,0]))+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),VP_z_data_upper)
 
 
+# %% plotting dump file tuples
+# 25mum
+# nitrogen 
+original_position_particle_1=np.array([1877.9594242952496, 1877.9594242952496, 2816.9391364428748])
+original_position_particle_2=np.array([1877.9594242952496, 1877.9594242952496, 938.9797121476248])
+# H20
+original_position_particle_1=np.array([59.38629134151539, 59.38629134151539, 89.07943701227309])
+original_position_particle_2=np.array([59.38629134151539, 59.38629134151539, 29.693145670757694])
+# Ar
+original_position_particle_1=np.array([5938.629134151539, 5938.629134151539, 8907.943701227308])
+original_position_particle_2=np.array([5938.629134151539, 5938.629134151539, 2969.3145670757694])
+# C6H14
+#original_position_particle_1=np.array([187.795942429525, 187.795942429525, 281.6939136442875])
+#original_position_particle_2=np.array([187.795942429525, 187.795942429525 ,93.8979712147625])
+
+
+dump_file_p1_realisation_averaged = np.mean(dump_file_tuple_1[0],axis=1)
+dump_file_p2_realisation_averaged = np.mean(dump_file_tuple_2[0],axis=1)
+truncation_index=int(truncation_timestep/dump_freq)
+#%%
+z_deviation_from_centre_p1 = dump_file_p1_realisation_averaged[:,truncation_index:,4] -original_position_particle_1[2]
+z_deviation_from_centre_p2 = dump_file_p2_realisation_averaged[:,truncation_index:,4] -original_position_particle_2[2]
+#z_mean_deviation_from_centre = 
+y_deviation_from_centre_p1 = dump_file_p1_realisation_averaged[:,truncation_index:,3] -original_position_particle_1[1]
+y_deviation_from_centre_p2 = dump_file_p2_realisation_averaged[:,truncation_index:,3] -original_position_particle_2[1]
+output_vector = np.arange(0,z_deviation_from_centre_p1.shape[1],1)
+
+for i in range(0,spring_constant.size):
+     
+              plt.plot(output_vector[:],z_deviation_from_centre_p1[i,:],label='$K=${}'.format(spring_constant[i]))
+              plt.xlabel('$N_{outputs}$')
+              plt.ylabel('$z-z_{0}$',rotation=0)
+              plt.legend(loc='best')
+plt.show()
+
+for i in range(0,spring_constant.size):
+     
+              plt.plot(output_vector[:],y_deviation_from_centre_p1[i,:])
+plt.show()
 # %%
