@@ -773,10 +773,10 @@ import sigfig
 lengthscale= sigfig.round(lengthscale,sigfigs=3)
 box_size_nd= box_side_length_scaled 
 
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "Helvetica"
-})
+# plt.rcParams.update({
+#     "text.usetex": True,
+#     "font.family": "Helvetica"
+# })
 
 org_var_1_index_start=0
 org_var_1_index_end=1
@@ -806,7 +806,7 @@ plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_var_1_
 # need to save this plot 
 
 # %%
-truncation_timestep=2000000
+truncation_timestep=2000000 # for H20 and Nitrogen 
 truncation_and_SS_averaging_data=  truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,shear_rate_lower_error,timestep_points,pearson_coeff_lower,pearson_coeff_upper,shear_rate_upper,shear_rate_lower,VP_ave_freq,truncation_timestep,VP_data_lower_realisation_averaged,VP_data_upper_realisation_averaged)
 standard_deviation_upper_error=truncation_and_SS_averaging_data[0]
 standard_deviation_lower_error=truncation_and_SS_averaging_data[1]
@@ -1265,11 +1265,10 @@ original_position_particle_2=np.array([5938.629134151539, 5938.629134151539, 296
 #original_position_particle_1=np.array([187.795942429525, 187.795942429525, 281.6939136442875])
 #original_position_particle_2=np.array([187.795942429525, 187.795942429525 ,93.8979712147625])
 
-
 dump_file_p1_realisation_averaged = np.mean(dump_file_tuple_1[0],axis=1)
 dump_file_p2_realisation_averaged = np.mean(dump_file_tuple_2[0],axis=1)
 truncation_index=int(truncation_timestep/dump_freq)
-#%%
+
 z_deviation_from_centre_p1 = dump_file_p1_realisation_averaged[:,truncation_index:,4] -original_position_particle_1[2]
 z_deviation_from_centre_p2 = dump_file_p2_realisation_averaged[:,truncation_index:,4] -original_position_particle_2[2]
 #z_mean_deviation_from_centre = 
