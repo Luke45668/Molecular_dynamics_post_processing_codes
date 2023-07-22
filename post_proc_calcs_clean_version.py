@@ -980,7 +980,7 @@ mom_data_realisation_averaged_truncated=mom_data_averaging_and_flux_calc(box_siz
 #%% importin momentum after steady state
 def mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,org_var_1,truncation_timestep,org_var_2,scaled_timestep,no_timesteps,box_side_length_scaled,mom_data):
     mom_data_realisation_averaged=()
-    number_swaps_before_truncation=(np.ceil(truncation_timestep/org_var_2)).astype(int)
+    number_swaps_before_truncation=(np.ceil(truncation_timestep/swap_rate)).astype(int)
     mom_data_realisation_averaged_truncated=()
     flux_x_momentum_z_direction=np.zeros((number_of_solutions,org_var_1.size,org_var_2.size))
     total_run_time=scaled_timestep* (no_timesteps-truncation_timestep)
