@@ -138,12 +138,57 @@ def dump2numpy_f(dump_start_line,Path_2_dump,dump_realisation_name,number_of_par
            # print(i)
             dump_one_timestep[i]=float(dump_one_timestep[i])
             
-        number_cols_dump = (len(dump_start_line.split()) -2) # minus one to remove item 
-        number_rows_dump= count * number_of_particles_per_dump 
-
-        dump_file=np.reshape(np.array(dump_one_timestep),(number_rows_dump,number_cols_dump))
         
-        return dump_file
+        #print(len(dump_one_timestep))
+        particle_sorted_array_1=[]  #np.zeros((1,len(dump_start_line.split()) -2)) #*number_of_particles_per_dump))    
+        particle_sorted_array_2=[] 
+        total_number_of_readouts_for_run=count
+        #print(total_number_of_readouts_for_run)
+        
+        number_cols_dump = (len(dump_start_line.split()) -2) #*number_of_particles_per_dump  # minus one to remove item: 
+        number_rows_dump= count *number_of_particles_per_dump 
+
+        dump_file_unsorted=np.reshape(np.array(dump_one_timestep),(number_rows_dump,number_cols_dump))
+        #particle_sorted_array=np.array([[]])
+        # need to extend this loop for more particles and generalise it if you want N particles
+        j=0
+        # particle 1
+        for i in range(0,number_rows_dump):
+                
+                
+                if dump_file_unsorted[i,0]=='1.0':
+                        #insert_point==[j+1,0:11]
+                        particle_sorted_array_1.append(dump_file_unsorted[i,:])
+                        #print(np.append(dump_file_unsorted[i,:],particle_sorted_array_1[0,0:11],axis=0))
+                        #print(dump_file_unsorted[i,:])
+                elif dump_file_unsorted[i,0]=='1':   
+                        #insert_point=[j+1,0:11]
+                        particle_sorted_array_1.append(dump_file_unsorted[i,:])
+                        #print(dump_file_unsorted[i,:])
+                else:
+                     continue
+        #particle 2
+        for i in range(0,number_rows_dump):
+                
+                
+                if dump_file_unsorted[i,0]=='2.0':
+                        #insert_point==[j+1,0:11]
+                        particle_sorted_array_2.append(dump_file_unsorted[i,:])
+                        #print(np.append(dump_file_unsorted[i,:],particle_sorted_array_1[0,0:11],axis=0))
+                        #print(dump_file_unsorted[i,:])
+                elif dump_file_unsorted[i,0]=='2':   
+                        #insert_point=[j+1,0:11]
+                        particle_sorted_array_2.append(dump_file_unsorted[i,:])
+                        #print(dump_file_unsorted[i,:])
+                else:
+                     continue
+        
+        dump_file_1=np.stack(particle_sorted_array_1)
+        dump_file_2=np.stack(particle_sorted_array_2)
+       
+       
+        
+        return dump_file_1,dump_file_2,dump_file_unsorted
 
 
 

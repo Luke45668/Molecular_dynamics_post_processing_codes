@@ -42,12 +42,12 @@ from post_MPCD_MP_processing_module import *
 j_=3
 swap_rate = np.array([3,7,15,30,60,150,300,600,900,1200]) # values chosen from original mp paper
 swap_number = np.array([1,10,100,1000])
-swap_number = np.array([1])
-spring_constant= np.array([0.01,0.1,1,10,20,40,50,60,100,1000])
+#swap_number = np.array([1])
+#spring_constant= np.array([0.01,0.1,1,10,20,40,50,60,100,1000])
 #swap_rate = np.array([15,15,15,15,15,15,15,15,15,15])
-swap_rate= np.array([15])
+#swap_rate= np.array([15])
 equilibration_timesteps= 2000 # number of steps to do equilibration with 
-#equilibration_timesteps=1000
+equilibration_timesteps=1000
 VP_ave_freq =1000
 chunk = 20
 dump_freq=10000 # if you change the timestep rememebr to chaneg this 
@@ -56,14 +56,14 @@ scaled_temp=1
 scaled_timestep=0.01
 realisation=np.array([0.0,1.0,2.0])
 VP_output_col_count = 4 
-r_particle =25e-6
+r_particle =10e-6
 phi=0.005
 N=2
 Vol_box_at_specified_phi=(N* (4/3)*np.pi*r_particle**3 )/phi
 box_side_length=np.cbrt(Vol_box_at_specified_phi)
-fluid_name='Ar'
+fluid_name='Nitrogen'
 run_number=''
-no_timesteps=8000000 # rememebr to change this depending on run 
+no_timesteps=4000000 # rememebr to change this depending on run 
 
 # grabbing file names 
 
@@ -75,38 +75,20 @@ log_general_name_string='log.'+fluid_name+'_*_inc_mom_output_no_rescale_*'
 
 # only need this section if you are analysing dumps 
 dump_general_name_string='test_run_dump_'+fluid_name+'_*'
-count_dump=0
-realisation_name_dump =[]
 
 
-for name in glob.glob(dump_general_name_string):
-        
-        count_dump=count_dump+1    
-        realisation_name_dump.append(name)
-    
-
-# filepath='T_1_phi_'+str(phi)+'_data/'+fluid_name+'_data_T_1_phi_'+str(phi)+'/run_'+str(run_number)+'/'
-# filepath='T_1_compiled_data_all_phi'
-# filepath='T_1_phi_0.005_data/H20_data_T_1_phi_0.0005/run_952534'
-# filepath='Test_data_solid/phi_0.005'
-filepath='T_1_phi_0.005_solid_inc_data/H20_data/run_208958'
+filepath= 'T_1_spring_tests_solid_in_simple_shear/R_10e-6'
 filepath='T_1_phi_0.005_data/Nitrogen_data_T_1_phi_0.005/run_84688'
-#filepath='T_1_spring_tests_solid_in_simple_shear/phi_0.005_tests'
-filepath= 'T_1_spring_tests_solid_in_simple_shear/phi_0.005_tests'
-#filepath= 'T_1_phi_0.0005_solid_inc_data/H20_data/run_484692'  
-#filepath='T_1_phi_0.005_data/H20_data_T_1_phi_0.005/run_830466'
-#filepath='T_1_phi_0.00005_solid_inc_data/H20_data/run_680943'
-#filepath='T_1_phi_0.005_data/H20_data_T_1_phi_0.005/run_830466'
-#filepath='T_1_compiled_data_all_phi/H20_data'
 
-realisation_name_info=VP_and_momentum_data_realisation_name_grabber(log_general_name_string,j_,swap_number,swap_rate,VP_general_name_string,Mom_general_name_string,filepath)
+realisation_name_info= VP_and_momentum_data_realisation_name_grabber(log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
 realisation_name_VP=realisation_name_info[1]
 count_mom=realisation_name_info[2]
 count_VP=realisation_name_info[3]
-
-realisation_name_log=realisation_name_info[5]
-count_log=realisation_name_info[6]
+realisation_name_log=realisation_name_info[4]
+count_log=realisation_name_info[5]
+realisation_name_dump=realisation_name_info[6]
+count_dump=realisation_name_info[7]
 
 #checking the number of different solutions used in the run
 # # locations of key info when string name is split by undescores
@@ -143,58 +125,13 @@ simulation_file="MYRIAD_LAMMPS_runs/"+filepath
 
 Path_2_VP="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/"+simulation_file
 #%% new more general version of VP organiser and reader
-def VP_organiser_and_reader(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,org_var_1,org_var_2,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP):
-    from velP2numpy import velP2numpy_f
-    marker=-1
-    error_count=0 
-    VP_data_upper=np.zeros((number_of_solutions,org_var_1.size,org_var_2.size,9,int(no_timesteps/VP_ave_freq),j_))
-    VP_data_lower=np.zeros((number_of_solutions,org_var_1.size,org_var_2.size,9,int(no_timesteps/VP_ave_freq),j_))
-    VP_z_data_upper=np.zeros((number_of_solutions,1,9))
-    VP_z_data_lower=np.zeros((number_of_solutions,1,9))
-    
-    for i in range(0,count_VP):
-        filename=realisation_name_VP[i].split('_')
-        marker=marker+1
-        no_SRD=filename[loc_no_SRD]
-        z=no_SRD_key.index(no_SRD)
-        realisation_index=filename[loc_Realisation_index]
-        j=int(float(realisation_index))
-        if isinstance(filename[loc_org_var_1], int):
-            org_var_1_find_from_file_name=int(filename[loc_org_var_1])
-            m=np.where(org_var_1==org_var_1_find_from_file_name)
-        else: 
-            org_var_1_find_from_file_name=float(filename[loc_org_var_1])
-            m=np.where(org_var_1==org_var_1_find_from_file_name)
-        if  isinstance(filename[loc_org_var_2], int):
-            org_var_2_find_from_file_name=int(filename[loc_org_var_2])
-            k=np.where(org_var_2==org_var_2_find_from_file_name)
-        else:    
-            org_var_2_find_from_file_name=float(filename[loc_org_var_2])
-            k=np.where(org_var_2==org_var_2_find_from_file_name)
-        realisation_name=realisation_name_VP[i]
-        try: 
-            VP_data = velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave_freq,no_SRD,no_timesteps,VP_output_col_count)[0]
-            VP_data_upper[z,m,k,:,:,j] = VP_data[1:10,:]
-            VP_data_lower[z,m,k,:,:,j] = VP_data[11:,:]
-            
-        except Exception as e:
-            print('Velocity Profile Data faulty')
-            error_count=error_count+1 
-            continue
-        VP_z_data = velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave_freq,no_SRD,no_timesteps,VP_output_col_count)[1]     
-       
-        VP_z_data_upper[z,0,:] = VP_z_data[1:10].astype('float64')* box_side_length_scaled.T    
-        VP_z_data_lower[z,0,:] = VP_z_data[11:].astype('float64')* box_side_length_scaled.T
-        
-    return VP_data_upper,VP_data_lower,error_count,filename,VP_z_data_upper,VP_z_data_lower
 
-#%%
 org_var_1=swap_rate
 loc_org_var_1=20
-org_var_2=spring_constant
-loc_org_var_2=25
+org_var_2=swap_number #spring_constant
+loc_org_var_2=22#25
 #VP_raw_data= VP_organiser_and_reader(loc_no_SRD,loc_EF,loc_SN,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,swap_number,swap_rate,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
-VP_raw_data= VP_organiser_and_reader(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,org_var_1,org_var_2,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
+VP_raw_data=VP_organiser_and_reader(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,org_var_1,org_var_2,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
 
 VP_data_upper=VP_raw_data[0]
 VP_data_lower=VP_raw_data[1]
@@ -226,86 +163,11 @@ thermo_vars='         KinEng          Temp          TotEng    '
 from log2numpy import * 
 org_var_log_1=swap_rate
 loc_org_var_log_1=log_EF
-org_var_log_2=spring_constant
-loc_org_var_log_2=log_K
+org_var_log_2=swap_number#spring_constant
+loc_org_var_log_2=log_SN
 
-
-for i in range(0,org_var_log_1.size):
-    log_4d_array_with_all_realisations=np.zeros((org_var_log_2.size,j_,int(log_file_row_count),log_file_col_count))
-    log_file_tuple=log_file_tuple+(log_4d_array_with_all_realisations,)
+averaged_log_file=log_file_organiser_and_reader(org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,log_file_row_count,log_file_col_count,count_log,realisation_name_log,log_realisation_index,Path_2_log,thermo_vars)
     
-averaged_log_file=np.zeros((org_var_log_1.size,org_var_log_2.size,int(log_file_row_count),4))
-
-for i in range(0,count_log):
-    filename=realisation_name_log[i].split('_')
-    realisation_index=int(float(realisation_name_log[i].split('_')[log_realisation_index]))
-    print(realisation_index)
-    if isinstance(filename[loc_org_var_log_1],int):
-       org_var_log_1_find_in_name=int(filename[loc_org_var_log_1])
-       tuple_index=np.where(org_var_log_1==org_var_log_1_find_in_name)[0][0]
-    else:
-       org_var_log_1_find_in_name=float(filename[loc_org_var_log_1])
-       tuple_index=np.where(org_var_log_1==org_var_log_1_find_in_name)[0][0]
-    
-    if isinstance(filename[loc_org_var_2],int):
-        org_var_log_2_find_in_name=int(filename[loc_org_var_log_2])
-        array_index_1= np.where(org_var_log_2==org_var_log_2_find_in_name)[0][0] 
-    else:
-        org_var_log_2_find_in_name=float(filename[loc_org_var_log_2])
-        array_index_1= np.where(org_var_log_2==org_var_log_2_find_in_name)[0][0] 
-        
-    # multiple swap numbers and swap rates
-    #log_file_tuple[np.where(swap_rate==swap_rate_org)[0][0]][np.where(swap_number==swap_number_org)[0][0],realisation_index,:,:]=log2numpy_reader(realisation_name_log[i],Path_2_log,thermo_vars)
-    log_file_tuple[tuple_index][array_index_1,realisation_index,:,:]=log2numpy_reader(realisation_name_log[i],Path_2_log,thermo_vars)
-
-
-for k in range(0,org_var_log_1.size):
-    for i in range(0,org_var_log_2.size):
-        averaged_log_file[k,i,:,:]=np.mean(log_file_tuple[k][i],axis=0)
-        
-
-
-    
-    
-    
-#%% to analyse one file 
-from velP2numpy import velP2numpy_f
-marker=-1
-error_count=0 
-VP_data_upper=np.zeros((number_of_solutions,swap_rate.size,swap_number.size,9,int(no_timesteps/VP_ave_freq),j_))
-VP_data_lower=np.zeros((number_of_solutions,swap_rate.size,swap_number.size,9,int(no_timesteps/VP_ave_freq),j_))
-
-for i in range(0,count_VP):
-    filename=realisation_name_VP[i].split('_')
-    marker=marker+1
-    no_SRD=filename[loc_no_SRD]
-    z=no_SRD_key.index(no_SRD)
-    realisation_index=filename[loc_Realisation_index]
-    j=int(float(realisation_index))
-    EF=int(filename[loc_EF])
-    m=np.where(swap_rate==EF)
-    SN=int(filename[loc_SN])
-    k=np.where(swap_number==SN)
-    realisation_name=realisation_name_VP[i]
-    try: 
-        VP_data = velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave_freq,no_SRD,no_timesteps,VP_output_col_count)[0]
-        VP_data_upper= VP_data[1:10,:]
-        VP_data_lower= VP_data[11:,:]
-        
-    except Exception as e:
-        print('Velocity Profile Data faulty')
-        error_count=error_count+1 
-        continue
-VP_z_data = velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave_freq,no_SRD,no_timesteps,VP_output_col_count)[1]     
-
-VP_z_data_upper = np.array([VP_z_data[1:10].astype('float64')])* box_side_length_scaled.T    
-VP_z_data_lower =np.array([ VP_z_data[11:].astype('float64') ])* box_side_length_scaled.T
-
-
-box_size_loc=9
-lengthscale=box_side_length/float(filename[box_size_loc])
-
-
 
  #%% saving VP data as function is very slow 
 # np.save(fluid_name+'_VP_data_upper_phi'+str(phi)+'_'+str(box_side_length_scaled)+'_no_timesteps_'+str(no_timesteps)+'VP_ave_freq'+str(VP_ave_freq),VP_data_upper)    
@@ -324,39 +186,8 @@ lengthscale=box_side_length/float(filename[box_size_loc])
 Path_2_mom_file=Path_2_VP
 org_var_mom_1=swap_rate
 loc_org_var_mom_1=20
-org_var_mom_2=spring_constant 
-loc_org_var_mom_2=25
-def mom_file_data_size_reader(j_,number_of_solutions,count_mom,realisation_name_Mom,no_SRD_key,org_var_mom_1,org_var_mom_2,Path_2_mom_file):
-    from mom2numpy import mom2numpy_f
-    pass_count=0
-    size_list=[]
-    
-    for i in range(0,count_mom):
-       
-        
-        realisation_name=realisation_name_Mom[i]
-        
-        
-        
-        mom_data_test=mom2numpy_f(realisation_name,Path_2_mom_file)  
-        size_list.append(mom_data_test.shape)
-        
-        pass_count=pass_count+1 
-    
-    size_list.sort()
-    size_list.reverse()
-    size_list=list(dict.fromkeys(size_list))
-    size_array=np.array(size_list)
-    
-    mom_data=()
-    for i in range(0,org_var_mom_1.size):
-    
-         mom_data= mom_data+(np.zeros((number_of_solutions,org_var_mom_2.size,j_,(size_array[i,0]))),)
-         
-         
-         
-    return size_array,mom_data,pass_count
-#%%
+org_var_mom_2=swap_number #spring_constant 
+loc_org_var_mom_2=22#25
 mom_data_pre_process= mom_file_data_size_reader(j_,number_of_solutions,count_mom,realisation_name_Mom,no_SRD_key,org_var_mom_1,org_var_mom_2,Path_2_mom_file)
 size_array=mom_data_pre_process[0]
 mom_data= mom_data_pre_process[1]
@@ -366,49 +197,6 @@ if pass_count!=count_VP:
     print("Data import error, number of momentum files should match number of velocity files" )
 else:
     print("Data size assessment success!")
-
-#%% re-writing mom organiser and reader 
-def Mom_organiser_and_reader(mom_data,count_mom,realisation_name_Mom,no_SRD_key,org_var_mom_1,loc_org_var_mom_1,org_var_mom_2,loc_org_var_mom_2,Path_2_mom_file):
-    from mom2numpy import mom2numpy_f
-    error_count_mom=0
-    failed_list_realisations=[]
-    for i in range(0,count_mom):
-        filename=realisation_name_Mom[i].split('_')
-    
-        no_SRD=filename[8]
-        z=no_SRD_key.index(no_SRD)
-    
-        realisation_index=filename[7]
-        j=int(float(realisation_index))
-        if isinstance(filename[loc_org_var_mom_1],int):
-            org_var_mom_1_find_in_name=int(filename[loc_org_var_mom_1])
-            tuple_index=np.where(org_var_mom_1==org_var_mom_1_find_in_name)[0][0]
-        else:
-            org_var_mom_1_find_in_name=float(filename[loc_org_var_mom_1])
-            tuple_index=np.where(org_var_mom_1==org_var_mom_1_find_in_name)[0][0]
-    
-        if isinstance(filename[loc_org_var_mom_2],int):
-            org_var_mom_2_find_in_name=int(filename[loc_org_var_mom_2])
-            array_index_1= np.where(org_var_mom_2==org_var_mom_2_find_in_name)[0][0] 
-        else:
-            org_var_mom_2_find_in_name=float(filename[loc_org_var_mom_2])
-            array_index_1= np.where(org_var_mom_2==org_var_mom_2_find_in_name)[0][0] 
-        
-        realisation_name=realisation_name_Mom[i]
-        
-        try:
-           mom_data[tuple_index][z,array_index_1,j,:]=mom2numpy_f(realisation_name,Path_2_mom_file)  
-        
-        
-
-        
-            
-        except Exception as e:
-            print('Mom Data faulty')
-            error_count_mom=error_count_mom+1 
-            failed_list_realisations.append(realisation_name)
-            break
-    return mom_data,error_count_mom,failed_list_realisations
 
 
 #%% Reading in mom data files 
@@ -423,153 +211,8 @@ if error_count_mom !=0:
 else:
     print("Mom data import success")
     
-#%% Dump file reader and organiser 
-def dump2numpy_f(dump_start_line,Path_2_dump,dump_realisation_name,number_of_particles_per_dump):
        
-       
-        dump_start_line_bytes = bytes(dump_start_line,'utf-8')
-
-        os.chdir(Path_2_dump) #+simulation_file+"/" +filename
-
-
-        with open(dump_realisation_name) as f:
-                    read_data = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) 
-                    if read_data.find(dump_start_line_bytes) != -1:
-                        print('Start of run found')
-                        dump_byte_start=read_data.find(dump_start_line_bytes)
-                        end_pattern = re.compile(b"\d\n$")
-                        end_position_search = end_pattern.search(read_data)  
-                    
-                
-                    else:
-                        print('could not find dump variables')
-            
-
-        # find end of run        
-        
-                    if end_pattern.search(read_data) != -1:
-                        print('End of run found')
-                        dump_byte_end= end_position_search.span(0)[1]
-                    else:
-                        print('could not find end of run')
-            
-   
-        read_data.seek(dump_byte_start) #setting relative psotion of the file 
-        size_of_data =dump_byte_end-dump_byte_start
-        dump_array_bytes=read_data.read(dump_byte_end)
-
-        #finding all the matches and putting their indicies into lists 
-
-        timestep_start_pattern = re.compile(dump_start_line_bytes) #b"ITEM: ATOMS id type x y z vx vy vz mass"
-        timestep_end_pattern = re.compile(b"ITEM: TIMESTEP")
-
-        dumpstart = timestep_start_pattern.finditer(dump_array_bytes)
-        dumpend = timestep_end_pattern.finditer(dump_array_bytes)
-        count=0
-        dump_start_timestep=[]
-        dump_end_timestep=[]
-
-
-        for matches in dumpstart:
-                count=count+1 # this is counted n times as we include the first occurence 
-                #print(matches)
-                dump_start_timestep.append(matches.span(0)[1])
-                
-
-        count1=0
-        for match in dumpend:
-                count1=count1+1 # this is counted n-1 times as we dont include the first occurence
-                #print(match)
-                dump_end_timestep.append(match.span(0)[0])
-
-
-        #Splicing and storing the dumps into a list containing the dump at each timestep  
-        dump_one_timestep=[]    
-       
-            
-        for i in range(0,count-1):
-                dump_one_timestep.append(dump_array_bytes[dump_start_timestep[i]:dump_end_timestep[i]])
-            
-        # getting last dump not marked by ITEM: TIMESTEP      
-        dump_one_timestep.append(dump_array_bytes[dump_start_timestep[count-1]:])
-        #dump_one_timestep_tuple=dump_one_timestep_tuple+(str(dump_array_bytes[dump_start_timestep[count-1]:]),)
-        dump_one_timestep=str(dump_one_timestep)
-
-        newline_regex_pattern= re.compile(r'\\n')
-        remove_b_regex_pattern= re.compile(r'b\'')
-        remove_left_bracket_regex_pattern=re.compile(r'\[')
-        remove_right_bracket_regex_pattern=re.compile(r'\]')
-
-        remove_stray_comma_regex_pattern=re.compile(r'\,')
-        remove_stray_appost_regex_pattern = re.compile(r'\'')
-        empty=' '
-
-
-        dump_one_timestep=re.sub(newline_regex_pattern,empty,dump_one_timestep)
-
-        dump_one_timestep=re.sub(remove_b_regex_pattern,empty,dump_one_timestep)
-        dump_one_timestep=re.sub(remove_left_bracket_regex_pattern,empty,dump_one_timestep)
-        dump_one_timestep=re.sub(remove_right_bracket_regex_pattern,empty,dump_one_timestep)
-        dump_one_timestep=re.sub(remove_stray_comma_regex_pattern,empty,dump_one_timestep)
-        dump_one_timestep=re.sub(remove_stray_appost_regex_pattern ,empty,dump_one_timestep)
-            # needs to remove all the line markers and the b'
-            
-        dump_one_timestep=dump_one_timestep.split()
-        for i in range(0,count): 
-           # print(i)
-            dump_one_timestep[i]=float(dump_one_timestep[i])
-            
-        
-        #print(len(dump_one_timestep))
-        particle_sorted_array_1=[]  #np.zeros((1,len(dump_start_line.split()) -2)) #*number_of_particles_per_dump))    
-        particle_sorted_array_2=[] 
-        total_number_of_readouts_for_run=count
-        #print(total_number_of_readouts_for_run)
-        
-        number_cols_dump = (len(dump_start_line.split()) -2) #*number_of_particles_per_dump  # minus one to remove item: 
-        number_rows_dump= count *number_of_particles_per_dump 
-
-        dump_file_unsorted=np.reshape(np.array(dump_one_timestep),(number_rows_dump,number_cols_dump))
-        #particle_sorted_array=np.array([[]])
-        # need to extend this loop for more particles and generalise it if you want N particles
-        j=0
-        # particle 1
-        for i in range(0,number_rows_dump):
-                
-                
-                if dump_file_unsorted[i,0]=='1.0':
-                        #insert_point==[j+1,0:11]
-                        particle_sorted_array_1.append(dump_file_unsorted[i,:])
-                        #print(np.append(dump_file_unsorted[i,:],particle_sorted_array_1[0,0:11],axis=0))
-                        #print(dump_file_unsorted[i,:])
-                elif dump_file_unsorted[i,0]=='1':   
-                        #insert_point=[j+1,0:11]
-                        particle_sorted_array_1.append(dump_file_unsorted[i,:])
-                        #print(dump_file_unsorted[i,:])
-                else:
-                     continue
-        #particle 2
-        for i in range(0,number_rows_dump):
-                
-                
-                if dump_file_unsorted[i,0]=='2.0':
-                        #insert_point==[j+1,0:11]
-                        particle_sorted_array_2.append(dump_file_unsorted[i,:])
-                        #print(np.append(dump_file_unsorted[i,:],particle_sorted_array_1[0,0:11],axis=0))
-                        #print(dump_file_unsorted[i,:])
-                elif dump_file_unsorted[i,0]=='2':   
-                        #insert_point=[j+1,0:11]
-                        particle_sorted_array_2.append(dump_file_unsorted[i,:])
-                        #print(dump_file_unsorted[i,:])
-                else:
-                     continue
-        
-        dump_file_1=np.stack(particle_sorted_array_1)
-        dump_file_2=np.stack(particle_sorted_array_2)
-       
-       
-        
-        return dump_file_1,dump_file_2,dump_file_unsorted
+    
 #%%
 org_var_dump_1=swap_rate
 loc_org_var_dump_1=19
@@ -616,14 +259,7 @@ for i in range(0,count_dump):
         dump_file_1=dump_file[0]
         #print(dump_file_1)
         dump_file_tuple_1[tuple_index][array_index_1,j,:,:]=dump_file_1
-       # print(dump_file_tuple_1[tuple_index][array_index_1,j,:,:])
-        
-
-        # dump_file_2=dump_file[1]
-        # print(dump_file_2)
-        # dump_file_tuple_2[tuple_index][array_index_1,j,:,:]=dump_file_2
-        # print(dump_file_tuple_2[tuple_index][array_index_1,j,:,:])
-  
+       
 # particle 2
 for i in range(0,org_var_dump_1.size):
     dump_file_array=np.zeros((org_var_dump_2.size,j_,dump_file_test_1.shape[0],dump_file_test_1.shape[1]))
@@ -651,54 +287,14 @@ for i in range(0,count_dump):
             array_index_1= np.where(org_var_dump_2==org_var_dump_2_find_in_name)[0][0] 
         
         dump_file_2=dump_file[1]
-       # print(dump_file_2)
+      
         dump_file_tuple_2[tuple_index][array_index_1,j,:,:]=dump_file_2
 
-       # print(dump_file_tuple_2[tuple_index][array_index_1,j,:,:])
+       
     
 #%% Now assess the steady state of the VP data 
 org_var_1=swap_rate
 org_var_2=spring_constant 
-def VP_data_averaging_and_stat_test_data(VP_z_data_upper,VP_z_data_lower,no_timesteps,VP_data_lower,VP_data_upper,number_of_solutions,org_var_1,org_var_2,VP_ave_freq):
-    VP_data_lower_realisation_averaged = np.mean(VP_data_lower,axis=5) 
-    VP_data_upper_realisation_averaged = np.mean(VP_data_upper,axis=5) 
-    x_u= np.array(VP_data_upper_realisation_averaged)
-    x_l= np.array(VP_data_lower_realisation_averaged)
-    y_u=np.zeros((number_of_solutions,VP_z_data_upper.shape[2],VP_data_upper.shape[4]))
-    y_l=np.zeros((number_of_solutions,VP_z_data_upper.shape[2],VP_data_upper.shape[4]))
-
-    for z in range(number_of_solutions):
-        y_u[z,:,:]= np.reshape(np.repeat(VP_z_data_upper[z,0,:],VP_data_upper.shape[4],axis=0),(VP_z_data_upper.shape[2],VP_data_upper.shape[4]))
-
-        y_l[z,:,:]= np.reshape(np.repeat(VP_z_data_lower[z,0,:],VP_data_lower.shape[4],axis=0),(VP_z_data_lower.shape[2],VP_data_lower.shape[4]))
-
-    pearson_coeff_upper= np.zeros((number_of_solutions,org_var_1.size,org_var_2.size,VP_data_upper_realisation_averaged.shape[4]))
-    pearson_coeff_lower= np.zeros((number_of_solutions,org_var_1.size,org_var_2.size,VP_data_lower_realisation_averaged.shape[4]))
-    shear_rate_upper= np.zeros((number_of_solutions,org_var_1.size,org_var_2.size,VP_data_upper_realisation_averaged.shape[4]))    
-    shear_rate_lower= np.zeros((number_of_solutions,org_var_1.size,org_var_2.size,VP_data_lower_realisation_averaged.shape[4]))
-    shear_rate_upper_error= np.zeros((number_of_solutions,org_var_1.size,org_var_2.size,VP_data_upper_realisation_averaged.shape[4]))    
-    shear_rate_lower_error= np.zeros((number_of_solutions,org_var_1.size,org_var_2.size,VP_data_lower_realisation_averaged.shape[4]))
-    timestep_points=np.array([[[np.linspace(1,VP_data_upper.shape[4],int(float(no_timesteps)/float(VP_ave_freq)))]]])*VP_ave_freq
-    timestep_points=np.repeat(timestep_points, number_of_solutions,axis=0)
-    timestep_points=np.repeat(timestep_points, org_var_1.size,axis=1)     
-    timestep_points=np.repeat(timestep_points, org_var_2.size,axis=2)   
-
-
-
-    for z in range(0,number_of_solutions): 
-        for m in range(0,org_var_1.size):
-            for k in range(0,org_var_2.size):
-                for i in range(0,VP_data_upper.shape[4]):
-                        
-                        pearson_coeff_upper[z,m,k,i] =scipy.stats.pearsonr(y_u[z,:,i],x_u[z,m,k,:,i] )[0]
-                        shear_rate_upper[z,m,k,i]= scipy.stats.linregress(y_u[z,:,i],x_u[z,m,k,:,i] ).slope
-                        shear_rate_upper_error[z,m,k,i]= scipy.stats.linregress(y_u[z,:,i],x_u[z,m,k,:,i] ).stderr
-                        pearson_coeff_lower[z,m,k,i] =scipy.stats.pearsonr(y_l[z,:,i],x_l[z,m,k,:,i] )[0]
-                        shear_rate_lower[z,m,k,i]= scipy.stats.linregress(y_l[z,:,i],x_l[z,m,k,:,i] ).slope  
-                        shear_rate_lower_error[z,m,k,i]= scipy.stats.linregress(y_l[z,:,i],x_l[z,m,k,:,i] ).stderr 
-     
-    return pearson_coeff_upper,shear_rate_upper,pearson_coeff_lower,shear_rate_lower,timestep_points,VP_data_lower_realisation_averaged,VP_data_upper_realisation_averaged,shear_rate_upper_error,shear_rate_lower_error
-        
 VP_shear_rate_and_stat_data=VP_data_averaging_and_stat_test_data(VP_z_data_upper,VP_z_data_lower,no_timesteps,VP_data_lower,VP_data_upper,number_of_solutions,org_var_1,org_var_2,VP_ave_freq)
 pearson_coeff_upper=VP_shear_rate_and_stat_data[0]
 shear_rate_upper=VP_shear_rate_and_stat_data[1]
@@ -709,65 +305,6 @@ VP_data_lower_realisation_averaged=VP_shear_rate_and_stat_data[5]
 VP_data_upper_realisation_averaged=VP_shear_rate_and_stat_data[6]
 shear_rate_upper_error=VP_shear_rate_and_stat_data[7]
 shear_rate_lower_error=VP_shear_rate_and_stat_data[8]
-
-#%% Averaging for one file 
-
-VP_z_data_upper_repeated= np.repeat(VP_z_data_upper.T,VP_data_upper.shape[1],axis=1)
-VP_z_data_lower_repeated= np.repeat(VP_z_data_lower.T,VP_data_lower.shape[1],axis=1)
-pearson_coeff_upper= np.zeros(VP_data_upper.shape[1])
-pearson_coeff_lower= np.zeros(VP_data_lower.shape[1])
-shear_rate_upper= np.zeros(VP_data_upper.shape[1])    
-shear_rate_lower= np.zeros(VP_data_lower.shape[1])
-shear_rate_upper_error= np.zeros(VP_data_upper.shape[1]) 
-shear_rate_lower_error= np.zeros(VP_data_lower.shape[1])
-
-for i in range(0,VP_data_upper.shape[1]):
-    pearson_coeff_upper[i]=scipy.stats.pearsonr(VP_data_upper[:,i],VP_z_data_upper_repeated[:,i])[0]
-    shear_rate_upper[i]= scipy.stats.linregress(VP_z_data_upper_repeated[:,i],VP_data_upper[:,i]).slope
-    shear_rate_upper_error[i]= scipy.stats.linregress(VP_data_upper[:,i],VP_z_data_upper_repeated[:,i] ).stderr
-    pearson_coeff_lower[i] =scipy.stats.pearsonr(VP_data_lower[:,i],VP_z_data_lower_repeated[:,i] )[0]
-    shear_rate_lower[i]= scipy.stats.linregress(VP_z_data_lower_repeated[:,i] ,VP_data_lower[:,i]).slope  
-    shear_rate_lower_error[i]= scipy.stats.linregress(VP_data_lower[:,i],VP_z_data_lower_repeated [:,i] ).stderr 
-timestep_points=np.array([[[np.linspace(1,VP_data_upper.shape[1],int(float(no_timesteps)/float(VP_ave_freq)))]]])*VP_ave_freq
-
-plt.plot(timestep_points[0,0,0,:],shear_rate_upper[:])
-plt.plot(timestep_points[0,0,0,:],shear_rate_lower[:])
-plt.xlabel('$N_{t}[-]$')
-plt.ylabel('$\dot{\gamma}[\\tau]$',rotation='horizontal')
-plt.title(fluid_name+" simulation run with all $f_{v,x}$ and $N_{v,x}$, $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
-
-plt.show()
-
-import log2numpy
-Path_2_log='/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/Test_data_solid/logs'
-realisation_name='log.H20_solid396988_inc_mom_output_no_rescale_243550_0.0_9112_118.77258268303078_0.001_1781_1000_10000_1000000_T_1.0_lbda_1.3166259218664098_SR_7_SN_1_rparticle_10.0'
-thermo_vars='         KinEng          Temp          TotEng'
-log_data= log2numpy.log2numpy(Path_2_log,thermo_vars,realisation_name)[0]
-fontsize=15
-labelpad=20
-#plotting temp vs time 
-plt.plot(log_data[:,0],log_data[:,2])
-temp=1
-x=np.repeat(temp,log_data[:,0].shape[0])
-plt.plot(log_data[:,0],x[:])
-plt.xlabel('$N_{t}[-]$',fontsize=fontsize)
-plt.ylabel('$T[\\frac{T k_{B}}{\\varepsilon}]$', rotation=0,fontsize=fontsize,labelpad=labelpad)
-plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+", $f_{v,x}=$"+str(swap_rate[0])+", $N_{v,x}=$"+str(swap_number[0])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
-                
-plt.show()
-
-#plotting energy vs time 
-plt.plot(log_data[:,0],log_data[:,3])
-plt.xlabel('$N_{t}[-]$',fontsize=fontsize)
-plt.ylabel('$E_{t}[\\frac{\\tau^{2}}{\mu \ell^{2}}]$', rotation=0,fontsize=fontsize,labelpad=labelpad)
-plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+", $f_{v,x}=$"+str(swap_rate[0])+", $N_{v,x}=$"+str(swap_number[0])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
-     
-plt.show()
-
-
-
-
-# need to fix log file removing warning messages
 
 #%%
 plt.rcParams.update({'font.size': 15})   
@@ -836,10 +373,7 @@ for z in range(0,number_of_solutions):
                      print('Great success')
                      
   
-                     
-                
-                
-                 
+                    
 print('Non-linear simulation count: ',error_count)
 marker=['x','o','+','^',"1","X","d","*","P","v"]
 for z in range(0,number_of_solutions):
@@ -893,20 +427,7 @@ for z in range(0,number_of_solutions):
             #plt.title("Needs a title")
 plt.show
 
-# is this sufficient ?? 
 
-#%%
-# np.save(fluid_name+'_standard_deviation_upper_error_phi'+str(phi)+'_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),standard_deviation_upper_error)    
-# np.save(fluid_name+'_standard_deviation_lower_error_phi'+str(phi)+'_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),standard_deviation_lower_error)    
-# np.save(fluid_name+'_pearson_coeff_upper_mean_SS_phi'+str(phi)+'_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),pearson_coeff_upper_mean_SS)    
-# np.save(fluid_name+'_pearson_coeff_lower_mean_SS_phi'+str(phi)+'_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),pearson_coeff_lower_mean_SS)    
-# np.save(fluid_name+'_shear_rate_lower_steady_state_mean_phi'+str(phi)+'_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),shear_rate_lower_steady_state_mean)          
-# np.save(fluid_name+'_shear_rate_upper_steady_state_mean_phi'+str(phi)+'_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),shear_rate_upper_steady_state_mean)          
-# np.save(fluid_name+'VP_steady_state_data_lower_truncated_time_averaged_phi'+str(phi)+'_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),VP_steady_state_data_lower_truncated_time_averaged)          
-# np.save(fluid_name+'VP_steady_state_data_upper_truncated_time_averaged_phi'+str(phi)+'_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),VP_steady_state_data_upper_truncated_time_averaged)          
-# #np.save(fluid_name+'mom_data_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),mom_data)
-# np.save(fluid_name+'VP_z_data_upper_phi'+str(phi)+'_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),VP_z_data_upper)
-# np.save(fluid_name+'VP_z_data_lower_phi'+str(phi)+'_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),VP_z_data_lower)
 
 #%% plotting E vs Nt and T vs Nt
 # legend colours still dont match 
@@ -977,7 +498,7 @@ flux_ready_for_plotting=mom_data_averaging_and_flux_calc(box_size_key,number_of_
 mom_data_realisation_averaged_truncated=mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,org_var_1,truncation_timestep,org_var_2,scaled_timestep,no_timesteps,box_side_length_scaled[0,0],mom_data)[1]
 #np.save(fluid_name+'_flux_ready_for_plotting_phi'+str(phi)+'_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),flux_ready_for_plotting)
 #(1,4,10)
-#%% importin momentum after steady state
+#%% importing momentum after steady state
 def mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,org_var_1,truncation_timestep,org_var_2,scaled_timestep,no_timesteps,box_side_length_scaled,mom_data):
     mom_data_realisation_averaged=()
     number_swaps_before_truncation=(np.ceil(truncation_timestep/swap_rate)).astype(int)
@@ -986,21 +507,24 @@ def mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,org_var_1,
     total_run_time=scaled_timestep* (no_timesteps-truncation_timestep)
     
     flux_ready_for_plotting=np.zeros((number_of_solutions,org_var_1.size,org_var_2.size))
-    for z in range(0,number_of_solutions):    
-        for i in range(0,org_var_2.size):
-            box_area_nd=float(box_size_key[z])**2
-            mom_data_realisation_averaged=mom_data_realisation_averaged+(np.mean(mom_data[i],axis=2),)
+    for j in range(0,org_var_1.size):
+        for z in range(0,number_of_solutions):    
+                for i in range(0,org_var_2.size):
+                    box_area_nd=float(box_size_key[z])**2
+                    mom_data_realisation_averaged=mom_data_realisation_averaged+(np.mean(mom_data[j],axis=2),)
 
 
-        #for i in range(0,org_var_2.size):
+            #for i in range(0,org_var_2.size):
 
-            mom_data_realisation_averaged_truncated=mom_data_realisation_averaged_truncated+(mom_data_realisation_averaged[i][:,:,number_swaps_before_truncation[i]:],)
+                    mom_data_realisation_averaged_truncated=mom_data_realisation_averaged_truncated+(mom_data_realisation_averaged[j][:,:,number_swaps_before_truncation[j]:],)
+                    print(mom_data_realisation_averaged_truncated[0].shape)
 
 
-        # now apply the MP formula 
-            mom_difference= mom_data_realisation_averaged_truncated[i][z,:,-1]-mom_data_realisation_averaged_truncated[i][z,:,0]
-            flux_x_momentum_z_direction[z,:,i]=(mom_difference)/(2*total_run_time*float(box_area_nd))
-            
+            # now apply the MP formula 
+                    mom_difference= mom_data_realisation_averaged_truncated[j][z,i,-1]-mom_data_realisation_averaged_truncated[j][z,i,0]
+                    print(mom_difference)
+                    flux_x_momentum_z_direction[z,j,i]=(mom_difference)/(2*total_run_time*float(box_area_nd))
+                
     flux_ready_for_plotting=np.log((np.abs(flux_x_momentum_z_direction)))
     
     return flux_ready_for_plotting,mom_data_realisation_averaged_truncated
@@ -1018,13 +542,7 @@ print(shear_rate_mean_error_of_both_cells.shape)
 shear_rate_mean_error_of_both_cells_relative=shear_rate_mean_error_of_both_cells/shear_rate_mean_of_both_cells
 shear_rate_mean_of_both_cells=np.log(((np.abs(shear_rate_lower_steady_state_mean)+np.abs(shear_rate_upper_steady_state_mean))*0.5))
 shear_rate_mean_error_of_both_cells=shear_rate_mean_of_both_cells*shear_rate_mean_error_of_both_cells_relative
-# np.save(fluid_name+'_shear_rate_mean_error_of_both_cells_phi'+str(phi)+'_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),shear_rate_mean_error_of_both_cells)
-# np.save(fluid_name+'_shear_rate_mean_of_both_cells_phi'+str(phi)+'_'+str(box_side_length_scaled[0,0])+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),shear_rate_mean_of_both_cells)
-# # reshape
 
-#shear_rate_mean_of_both_cells= np.reshape(shear_rate_mean_of_both_cells,(flux_ready_for_plotting.shape))
-# shear_rate_mean_error_of_both_cells_relative= np.reshape(shear_rate_mean_error_of_both_cells_relative,(flux_ready_for_plotting.shape))
-# shear_rate_mean_error_of_both_cells=shear_rate_mean_of_both_cells*shear_rate_mean_error_of_both_cells_relative
 print(shear_rate_mean_of_both_cells.shape)
 print(shear_rate_mean_error_of_both_cells.shape)
 
@@ -1043,7 +561,7 @@ def func4(x, a, b):
 for z in range(0,number_of_solutions):    
     for i in range(0,org_var_1.size):
       
-        flux_vs_shear_regression_line_params= flux_vs_shear_regression_line_params+(scipy.optimize.curve_fit(func4,shear_rate_mean_of_both_cells[z,:,i],flux_ready_for_plotting[z,i,:],method='lm',maxfev=5000)[0],)
+        flux_vs_shear_regression_line_params= flux_vs_shear_regression_line_params+(scipy.optimize.curve_fit(func4,shear_rate_mean_of_both_cells[z,i,:],flux_ready_for_plotting[z,i,:],method='lm',maxfev=5000)[0],)
         #print(scipy.optimize.curve_fit(func4,shear_rate_mean_of_both_cells[z,:,i],flux_ready_for_plotting[z,i,:],method='lm',maxfev=5000)[0])
 
 params=flux_vs_shear_regression_line_params 
@@ -1059,11 +577,12 @@ params=flux_vs_shear_regression_line_params
 #total_number_of_swaps_after_SS=(np.floor( (no_timesteps-truncation_timestep)/org_var_2))
 swap_timestep_vector=()
 total_run_time=scaled_timestep* (no_timesteps-truncation_timestep)
-for z in range(org_var_2_index_start,org_var_1_index_end):
+for z in range(0,swap_rate.size):
     total_number_of_swaps_after_SS=mom_data_realisation_averaged_truncated[z].shape[2]
-    final_swap_step= truncation_timestep +(total_number_of_swaps_after_SS*org_var_2[z])
+    final_swap_step= truncation_timestep +(total_number_of_swaps_after_SS*swap_rate[z])
     #print(final_swap_step)
-    swap_timestep_vector= swap_timestep_vector+ (np.arange(truncation_timestep,final_swap_step,int(org_var_2[z])),)
+    swap_timestep_vector= swap_timestep_vector+ (np.arange(truncation_timestep,final_swap_step,int(swap_rate[z])),)
+
 
 slope_momentum_vector_error=()
 slope_momentum_vector_error_1=()
@@ -1072,9 +591,9 @@ slope_momentum_vector_mean_abs_error= np.zeros((number_of_solutions,org_var_1_in
 slope_flux_abs_error=np.zeros((number_of_solutions,org_var_1_index_end,org_var_1_index_end))
 for z in range(0,number_of_solutions):
     box_area_nd=float(box_size_key[z])**2
-    for k in range(org_var_1_index_start,org_var_1_index_end:
-            for m in range(org_var_2_index_start,org_var_1_index_end):
-                plt.scatter(swap_timestep_vector[m],-mom_data_realisation_averaged_truncated[m][z,k,:],label='$f_v=${}'.format(org_var_2[m]),marker='x', s=0.00005)
+    for k in range(org_var_1_index_start,org_var_1_index_end):
+            for m in range(org_var_2_index_start,org_var_2_index_end):
+                plt.scatter(swap_timestep_vector[m],-mom_data_realisation_averaged_truncated[k][z,m,:],label='$f_v=${}'.format(org_var_2[m]),marker='x', s=0.00005)
                 plt.legend()
                 plt.ylabel('$P_x$',rotation=0)
                 plt.xlabel('$N_t$')
@@ -1265,20 +784,35 @@ np.save(fluid_name+'_VP_z_data_upper_'+str(run_number)+'_phi_'+str(phi)+'_'+str(
 
 
 # %% plotting dump file tuples
+legendx=1.5
 # 25mum
 # nitrogen 
-original_position_particle_1=np.array([1877.9594242952496, 1877.9594242952496, 2816.9391364428748])
-original_position_particle_2=np.array([1877.9594242952496, 1877.9594242952496, 938.9797121476248])
+# original_position_particle_1=np.array([1877.9594242952496, 1877.9594242952496, 2816.9391364428748])
+# original_position_particle_2=np.array([1877.9594242952496, 1877.9594242952496, 938.9797121476248])
 # H20
-original_position_particle_1=np.array([59.38629134151539, 59.38629134151539, 89.07943701227309])
-original_position_particle_2=np.array([59.38629134151539, 59.38629134151539, 29.693145670757694])
-# Ar
-original_position_particle_1=np.array([5938.629134151539, 5938.629134151539, 8907.943701227308])
-original_position_particle_2=np.array([5938.629134151539, 5938.629134151539, 2969.3145670757694])
-# C6H14
-#original_position_particle_1=np.array([187.795942429525, 187.795942429525, 281.6939136442875])
-#original_position_particle_2=np.array([187.795942429525, 187.795942429525 ,93.8979712147625])
+# original_position_particle_1=np.array([59.38629134151539, 59.38629134151539, 89.07943701227309])
+# original_position_particle_2=np.array([59.38629134151539, 59.38629134151539, 29.693145670757694])
+# # Ar
+# original_position_particle_1=np.array([5938.629134151539, 5938.629134151539, 8907.943701227308])
+# original_position_particle_2=np.array([5938.629134151539, 5938.629134151539, 2969.3145670757694])
+# #C6H14
+# original_position_particle_1=np.array([187.795942429525, 187.795942429525, 281.6939136442875])
+# original_position_particle_2=np.array([187.795942429525, 187.795942429525 ,93.8979712147625])
+#10mum
+#nitrogen 
+original_position_particle_1=np.array([3459.230836136133, 3459.230836136133, 5188.8462542042])
+original_position_particle_2=np.array([3459.230836136133, 3459.230836136133,1729.6154180680664])
+# H20
+original_position_particle_1=np.array([109.39048394478877, 109.39048394478877, 164.08572591718317])
+original_position_particle_2=np.array([109.39048394478877, 109.39048394478877, 54.695241972394385])
+# # Ar
+original_position_particle_1=np.array([10939.04839447888, 10939.04839447888, 16408.57259171832])
+original_position_particle_2=np.array([10939.04839447888, 10939.04839447888, 5469.52419723944])
+# #C6H14
+original_position_particle_1=np.array([345.92308361361336, 345.92308361361336, 518.8846254204201])
+original_position_particle_2=np.array([345.92308361361336, 345.92308361361336,172.96154180680668])
 
+# is this the correct way to calcuate the mean ?? 
 dump_file_p1_realisation_averaged = np.mean(dump_file_tuple_1[0],axis=1)
 dump_file_p2_realisation_averaged = np.mean(dump_file_tuple_2[0],axis=1)
 truncation_index=int(truncation_timestep/dump_freq)
@@ -1286,6 +820,7 @@ truncation_index=int(truncation_timestep/dump_freq)
 z_deviation_from_centre_p1 = dump_file_p1_realisation_averaged[:,truncation_index:,4] -original_position_particle_1[2]
 z_deviation_from_centre_p2 = dump_file_p2_realisation_averaged[:,truncation_index:,4] -original_position_particle_2[2]
 z_mean_deviation_from_centre_scaled_box_side = (np.sqrt((z_deviation_from_centre_p1**2)+(z_deviation_from_centre_p2**2))*0.5)/ box_side_length_scaled
+#z_mean_deviation_from_centre_scaled_box_side = ((z_deviation_from_centre_p1+z_deviation_from_centre_p2)*0.5)/ box_side_length_scaled
 z_time_mean_deviation_from_centre_scaled_box_side=np.mean(z_mean_deviation_from_centre_scaled_box_side,axis=1)
 z_std_dev_mean_deviation_from_centre_scaled_box_side = np.std(z_mean_deviation_from_centre_scaled_box_side,axis=1)
 y_deviation_from_centre_p1 = dump_file_p1_realisation_averaged[:,truncation_index:,3] -original_position_particle_1[1]
@@ -1303,11 +838,23 @@ for i in range(0,spring_constant.size):
 plt.show()
 
 # need to add a fitting to this plot 
+def func5(x, a, b):
+   #return np.log(a) + np.log(b*x)
+   #return (a*(x**b))
+   return 10**(a*np.log(x)+b)
+   #return a*np.log(b*x)+c
+   #10^(slope*log(X) + Yintercept)
+
+fitting_params_spring_constant=scipy.optimize.curve_fit(func5,spring_constant[:],z_time_mean_deviation_from_centre_scaled_box_side[:],method='lm',maxfev=5000)[0]
+
 plt.scatter(spring_constant[:],z_time_mean_deviation_from_centre_scaled_box_side[:], marker='x')
+plt.plot(spring_constant[:],func5(spring_constant[:],fitting_params_spring_constant[0],fitting_params_spring_constant[1]),'--',label= "$y=10^{alog(x)+b}$, $a=$"+str(fitting_params_spring_constant[0])+" and $b=$"+str(fitting_params_spring_constant[1]))
+plt.title(fluid_name+" Mean relative deviation from centre line vs all K")
 plt.xscale('log')
 plt.xlabel('$K[\\frac{\\tau}{\mu}]$')
-plt.ylabel('$\Delta\\bar{Z}/L_{z}[-]$',rotation=0)
+plt.ylabel('$\Delta\\bar{Z}/L_{z}[-]$',rotation=0,labelpad=35)
 plt.yscale('log')
+plt.legend(loc=8,bbox_to_anchor=(0.5, -0.3))
 plt.show()
 
 for i in range(0,spring_constant.size):
@@ -1315,4 +862,7 @@ for i in range(0,spring_constant.size):
               plt.plot(output_vector[:],y_deviation_from_centre_p1[i,:])
               plt.xscale('log')
 plt.show()
+
+
+
 # %%
