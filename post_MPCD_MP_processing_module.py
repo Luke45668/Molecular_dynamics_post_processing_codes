@@ -126,7 +126,7 @@ def VP_organiser_and_reader(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisati
             VP_data_lower[z,m,k,:,:,j] = VP_data[11:,:]
             
         except Exception as e:
-            print('Velocity Profile Data faulty')
+            print('Velocity Profile reading failed')
             error_count=error_count+1 
             continue
         VP_z_data = velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave_freq,no_SRD,no_timesteps,VP_output_col_count)[1]     
