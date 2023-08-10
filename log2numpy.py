@@ -103,7 +103,7 @@ def log2numpy_reader(realisation_name,Path_2_log,thermo_vars):
 
    #Count SRD warnings   
    warn_count  = log_string.count(warning_start) 
-   print('Number of Warnings:',warn_count)
+   #print('Number of Warnings:',warn_count)
    newline_count= log_string.count('\\n')
 
    empty=''
@@ -121,7 +121,7 @@ def log2numpy_reader(realisation_name,Path_2_log,thermo_vars):
    log_string=re.sub(newline_regex_pattern,empty,log_string)
    # log_array=log_string.split()
    warn_count_after  = log_string.count(warning_start) 
-   print('Number of Warnings after:',warn_count_after)
+   #print('Number of Warnings after:',warn_count_after)
    #print(log_string)
    newline_count_after = log_string.count('\\n') 
 
@@ -141,7 +141,7 @@ def log2numpy_reader(realisation_name,Path_2_log,thermo_vars):
    log_string_array =log_string_array[thermo_vars_length:]
 
    log_string_array= log_string_array.split()
-   print(log_string_array)
+  # print(log_string_array)
    log_float_array = [0.00]*len(log_string_array)
 
    for i in range(len(log_string_array)):
