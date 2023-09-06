@@ -41,6 +41,8 @@ from post_MPCD_MP_processing_module import *
 # define key inputs 
 j_=3
 swap_rate = np.array([3,7,15,30,60,150,300,600]) # values chosen from original mp paper
+# for a run with missing 300 data 
+#swap_rate = np.array([3,7,15,30,60,150,600])
 swap_number = np.array([1])
 equilibration_timesteps=1000
 VP_ave_freq =1000
@@ -52,14 +54,14 @@ scaled_timestep=0.01
 realisation=np.array([0.0,1.0,2.0])
 VP_output_col_count = 4 
 r_particle =25e-6 # for some solutions, rememebrr to check if its 25 or 10
-phi=0.005
+phi=0.0005
 N=2
 Vol_box_at_specified_phi=(N* (4/3)*np.pi*r_particle**3 )/phi
 box_side_length=np.cbrt(Vol_box_at_specified_phi)
 fluid_name='H20'
 run_number=''
-batchcode='823910'
-no_timesteps=2000000 # rememebr to change this depending on run 
+batchcode='64166'
+no_timesteps=4000000 # rememebr to change this depending on run 
 
 # grabbing file names 
 
@@ -76,7 +78,7 @@ dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 
 
 
-filepath='VACF_temp_profile_tests/run_823910'
+filepath='VACF_temp_profile_tests/run_'+batchcode
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
 realisation_name_VP=realisation_name_info[1]
@@ -171,10 +173,10 @@ else:
     print('Velocity profile data success')
     
 #%% Plot full series of temp profiles 
-for k in range(0,org_var_1.size):
-    for i in range(0,2000):
-      plt.plot(TP_data_lower[0,k,0,:,i],TP_z_data_lower[0,0,:])
-    plt.show()
+# for k in range(0,org_var_1.size):
+#     for i in range(0,2000):
+#       plt.plot(TP_data_lower[0,k,0,:,i],TP_z_data_lower[0,0,:])
+#     plt.show()
 
 
 
@@ -278,34 +280,50 @@ for k in range(0,org_var_1.size):
 plt.show()
 #%%VACF plot
 #averaged_log_file_VACF=averaged_log_file[:,:,:300,4]
-VACF_cut_off=40
+VACF_cut_off=100
+fontsize=20
+labelpadx=15
+labelpady=50
+labelpad=50
+width_plot=15
+height_plot=10
+legendx=1
+legend_y_pos=1
 def func4(x, a, b):
    #return np.log(a) + np.log(b*x)
    #return (a*(x**b))
-   return 10**(a*np.log(x) + b)
+   #return 10**(a*np.log(x) + b)
    #return (a*x) +b 
-   #return a*np.log(b*x)+c
+   return a * np.exp(b*x)
 VACF_fitting_params=()
+VACF_covariance=()
 for k in range(0,org_var_1.size):    
     for i in range(0,org_var_2.size):
       
-        VACF_fitting_params= VACF_fitting_params+(scipy.optimize.curve_fit(func4,averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],method='lm',maxfev=5000)[0],)
+        #VACF_fitting_params= VACF_fitting_params+(scipy.optimize.curve_fit(func4,averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],method='lm',maxfev=5000)[0],)
+        VACF_fitting_params= VACF_fitting_params+(scipy.optimize.curve_fit(func4,averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],p0=[0, 0], bounds=(-np.inf, np.inf))[0],)
+        VACF_covariance = VACF_covariance +(scipy.optimize.curve_fit(func4,averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],p0=[0, 0], bounds=(-np.inf, np.inf))[1],)
+
+sample_rate=10
 
 for k in range(0,org_var_1.size):
+#for k in range(0,1):
     #plotting energy vs time 
+   
     for i in range(org_var_2.size):
         #plotting energy vs time 
-        #plt.plot(averaged_log_file[k,i,:,0],averaged_log_file[k,i,:,3],label='$f_v=${}'.format(org_var_2[i]))
-        plt.scatter(averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],label='$f_p=${}'.format(org_var_1[k]))
-        plt.plot(averaged_log_file[k,i,:VACF_cut_off,0],func4(averaged_log_file[k,i,:VACF_cut_off,0],VACF_fitting_params[k][0],VACF_fitting_params[k][1]))
-        plt.xscale('log')
-        plt.yscale('log')
+        #plt.plot(averaged_log_file[k,i,:,0],averaged_log_file[k,i,:,4],label='$f_v=${}'.format(org_var_2[i]))
+        plt.scatter(averaged_log_file[k,i,:VACF_cut_off:sample_rate,0],averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],label='$f_p=${}'.format(org_var_1[k]))
+        plt.plot(averaged_log_file[k,i,:VACF_cut_off:sample_rate,0],func4(averaged_log_file[k,i,:VACF_cut_off:sample_rate,0],VACF_fitting_params[k][0],VACF_fitting_params[k][1]))
+        #plt.xscale('log')
+        #plt.yscale('log')
         plt.xlabel('$N_{t}[-]$',fontsize=fontsize)
         plt.ylabel('$\hat{C}_{\\nu}(N_{c}\Delta t)$', rotation=0,fontsize=fontsize,labelpad=labelpad)
        # plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+",All $f_{v_{x}}=$, $N_{v,x}=$"+str(org_var_1[k])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
         #plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+", All $K$, $f_{v,x}=$"+str(org_var_1[k])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
         
         plt.legend(loc=7,bbox_to_anchor=(legendx, 0.5))
+        print(VACF_fitting_params)
 plt.show()
 
 #%% reading in mom files (much faster)
@@ -337,7 +355,7 @@ if error_count_mom !=0:
     print("Mom file error, check data files aren't damaged")
 else:
     print("Mom data import success")
-
+#%%
   
 # Now assess the steady state of the VP data 
 org_var_1=swap_rate
@@ -359,7 +377,7 @@ TP_data_lower_realisation_averaged=TP_shear_rate_and_stat_data[5]
 TP_data_upper_realisation_averaged=TP_shear_rate_and_stat_data[6]
 
 
-
+#%%
 
 plt.rcParams.update({'font.size': 15})   
 import sigfig
@@ -434,7 +452,7 @@ VP_z_data_upper=np.load("VP_z_data_upper_"+name_of_run_for_save+".npy")
 
 
 # %%
-truncation_timestep=00000 # for H20 and Nitrogen 
+truncation_timestep=300000 # for H20 and Nitrogen 
 truncation_and_SS_averaging_data=  truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,shear_rate_lower_error,timestep_points,pearson_coeff_lower,pearson_coeff_upper,shear_rate_upper,shear_rate_lower,VP_ave_freq,truncation_timestep,VP_data_lower_realisation_averaged,VP_data_upper_realisation_averaged)
 standard_deviation_upper_error=truncation_and_SS_averaging_data[0]
 standard_deviation_lower_error=truncation_and_SS_averaging_data[1]
@@ -776,13 +794,13 @@ plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,legend_x
 #%% plotting temp profiles 
 plt.rcParams.update({'font.size': 25})
 org_var_1_choice_index=org_var_1.size
-fontsize=35
+fontsize=45
 labelpadx=15
 labelpady=35
 width_plot=15
 height_plot=10
 legend_x_pos=1
-legend_y_pos=1
+legend_y_pos=0.8
 org_var_1_index_start=0
 org_var_1_index_end=8
 org_var_2_index_start=0
@@ -802,7 +820,7 @@ def plotting_SS_Temp_profiles(org_var_2_index_start,org_var_1_index_end,legend_x
         
 
 
-            for k in range(0,org_var_1.size):  
+            for k in range(org_var_1_index_start,org_var_1_index_end):  
                 x_1=TP_steady_state_data_lower_truncated_time_averaged[z,k,m,:]
                 #print(x_1.shape)
                 x_2=TP_steady_state_data_upper_truncated_time_averaged[z,k,m,:]
@@ -816,9 +834,9 @@ def plotting_SS_Temp_profiles(org_var_2_index_start,org_var_1_index_end,legend_x
                 #ax1.set_ylabel('$v_{x}\ [\\frac{\\tau}{\ell}]$',rotation=0,labelpad=labelpady, fontsize=fontsize)
                 ax1.set_xlabel('$L_{z}\ \ell^{-1}$',rotation=0,labelpad=labelpadx,fontsize=fontsize)
                 ax2.plot(y_2[:],x_2[:],label='$f_p=${}'.format(org_var_1[k]),marker='x')
-                ax2.set_ylabel('$ \\frac{v_{x}\\tau}{\ell}$',rotation=0,labelpad=labelpady, fontsize=fontsize)
+                ax2.set_ylabel('$ \\frac{T k_{B}}{\epsilon}$',rotation=0,labelpad=labelpady, fontsize=fontsize)
                 ax2.set_xlabel('$L_{z}\ \ell^{-1}$',rotation=0,labelpad=labelpadx,fontsize=fontsize)
-                ax1.legend(frameon=False,loc=0,bbox_to_anchor=(legend_x_pos, legend_y_pos),fontsize=fontsize-4)       
+                ax1.legend(frameon=False,loc=0,bbox_to_anchor=(legend_x_pos, legend_y_pos))      
             plt.show()
     
 
