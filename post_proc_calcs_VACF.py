@@ -8,6 +8,7 @@ after an MPCD simulation.
 #%%
 #from imp import reload
 import os
+from random import sample
 
 #from sys import exception
 #from tkinter import HORIZONTAL
@@ -17,7 +18,7 @@ import matplotlib.pyplot as plt
 import regex as re
 import pandas as pd
 #import pyswarms as ps
-
+import sigfig
 plt.rcParams.update(plt.rcParamsDefault)
 #plt.rcParams['text.usetex'] = True
 from mpl_toolkits import mplot3d
@@ -60,8 +61,8 @@ Vol_box_at_specified_phi=(N* (4/3)*np.pi*r_particle**3 )/phi
 box_side_length=np.cbrt(Vol_box_at_specified_phi)
 fluid_name='H20'
 run_number=''
-batchcode='64166'
-no_timesteps=4000000 # rememebr to change this depending on run 
+batchcode='823910'
+no_timesteps=2000000 # rememebr to change this depending on run 
 
 # grabbing file names 
 
@@ -241,7 +242,7 @@ def log_file_organiser_and_reader(org_var_log_1,loc_org_var_log_1,org_var_log_2,
     
 
 averaged_log_file=log_file_organiser_and_reader(org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,log_file_row_count,log_file_col_count,count_log,realisation_name_log,log_realisation_index,Path_2_log,thermo_vars)
-
+time_vector_from_timestep= (averaged_log_file[0,0,:,0] -equilibration_timesteps )* scaled_timestep
 
 #%% plotting E vs Nt and T vs Nt
 # legend colours still dont match 
@@ -280,7 +281,12 @@ for k in range(0,org_var_1.size):
 plt.show()
 #%%VACF plot
 #averaged_log_file_VACF=averaged_log_file[:,:,:300,4]
-VACF_cut_off=100
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "Helvetica"
+})
+plt.rcParams.update({'font.size': 25})
+VACF_cut_off=200
 fontsize=20
 labelpadx=15
 labelpady=50
@@ -296,14 +302,17 @@ def func4(x, a, b):
    #return (a*x) +b 
    return a * np.exp(b*x)
 VACF_fitting_params=()
-VACF_covariance=()
+VACF_covariance_time=()
+VACF_std_error=()
+VACF_fitting_params_time=()
+VACF_infodict_out =()
 for k in range(0,org_var_1.size):    
     for i in range(0,org_var_2.size):
       
         #VACF_fitting_params= VACF_fitting_params+(scipy.optimize.curve_fit(func4,averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],method='lm',maxfev=5000)[0],)
         VACF_fitting_params= VACF_fitting_params+(scipy.optimize.curve_fit(func4,averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],p0=[0, 0], bounds=(-np.inf, np.inf))[0],)
-        VACF_covariance = VACF_covariance +(scipy.optimize.curve_fit(func4,averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],p0=[0, 0], bounds=(-np.inf, np.inf))[1],)
-
+       
+       
 sample_rate=10
 
 for k in range(0,org_var_1.size):
@@ -322,10 +331,48 @@ for k in range(0,org_var_1.size):
        # plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+",All $f_{v_{x}}=$, $N_{v,x}=$"+str(org_var_1[k])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
         #plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+", All $K$, $f_{v,x}=$"+str(org_var_1[k])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
         
-        plt.legend(loc=7,bbox_to_anchor=(legendx, 0.5))
+        plt.legend(loc=7,bbox_to_anchor=(1.55, 0.5))
         print(VACF_fitting_params)
 plt.show()
 
+
+for k in range(0,org_var_1.size):    
+    for i in range(0,org_var_2.size):
+        VACF_fit_calc=scipy.optimize.curve_fit(func4,time_vector_from_timestep[:VACF_cut_off:sample_rate],averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],p0=[0, 0], bounds=(-np.inf, np.inf),full_output=True)
+        #VACF_fitting_params= VACF_fitting_params+(scipy.optimize.curve_fit(func4,averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],method='lm',maxfev=5000)[0],)
+        VACF_fitting_params_time= VACF_fitting_params_time+ (VACF_fit_calc[0],)
+        VACF_covariance_time = VACF_covariance_time +(VACF_fit_calc[1],)
+    
+       
+#for k in range(0,org_var_1.size):
+number_of_data_points= VACF_cut_off/sample_rate
+standard_error_fit= ()
+#for k in range(0,1):
+
+#for k in range(0,org_var_1.size):
+for k in range(0,1):
+
+    #plotting VACF vs time 
+   
+    for i in range(org_var_2.size):
+        #plotting energy vs time 
+        #plt.plot(averaged_log_file[k,i,:,0],averaged_log_file[k,i,:,4],label='$f_v=${}'.format(org_var_2[i]))
+        
+        standard_error_fit=standard_error_fit + (np.sqrt(np.mean(((func4(time_vector_from_timestep[:VACF_cut_off:sample_rate],VACF_fitting_params_time[k][0],VACF_fitting_params_time[k][1])- averaged_log_file[k,i,:VACF_cut_off:sample_rate,4])**2)/number_of_data_points)),) 
+        plt.scatter(time_vector_from_timestep[:VACF_cut_off:sample_rate],averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],marker='x')#,label='$f_p=${}'.format(org_var_1[k]))
+        plt.plot(time_vector_from_timestep[:VACF_cut_off:sample_rate],func4(time_vector_from_timestep[:VACF_cut_off:sample_rate],VACF_fitting_params_time[k][0],VACF_fitting_params_time[k][1]),'--',label= "$y=ae^{bx}$, $a=$"+str(sigfig.round(VACF_fitting_params_time[k][0],sigfigs=4))+" and $b=$"+str(sigfig.round(VACF_fitting_params_time[k][1],sigfigs=4))+", $\epsilon=$"+str(sigfig.round(standard_error_fit[k],sigfigs=4)))
+        # epsilon is the mean square deviation from the fit 
+        # sigfig.round(VACF_fitting_params_time[k][0],sigfigs=3)
+        #plt.xscale('log')
+        #plt.yscale('log')
+        plt.xlabel('$t/\\tau$')
+        plt.ylabel('$\hat{C}_{\\nu}(N_{c}\Delta t)$', rotation=0,labelpad=labelpad)
+       # plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+",All $f_{v_{x}}=$, $N_{v,x}=$"+str(org_var_1[k])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
+        #plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+", All $K$, $f_{v,x}=$"+str(org_var_1[k])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
+        
+        plt.legend(loc=7,bbox_to_anchor=(1.3, -0.35))
+        print(VACF_fitting_params)
+plt.show()
 #%% reading in mom files (much faster)
 #  obtaining the mom data size
 #Path_2_mom_file="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/"+simulation_file
