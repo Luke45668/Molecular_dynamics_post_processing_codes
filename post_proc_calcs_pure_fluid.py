@@ -429,10 +429,17 @@ shear_rate_mean_error_of_both_cells_relative=shear_rate_mean_error_of_both_cells
 shear_rate_mean_of_both_cells=np.log(((np.abs(shear_rate_lower_steady_state_mean)+np.abs(shear_rate_upper_steady_state_mean))*0.5))
 shear_rate_mean_error_of_both_cells=shear_rate_mean_of_both_cells*shear_rate_mean_error_of_both_cells_relative
 
+# this should be calculated later once one has selected the data points which give the fit closest to grad 1
+# shear_rate_mean_error_of_both_cell_mean_over_all_points = np.mean(shear_rate_mean_error_of_both_cells,axis=1)
+# shear_rate_mean_of_both_cell_mean_over_all_points=np.mean(shear_rate_mean_of_both_cells,axis=1)
+# shear_rate_mean_error_of_both_cell_mean_over_all_points_relative= shear_rate_mean_error_of_both_cell_mean_over_all_points/shear_rate_mean_of_both_cell_mean_over_all_points
+
+
 print(shear_rate_mean_of_both_cells.shape)
 print(shear_rate_mean_error_of_both_cells.shape)
 
 flux_vs_shear_regression_line_params=()
+
 x=shear_rate_mean_of_both_cells
 #shear_rate_mean_of_both_cells=np.reshape(shear_rate_mean_of_both_cells,(flux_ready_for_plotting.shape))
 # fiting params
@@ -447,14 +454,24 @@ def func4(x, a, b):
 
 org_var_1_fitting_start_index=6
 org_var_1_fitting_end_index=10
+shear_rate_mean_error_of_both_cell_mean_over_all_points = np.mean(shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
+shear_rate_mean_of_both_cell_mean_over_all_points=np.mean(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
+shear_rate_mean_error_of_both_cell_mean_over_all_points_relative= shear_rate_mean_error_of_both_cell_mean_over_all_points/shear_rate_mean_of_both_cell_mean_over_all_points
+mean_flux_ready_for_plotting=np.mean(flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
+mean_flux_ready_for_plotting_relative_error=np.zeros((org_var_2.size))
+mean_error_in_fit =np.zeros((org_var_2.size))
 for z in range(0,number_of_solutions):    
     for i in range(0,org_var_2.size):
       
         flux_vs_shear_regression_line_params= flux_vs_shear_regression_line_params+(scipy.optimize.curve_fit(func4,shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],method='lm',maxfev=5000)[0],)
+        mean_error_in_fit[i] = np.sqrt(np.mean((func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0] ,flux_vs_shear_regression_line_params[i][1])-flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i])**2))
+        mean_flux_ready_for_plotting_relative_error[i]=mean_error_in_fit[i]/mean_flux_ready_for_plotting[i]
         #print(scipy.optimize.curve_fit(func4,shear_rate_mean_of_both_cells[z,:,i],flux_ready_for_plotting[z,i,:],method='lm',maxfev=5000)[0])
 
-params=flux_vs_shear_regression_line_params 
+params=flux_vs_shear_regression_line_params
 
+total_error_relative_in_flux_fit= mean_flux_ready_for_plotting_relative_error+shear_rate_mean_error_of_both_cell_mean_over_all_points_relative
+# we can now simply multiply the viscosity by this value to get an absolute error in it 
 #%% px vs time
 #calculating error of flux
 # plot cumulative momentum exchange vs time 
