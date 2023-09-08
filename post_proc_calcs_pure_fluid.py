@@ -10,24 +10,15 @@ after an MPCD simulation.
 NOTE always use the lammps units lj scalings for units on axes 
 """
 #%%
-#from imp import reload
-import os
 
-#from sys import exception
-#from tkinter import HORIZONTAL
+import os
 import numpy as np
-#import sklearn as sk
 import matplotlib.pyplot as plt
 import regex as re
 import pandas as pd
-#import pyswarms as ps
-
 plt.rcParams.update(plt.rcParamsDefault)
-#plt.rcParams['text.usetex'] = True
 from mpl_toolkits import mplot3d
 from matplotlib.gridspec import GridSpec
-#import seaborn as sns
-
 import scipy.stats
 from datetime import datetime
 
@@ -92,6 +83,8 @@ filepath='T_1_phi_0.005_data/H20_data_T_1_phi_0.005/run_835707'
 #filepath='/T_1_phi_0.005_data/C6H14_data_T_1_phi_0.005/run_537337'
 filepath='T_1_phi_0.005_data/Ar_data_T_1_phi_0.005/run_327740'
 filepath='T_1_phi_0.005_data/Nitrogen_data_T_1_phi_0.005/run_84688'
+
+
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
 realisation_name_VP=realisation_name_info[1]
@@ -168,7 +161,6 @@ else:
 # lengthscale=box_side_length/float(filename[box_size_loc])
 #%% reading in mom files (much faster)
 #  obtaining the mom data size
-#Path_2_mom_file="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/"+simulation_file
 Path_2_mom_file=Path_2_VP
 org_var_mom_1=swap_rate
 loc_org_var_mom_1=20
@@ -218,10 +210,10 @@ import sigfig
 lengthscale= sigfig.round(lengthscale,sigfigs=3)
 box_size_nd= box_side_length_scaled 
 # get rid of this on laptop or code will fail 
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "Helvetica"
-})
+# plt.rcParams.update({
+#     "text.usetex": True,
+#     "font.family": "Helvetica"
+# })
 
 org_var_1_index_start=0
 org_var_1_index_end=10
@@ -230,7 +222,6 @@ org_var_2_index_end=4
 
 def plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_var_1_index_start,org_var_1_index_end,no_timesteps,phi,lengthscale,timestep_points,scaled_temp,number_of_solutions,org_var_1,org_var_2,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd):
     for z in range(0,number_of_solutions): 
-        #for k in range(org_var_2_index_start,org_var_2_index_end):
         for m in range(org_var_1_index_start,org_var_1_index_end):
              for k in range(org_var_2_index_start,org_var_2_index_end):
                 plt.plot(timestep_points[0,0,0,:],shear_rate_upper[z,m,k,:])
@@ -241,15 +232,9 @@ def plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_va
                 #plt.title(fluid_name+" simulation run with all $K$ and $f_{v,x}=$"+str(org_var_1[m])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
                 
         plt.show()
-        #plot_save=input("save figure?, YES/NO")
-        # if plot_save=='YES':
-        #     plt.savefig(fluid_name+'_T_'+str(scaled_temp)+'_length_scale_'+str(lengthscale)+'_phi_'+str(phi)+'_no_timesteps_'+str(no_timesteps)+'.png')
-        # else:
-        #     print('Thanks for checking steady state')
-
+        
 plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_var_1_index_start,org_var_1_index_end,no_timesteps,phi,lengthscale,timestep_points,scaled_temp,number_of_solutions,org_var_1,org_var_2,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd)
-# need to save this plot 
-# saving this data 
+
 #%%
 name_of_run_for_save=fluid_name+"_phi_"+str(phi)+"_pure_fluid_notsteps_"+str(no_timesteps)+"_"+str(scaled_timestep)+"_scaled_box_size_"+str(np.round(box_side_length_scaled[0][0]))+"_run_"+batchcode
 print(name_of_run_for_save)
@@ -454,23 +439,29 @@ def func4(x, a, b):
 
 org_var_1_fitting_start_index=6
 org_var_1_fitting_end_index=10
-shear_rate_mean_error_of_both_cell_mean_over_all_points = np.mean(shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
-shear_rate_mean_of_both_cell_mean_over_all_points=np.mean(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
-shear_rate_mean_error_of_both_cell_mean_over_all_points_relative= shear_rate_mean_error_of_both_cell_mean_over_all_points/shear_rate_mean_of_both_cell_mean_over_all_points
-mean_flux_ready_for_plotting=np.mean(flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
-mean_flux_ready_for_plotting_relative_error=np.zeros((org_var_2.size))
-mean_error_in_fit =np.zeros((org_var_2.size))
+size_of_new_data=org_var_1_fitting_end_index-org_var_1_fitting_start_index
+#shear_rate_error_of_both_cell_mean_over_all_points_relative = shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]/shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
+shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative= np.mean(shear_rate_mean_error_of_both_cells_relative[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
+
+# mean_flux_ready_for_plotting=np.mean(flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
+# mean_flux_ready_for_plotting_relative_error=np.zeros((org_var_2.size))
+# mean_error_in_fit =np.zeros((org_var_2.size))
+y_residual_in_fit=np.zeros((number_of_solutions,size_of_new_data,org_var_2.size))
 for z in range(0,number_of_solutions):    
     for i in range(0,org_var_2.size):
       
         flux_vs_shear_regression_line_params= flux_vs_shear_regression_line_params+(scipy.optimize.curve_fit(func4,shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],method='lm',maxfev=5000)[0],)
-        mean_error_in_fit[i] = np.sqrt(np.mean((func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0] ,flux_vs_shear_regression_line_params[i][1])-flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i])**2))
-        mean_flux_ready_for_plotting_relative_error[i]=mean_error_in_fit[i]/mean_flux_ready_for_plotting[i]
+        y_residual_in_fit[z,:,i]=func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0] ,flux_vs_shear_regression_line_params[i][1])-flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i]
+        
+        #mean_error_in_fit[i] = np.sqrt(np.mean((func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0] ,flux_vs_shear_regression_line_params[i][1])-flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i])**2))
+        #mean_flux_ready_for_plotting_relative_error[i]=mean_error_in_fit[i]/mean_flux_ready_for_plotting[i]
         #print(scipy.optimize.curve_fit(func4,shear_rate_mean_of_both_cells[z,:,i],flux_ready_for_plotting[z,i,:],method='lm',maxfev=5000)[0])
 
 params=flux_vs_shear_regression_line_params
+relative_y_residual_mean= np.mean(y_residual_in_fit/flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
 
-total_error_relative_in_flux_fit= mean_flux_ready_for_plotting_relative_error+shear_rate_mean_error_of_both_cell_mean_over_all_points_relative
+total_error_relative_in_flux_fit= relative_y_residual_mean+shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative
+
 # we can now simply multiply the viscosity by this value to get an absolute error in it 
 #%% px vs time
 #calculating error of flux
@@ -605,11 +596,13 @@ def plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelp
                 #plt.show() 
                 shear_viscosity_=10** (params[i][1])
                 shear_viscosity.append(shear_viscosity_)
+                shear_viscosity_abs_error = shear_viscosity_*total_error_relative_in_flux_fit[z,i]
                 
                 grad_fit=(params[i][0])
+                grad_fit_abs_error= grad_fit*shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative[i]
                 gradient_of_fit.append(grad_fit)
-                print('Dimensionless_shear_viscosity:',shear_viscosity_)
-                print('Grad of fit =',grad_fit)
+                print('Dimensionless_shear_viscosity:',shear_viscosity_,',abs error',shear_viscosity_abs_error)
+                print('Grad of fit =',grad_fit,',abs error', grad_fit_abs_error)
                 plt.show() 
            
         
