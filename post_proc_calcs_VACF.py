@@ -55,7 +55,7 @@ scaled_timestep=0.01
 realisation=np.array([0.0,1.0,2.0])
 VP_output_col_count = 4 
 r_particle =25e-6 # for some solutions, rememebrr to check if its 25 or 10
-phi=0.0005
+phi=0.005
 N=2
 Vol_box_at_specified_phi=(N* (4/3)*np.pi*r_particle**3 )/phi
 box_side_length=np.cbrt(Vol_box_at_specified_phi)
@@ -169,9 +169,9 @@ TP_z_data_upper=TP_raw_data[4]
 TP_z_data_lower=TP_raw_data[5]
 
 if error_count != 0: 
-    print('Error reading velocity profiles, check data !')
+    print('Error reading temp profiles, check data !')
 else:
-    print('Velocity profile data success')
+    print('Temp profile data success')
     
 #%% Plot full series of temp profiles 
 # for k in range(0,org_var_1.size):
@@ -251,7 +251,7 @@ labelpad=20
 #plotting temp vs time 
 temp=1
 legendx=1.4
-#%% T vs time 
+# T vs time 
 for k in range(0,org_var_1.size):
     for i in range(org_var_2.size):
         
@@ -281,10 +281,10 @@ for k in range(0,org_var_1.size):
 plt.show()
 #%%VACF plot
 #averaged_log_file_VACF=averaged_log_file[:,:,:300,4]
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "Helvetica"
-})
+# plt.rcParams.update({
+#     "text.usetex": True,
+#     "font.family": "Helvetica"
+# })
 plt.rcParams.update({'font.size': 25})
 VACF_cut_off=200
 fontsize=20
