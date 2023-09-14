@@ -30,10 +30,12 @@ from velP2numpy import *
 import glob 
 from post_MPCD_MP_processing_module import *
 import fnmatch
+
+
 #%% loading in data 
 
 #file_search_strings=['flux_fitting_params_*','flux_ready_for_plotting_*','shear_rate_mean_error_of_both_cells_*','shear_rate_mean_of_both_cells_*']
-fluid_name='Ar'
+fluid_name='Nitrogen'
 path_2_compiled_data= '/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/T_1_compiled_data_all_phi/'+str(fluid_name)+'_data'
 os.chdir(path_2_compiled_data)
 
@@ -75,13 +77,16 @@ flux_fitting_params=np.array(all_files_in_tuple[0:3])
 flux_ready_for_plotting=np.vstack(np.array(all_files_in_tuple[3:6]))
 shear_rate_mean_error_of_both_cells=np.vstack(np.array(all_files_in_tuple[6:9]))
 shear_rate_mean_of_both_cells=np.vstack(np.array(all_files_in_tuple[9:12]))
-#%%
+
 
 org_var_1=np.array([3,7,15,30,60,150,300,600,900,1200])
 org_var_2=np.array([1,10,100,1000])
+#%%
 # need to make sure you note which fitting indices you use below
-org_var_1_fitting_start_index=5
+org_var_1_fitting_start_index=6
 org_var_1_fitting_end_index=10
+
+
 size_of_new_data=org_var_1_fitting_end_index-org_var_1_fitting_start_index
 shear_rate_mean_error_of_both_cells_relative=shear_rate_mean_error_of_both_cells/shear_rate_mean_of_both_cells
 shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative= np.mean(shear_rate_mean_error_of_both_cells_relative[:,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
@@ -137,22 +142,25 @@ for i in range(0,1):
           print('Dimensionless_shear_viscosity:',shear_viscosity_,',abs error',shear_viscosity_abs_error)
           
           print('Grad of fit =',grad_fit,',abs error', grad_fit_abs_error)
-          plt.scatter(x[:,i],y[:,i],label="$L=$"+str(box_side_length_scaled[z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2))+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=2)),marker='x')
+          plt.scatter(x[:,i],y[:,i],label="$L/\ell=$"+str(box_side_length_scaled[z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2))+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=1)),marker='x')
           plt.plot(x[:,i],func4(x[:,i],flux_fitting_params[z,i,0],flux_fitting_params[z,i,1]),'--')
           plt.xlabel('$log(\dot{\gamma}\\tau)$', labelpad=labelpadx,fontsize=fontsize)
           plt.ylabel('$log(J_{z}(p_{x})$$\ \\frac{\\tau^{3}}{\\varepsilon})$',rotation=0,labelpad=labelpady,fontsize=fontsize)
-          plt.legend(loc=7,bbox_to_anchor=(0.8, 0.2) )
+          plt.legend(loc='upper right',bbox_to_anchor=(0.25,-0.1))
+          #plt.legend(loc='best')
+     plt.tight_layout()
+     plt.savefig(fluid_name+"_flux_vs_shear_swap_rates_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
      
      plt.show() 
-
+     
  
 shear_viscosity= 10**flux_fitting_params[:,:,1]
 shear_viscosity_abs_error = shear_viscosity_*total_error_relative_in_flux_fit[:,:]
 
 #%%
 
-np.save(fluid_name+"_shear_viscosity_data_run_swap_rates_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".npy",shear_viscosity)
-np.save(fluid_name+"_shear_viscosity_abs_error_data_run_swap_rates_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".npy",shear_viscosity_abs_error)
+np.save(fluid_name+"_shear_viscosity_data_run_swap_rates_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".npy",shear_viscosity)
+np.save(fluid_name+"_shear_viscosity_abs_error_data_run_swap_rates_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".npy",shear_viscosity_abs_error)
        
   
 
@@ -163,7 +171,7 @@ np.save(fluid_name+"_shear_viscosity_abs_error_data_run_swap_rates_"+str(org_var
 labelpadx=5
 labelpady=15
 shear_viscosity_abs_error_max=np.amax(shear_viscosity_abs_error,axis=0)
-for z in range(0,org_var_2.size):
+for z in range(0,4):
           x=phi[:]
           y=shear_viscosity[:,z]
      
@@ -171,12 +179,12 @@ for z in range(0,org_var_2.size):
           plt.plot(x,y,"--",label="$N_{v,x}=$"+str(org_var_2[z])+", $\Delta\eta_{max}=$"+str(sigfig.round(shear_viscosity_abs_error_max[z],sigfigs=2)),marker='x')
           plt.xlabel('$\phi$', labelpad=labelpadx,fontsize=fontsize)
           plt.yscale('log')
+          #plt.xscale('log')
           plt.ylabel('$\eta \\frac{\ell^{3}}{\epsilon\\tau}$',rotation=0,labelpad=labelpady,fontsize=fontsize)
           plt.legend()
-     
+plt.tight_layout()     
+plt.savefig(fluid_name+"_shear_eta_vs_phi_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
 plt.show() 
 
 
-
-
-# %% saving figures 
+# %%
