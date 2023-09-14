@@ -20,7 +20,7 @@ import pandas as pd
 #import pyswarms as ps
 import sigfig
 plt.rcParams.update(plt.rcParamsDefault)
-#plt.rcParams['text.usetex'] = True
+plt.rcParams['text.usetex'] = True
 from mpl_toolkits import mplot3d
 from matplotlib.gridspec import GridSpec
 #import seaborn as sns
@@ -41,7 +41,8 @@ from post_MPCD_MP_processing_module import *
 
 # define key inputs 
 j_=3
-swap_rate = np.array([3,7,15,30,60,150,300,600]) # values chosen from original mp paper
+swap_rate = np.array([3,7,15,30,60,150,300,600])# values chosen from original mp paper
+swap_rate = np.array([3,7,15,30,60,150,600])
 # for a run with missing 300 data 
 #swap_rate = np.array([3,7,15,30,60,150,600])
 swap_number = np.array([1])
@@ -55,14 +56,14 @@ scaled_timestep=0.01
 realisation=np.array([0.0,1.0,2.0])
 VP_output_col_count = 4 
 r_particle =25e-6 # for some solutions, rememebrr to check if its 25 or 10
-phi=0.005
+phi=0.0005
 N=2
 Vol_box_at_specified_phi=(N* (4/3)*np.pi*r_particle**3 )/phi
 box_side_length=np.cbrt(Vol_box_at_specified_phi)
 fluid_name='H20'
 run_number=''
-batchcode='823910'
-no_timesteps=2000000 # rememebr to change this depending on run 
+batchcode='908583'
+no_timesteps=3000000 # rememebr to change this depending on run 
 
 # grabbing file names 
 
@@ -313,7 +314,7 @@ for k in range(0,org_var_1.size):
         VACF_fitting_params= VACF_fitting_params+(scipy.optimize.curve_fit(func4,averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],p0=[0, 0], bounds=(-np.inf, np.inf))[0],)
        
        
-sample_rate=10
+sample_rate=25
 
 for k in range(0,org_var_1.size):
 #for k in range(0,1):
@@ -327,12 +328,13 @@ for k in range(0,org_var_1.size):
         #plt.xscale('log')
         #plt.yscale('log')
         plt.xlabel('$N_{t}[-]$',fontsize=fontsize)
-        plt.ylabel('$\hat{C}_{\\nu}(N_{c}\Delta t)$', rotation=0,fontsize=fontsize,labelpad=labelpad)
+        plt.ylabel('$C_{\\nu}(N_{c}\Delta t)$', rotation=0,fontsize=fontsize,labelpad=labelpad)
        # plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+",All $f_{v_{x}}=$, $N_{v,x}=$"+str(org_var_1[k])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
         #plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+", All $K$, $f_{v,x}=$"+str(org_var_1[k])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
         
         plt.legend(loc=7,bbox_to_anchor=(1.55, 0.5))
         print(VACF_fitting_params)
+plt.savefig(fluid_name+"_All_swaps_VACF_sample_rate_"+str(sample_rate)+"_cut_off_"+str(VACF_cut_off)+"_batch_"+str(batchcode)+".pdf",dpi=500, bbox_inches='tight')
 plt.show()
 
 
@@ -360,18 +362,19 @@ for k in range(0,1):
         
         standard_error_fit=standard_error_fit + (np.sqrt(np.mean(((func4(time_vector_from_timestep[:VACF_cut_off:sample_rate],VACF_fitting_params_time[k][0],VACF_fitting_params_time[k][1])- averaged_log_file[k,i,:VACF_cut_off:sample_rate,4])**2)/number_of_data_points)),) 
         plt.scatter(time_vector_from_timestep[:VACF_cut_off:sample_rate],averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],marker='x')#,label='$f_p=${}'.format(org_var_1[k]))
-        plt.plot(time_vector_from_timestep[:VACF_cut_off:sample_rate],func4(time_vector_from_timestep[:VACF_cut_off:sample_rate],VACF_fitting_params_time[k][0],VACF_fitting_params_time[k][1]),'--',label= "$y=ae^{bx}$, $a=$"+str(sigfig.round(VACF_fitting_params_time[k][0],sigfigs=4))+" and $b=$"+str(sigfig.round(VACF_fitting_params_time[k][1],sigfigs=4))+", $\epsilon=$"+str(sigfig.round(standard_error_fit[k],sigfigs=4)))
+        plt.plot(time_vector_from_timestep[:VACF_cut_off:sample_rate],func4(time_vector_from_timestep[:VACF_cut_off:sample_rate],VACF_fitting_params_time[k][0],VACF_fitting_params_time[k][1]),'--',label= "$y=ae^{bx}$, $a=$"+str(sigfig.round(VACF_fitting_params_time[k][0],sigfigs=4))+" and $b=$"+str(sigfig.round(VACF_fitting_params_time[k][1],sigfigs=4))+", $\sigma_{m}=$"+str(sigfig.round(standard_error_fit[k],sigfigs=4)))
         # epsilon is the mean square deviation from the fit 
         # sigfig.round(VACF_fitting_params_time[k][0],sigfigs=3)
         #plt.xscale('log')
         #plt.yscale('log')
         plt.xlabel('$t/\\tau$')
-        plt.ylabel('$\hat{C}_{\\nu}(N_{c}\Delta t)$', rotation=0,labelpad=labelpad)
+        plt.ylabel('$C_{\\nu}(N_{c}\Delta t)$', rotation=0,labelpad=labelpad)
        # plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+",All $f_{v_{x}}=$, $N_{v,x}=$"+str(org_var_1[k])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
         #plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+", All $K$, $f_{v,x}=$"+str(org_var_1[k])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
         
         plt.legend(loc=7,bbox_to_anchor=(1.3, -0.35))
         print(VACF_fitting_params)
+plt.savefig(fluid_name+"_VACF_sample_rate_"+str(sample_rate)+"_cut_off_"+str(VACF_cut_off)+"_batch_"+str(batchcode)+".pdf",dpi=500, bbox_inches='tight')
 plt.show()
 #%% reading in mom files (much faster)
 #  obtaining the mom data size
@@ -417,6 +420,9 @@ VP_data_lower_realisation_averaged=VP_shear_rate_and_stat_data[5]
 VP_data_upper_realisation_averaged=VP_shear_rate_and_stat_data[6]
 shear_rate_upper_error=VP_shear_rate_and_stat_data[7]
 shear_rate_lower_error=VP_shear_rate_and_stat_data[8]
+#%% TP data
+org_var_1=swap_rate
+org_var_2=swap_number
 
 TP_shear_rate_and_stat_data=VP_data_averaging_and_stat_test_data(TP_z_data_upper,TP_z_data_lower,no_timesteps,TP_data_lower,TP_data_upper,number_of_solutions,org_var_1,org_var_2,VP_ave_freq)
 
@@ -437,7 +443,7 @@ plt.rcParams.update({
 })
 
 org_var_1_index_start=0
-org_var_1_index_end=8
+org_var_1_index_end=6
 org_var_2_index_start=0
 org_var_2_index_end=1
 
@@ -473,6 +479,8 @@ np.save("pearson_coeff_upper_"+name_of_run_for_save,pearson_coeff_lower)
 np.save("pearson_coeff_lower_"+name_of_run_for_save,pearson_coeff_upper)
 np.save("VP_data_lower_realisation_averaged_"+name_of_run_for_save,VP_data_lower_realisation_averaged)
 np.save("VP_data_upper_realisation_averaged_"+name_of_run_for_save,VP_data_upper_realisation_averaged)
+np.save("VP_z_data_lower_"+name_of_run_for_save,VP_z_data_lower)
+np.save("VP_z_data_upper_"+name_of_run_for_save,VP_z_data_upper)
 np.save("shear_rate_upper_error_"+name_of_run_for_save,shear_rate_upper_error)
 np.save("shear_rate_lower_error_"+name_of_run_for_save,shear_rate_lower_error)
 
@@ -843,13 +851,13 @@ plt.rcParams.update({'font.size': 25})
 org_var_1_choice_index=org_var_1.size
 fontsize=45
 labelpadx=15
-labelpady=35
-width_plot=15
-height_plot=10
+labelpady=45
+width_plot=12
+height_plot=7
 legend_x_pos=1
 legend_y_pos=0.8
 org_var_1_index_start=0
-org_var_1_index_end=8
+org_var_1_index_end=7
 org_var_2_index_start=0
 org_var_2_index_end=1
 def plotting_SS_Temp_profiles(org_var_2_index_start,org_var_1_index_end,legend_x_pos, legend_y_pos,labelpadx,labelpady,fontsize,number_of_solutions,org_var_1_choice_index,width_plot,height_plot,org_var_1,org_var_2,VP_ave_freq,no_timesteps,TP_steady_state_data_lower_truncated_time_averaged,TP_steady_state_data_upper_truncated_time_averaged,TP_z_data_lower,TP_z_data_upper):
@@ -878,12 +886,15 @@ def plotting_SS_Temp_profiles(org_var_2_index_start,org_var_1_index_end,legend_x
                 #for i in range(org_var_2_index_start,org_var_1_index_end):
                 
                 ax1.plot(y_1[:],x_1[:],label='$f_p=${}'.format(org_var_1[k]),marker='x')
+                #ax1.set_yscale('log')
+                #ax2.set_yscale('log')
                 #ax1.set_ylabel('$v_{x}\ [\\frac{\\tau}{\ell}]$',rotation=0,labelpad=labelpady, fontsize=fontsize)
-                ax1.set_xlabel('$L_{z}\ \ell^{-1}$',rotation=0,labelpad=labelpadx,fontsize=fontsize)
+                ax1.set_xlabel('$L_{z}/\ell$',rotation=0,labelpad=labelpadx,fontsize=fontsize)
                 ax2.plot(y_2[:],x_2[:],label='$f_p=${}'.format(org_var_1[k]),marker='x')
-                ax2.set_ylabel('$ \\frac{T k_{B}}{\epsilon}$',rotation=0,labelpad=labelpady, fontsize=fontsize)
-                ax2.set_xlabel('$L_{z}\ \ell^{-1}$',rotation=0,labelpad=labelpadx,fontsize=fontsize)
+                ax2.set_ylabel('$ T\\frac{ k_{B}}{\epsilon}$',rotation=0,labelpad=labelpady, fontsize=fontsize)
+                ax2.set_xlabel('$L_{z}/\ell$',rotation=0,labelpad=labelpadx,fontsize=fontsize)
                 ax1.legend(frameon=False,loc=0,bbox_to_anchor=(legend_x_pos, legend_y_pos))      
+            plt.savefig(fluid_name+"_temp_profile_batch_"+str(batchcode)+".pdf",dpi=500, bbox_inches='tight')
             plt.show()
     
 
