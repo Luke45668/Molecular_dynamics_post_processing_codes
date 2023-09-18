@@ -4,7 +4,7 @@
 This script will load in an array of run time data  by reading lammps log files. T
 """
 #%%
-
+#NOTE need to turn script bck into functions 
 import os
 from random import sample
 import numpy as np
@@ -13,7 +13,7 @@ import regex as re
 import pandas as pd
 import sigfig
 plt.rcParams.update(plt.rcParamsDefault)
-plt.rcParams['text.usetex'] = True
+#plt.rcParams['text.usetex'] = True
 from mpl_toolkits import mplot3d
 from matplotlib.gridspec import GridSpec
 import scipy.stats
@@ -118,6 +118,7 @@ loc_org_var_log_1=log_EF
 org_var_log_2=swap_number#spring_constant
 loc_org_var_log_2=log_SN
 
+#%%
 def log_run_time_reader(loc_no_SRD,org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,count_log,realisation_name_log,log_realisation_index,fluid_names,loc_fluid_name):
     
    
@@ -182,41 +183,53 @@ def log_run_time_reader(loc_no_SRD,org_var_log_1,loc_org_var_log_1,org_var_log_2
 
 #%%
 
-run_time_array= log_run_time_reader(loc_no_SRD,org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,count_log,realisation_name_log,log_realisation_index,fluid_names,loc_fluid_name)
+#run_time_array= log_run_time_reader(loc_no_SRD,org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,count_log,realisation_name_log,log_realisation_index,fluid_names,loc_fluid_name)
 
 
 #%%
-run_time_array_with_all_realisations=np.zeros((1,j_,org_var_log_1.size,org_var_log_2.size,))
+run_time_array_with_all_realisations=np.zeros((fluid_name_array.shape[0],j_,org_var_log_1.size,org_var_log_2.size,))
 run_time_array_unsorted_srd_bins=()
+#%%
 for i in range(0,fluid_name_array.shape[0]):
     run_time_array_unsorted_srd_bins=run_time_array_unsorted_srd_bins+(run_time_array_with_all_realisations,)
     
-    
+#%%   
 
-for i in range(1200,1220):
+#for i in range(0,count_log):
+#for i in range(0,120):
+#for i in range(120,125):    
+for i in range(0,count_log): 
     filename=realisation_name_log[i].split('_')
     realisation_name_for_run_time=realisation_name_log[i]
+    #print(realisation_name_for_run_time)
     realisation_index=int(float(realisation_name_log[i].split('_')[log_realisation_index]))
     
     fluid_identifier=filename[loc_fluid_name][4:]
-    print(fluid_identifier)
+    #print("fluid_identifier",fluid_identifier)
     fluid_name_index=fluid_names.index(fluid_identifier)
-    print( fluid_name_index)
-    print(filename[loc_no_SRD])
+    #print("fluid_name_index", fluid_name_index)
+    #print(filename[loc_no_SRD])
     fluid_name_array_fluid_col_index = np.where(fluid_name_array[:,0]==fluid_names[fluid_name_index][0])
-    print(fluid_name_array_fluid_col_index)
+    #print("fluid_name_array_fluid_col_index",fluid_name_array_fluid_col_index)
     no_srd_row_index=np.where(filename[loc_no_SRD]==fluid_name_array[:,1])[0]
-    print(no_srd_row_index)
+    #print("no_srd_row_index",no_srd_row_index)
     a = no_srd_row_index[:]
     b =fluid_name_array_fluid_col_index[0].flatten()
     name_number_comparison = [np.where(a==x) for x in b]
-    correct_fluid_index= np.where(name_number_comparison[:][:][:][:]==0)
+    correct_fluid_index=[]
+    for j in range(0,len(name_number_comparison)):
+        if name_number_comparison[j][0].size == 0:
+           continue 
+        elif name_number_comparison[j][0] == 0:
+            correct_fluid_index.append(j)
+        elif name_number_comparison[j][0] == 1:
+            correct_fluid_index.append(j)
+        else: 
+            print("SRD and fluid name not matched")
+            break 
+    #print("correct_fluid_index",correct_fluid_index)
     
-    fluid_name_no_srd_tuple_index =fluid_name_array_fluid_col_index[0][correct_fluid_index[0]]
-    print(fluid_name_no_srd_tuple_index)
-
-#%%
-
+    #print(fluid_name_no_srd_tuple_index)
     if isinstance(filename[loc_org_var_log_1],int):
         org_var_log_1_find_in_name=int(filename[loc_org_var_log_1])
         org_var_1_index=np.where(org_var_log_1==org_var_log_1_find_in_name)[0][0]
@@ -233,6 +246,64 @@ for i in range(1200,1220):
         
     # multiple swap numbers and swap rates
     #log_file_tuple[np.where(swap_rate==swap_rate_org)[0][0]][np.where(swap_number==swap_number_org)[0][0],realisation_index,:,:]=log2numpy_reader(realisation_name_log[i],Path_2_log,thermo_vars)
+    #print(fluid_name_no_srd_tuple_index[0])
+    # print(realisation_index)
+    # print(org_var_1_index) 
+    # print(org_var_2_index)
+    # print(run_time_reader(realisation_name_for_run_time))
+    fluid_name_no_srd_index =fluid_name_array_fluid_col_index[0][correct_fluid_index]
+    print( fluid_name_no_srd_index)
+    
+    run_time_array_with_all_realisations[fluid_name_no_srd_index,realisation_index,org_var_1_index, org_var_2_index]=run_time_reader(realisation_name_for_run_time)
+    #print( run_time_array_unsorted_srd_bins[fluid_name_no_srd_tuple_index[0]])
+# %%
 
-    run_time_array_unsorted_srd_bins[fluid_name_no_srd_tuple_index][fluid_name_index,realisation_index,org_var_1_index, org_var_2_index]=run_time_reader(realisation_name_for_run_time)
+# run time vs swap rate
+#NOTE: need to consider this averaging 
+#NOTE: need to consider how exactly to plot, could be a quad plot with one set of data for each swap rate
+
+run_time_array_with_all_realisations_real_av=np.mean(run_time_array_with_all_realisations,axis=1)
+run_time_array_with_all_realisations_swap_av=np.mean(run_time_array_with_all_realisations_real_av,axis=1)
+run_time_array_with_all_realisations_swap_num_av=np.mean(run_time_array_with_all_realisations_swap_av,axis=1)
+for j in range(0,swap_number.size):
+    for i in range(0,fluid_name_array.shape[0]):
+   
+        plt.plot(swap_rate[:],run_time_array_with_all_realisations_real_av[i,:,j])
+        #plt.yscale('log')
+        plt.ylabel("$f_{p}[-]$")
+        plt.ylabel("$t_{\infty}[s]$", rotation=0)
+
+    plt.show()
+
+#%%
+# run time vs SRD count 
+plt.rcParams.update({'font.size': 15})
+fluid_names_=["Argon","Cyclohexane","Water","Nitrogen"]
+linestyle=["--","-",":","-."]
+marker=["x","o","+","^"]
+no_srd_values= np.asarray(fluid_name_array[:,1] , dtype=float)
+#plt.plot(fluid_name_array[0:3,1],run_time_array_with_all_realisations_swap_num_av[0:3])
+#plt.plot(fluid_name_array[3:6,1],run_time_array_with_all_realisations_swap_num_av[3:6])
+#plt.plot(fluid_name_array[6:9,1],run_time_array_with_all_realisations_swap_num_av[6:9])
+i_=[0,3,6,9]
+for i in range(0,4):
+    #plt.figure(figsize=(20,5))
+   # linestyle=linestyle[i]
+    plt.scatter(np.flip(no_srd_values[i_[i]:i_[i]+3]),np.flip(run_time_array_with_all_realisations_swap_num_av[i_[i]:i_[i]+3]),label=str(fluid_names_[i]), marker=marker[i])
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel("$N_{SRD}[-]$")
+    plt.ylabel("$t_{\infty}[s]$", rotation=0)
+
+    plt.legend()
+
+plt.show()
+
+
+
+
+
+
+    
+
 # %%
