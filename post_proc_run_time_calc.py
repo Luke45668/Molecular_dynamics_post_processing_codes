@@ -84,17 +84,30 @@ j_=3
 loc_no_SRD=9
 no_SRD=[]
 box_size=[]
-for i in range(0,count_log):
-    no_srd=realisation_name_log[i].split('_')
-    no_SRD.append(no_srd[loc_no_SRD])
+no_SRD=np.zeros((count_log,1),dtype=int)
+fluid_name_array=np.zeros((count_log,1),dtype=str)
 
+# not happy with this bit of code, could ceertainly be more elegant 
+for i in range(0,count_log):
+    filename=realisation_name_log[i].split('_')
+    print(filename[loc_no_SRD])
+    no_SRD[i,0] = filename[loc_no_SRD]
+    print(filename[loc_fluid_name][4:])
+    fluid_name_array[i,0] = filename[loc_fluid_name][4:]
+
+no_SRD_and_fluid_names = np.concatenate((fluid_name_array,no_SRD),axis=1)
+fluid_name_array=np.unique(no_SRD_and_fluid_names,axis=0)
+
+
+
+#%%
     
-no_SRD.sort(key=int)
-no_SRD.sort()
-no_SRD_key=[]
+# no_SRD.sort(key=int)
+# no_SRD.sort()
+# no_SRD_key=[]
 
 #using list comprehension to remove duplicates
-[no_SRD_key.append(x) for x in no_SRD if x not in no_SRD_key]
+# [no_SRD_key.append(x) for x in no_SRD if x not in no_SRD_key]
 
 Path_2_log='/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/'+filepath
 thermo_vars='         KinEng          Temp          TotEng       c_vacf[4]   '
@@ -105,11 +118,16 @@ loc_org_var_log_1=log_EF
 org_var_log_2=swap_number#spring_constant
 loc_org_var_log_2=log_SN
 
-def log_run_time_reader(no_SRD_key,loc_no_SRD,org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,count_log,realisation_name_log,log_realisation_index,fluid_names,loc_fluid_name):
+def log_run_time_reader(loc_no_SRD,org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,count_log,realisation_name_log,log_realisation_index,fluid_names,loc_fluid_name):
     
    
-    run_time_array_with_all_realisations=np.zeros((len(fluid_names),len(no_SRD_key),j_,org_var_log_1.size,org_var_log_2.size,))
-       
+   
+   
+    run_time_array_with_all_realisations=np.zeros((len(fluid_names),j_,org_var_log_1.size,org_var_log_2.size,))
+    run_time_array_unsorted_srd_bins=()
+    for i in range(0,fluid_name_array.shape[0]):
+        run_time_array_unsorted_srd_bins=run_time_array_unsorted_srd_bins+(run_time_array_with_all_realisations,)
+        
         
    
 
@@ -118,6 +136,8 @@ def log_run_time_reader(no_SRD_key,loc_no_SRD,org_var_log_1,loc_org_var_log_1,or
         realisation_name_for_run_time=realisation_name_log[i]
         realisation_index=int(float(realisation_name_log[i].split('_')[log_realisation_index]))
         fluid_identifier=filename[loc_fluid_name][4:]
+        
+        
 
         if isinstance(fluid_identifier,(str)):
             fluid_name_find_in_selection=fluid_identifier
@@ -126,7 +146,16 @@ def log_run_time_reader(no_SRD_key,loc_no_SRD,org_var_log_1,loc_org_var_log_1,or
             break
         if isinstance(filename[loc_no_SRD],(int)):
             no_srd_in_selection=filename[loc_no_SRD]
-            no_srd_index=no_SRD_key.index(no_srd_in_selection)
+            #no_srd_index=no_SRD_key.index(no_srd_in_selection)
+            fluid_name_array_fluid_col_index = np.where(fluid_name_array[:,0]==fluid_names[fluid_name_index][0])
+            no_srd_row_index=np.where(int(filename[loc_no_SRD])==fluid_name_array[:,1])
+            if no_srd_row_index == fluid_name_array_fluid_col_index :
+                
+                fluid_name_no_srd_tuple_index = no_srd_row_index
+                print(fluid_name_no_srd_tuple_index)
+                
+            else:
+                break 
         else:
             break
         if isinstance(filename[loc_org_var_log_1],int):
@@ -146,15 +175,64 @@ def log_run_time_reader(no_SRD_key,loc_no_SRD,org_var_log_1,loc_org_var_log_1,or
         # multiple swap numbers and swap rates
         #log_file_tuple[np.where(swap_rate==swap_rate_org)[0][0]][np.where(swap_number==swap_number_org)[0][0],realisation_index,:,:]=log2numpy_reader(realisation_name_log[i],Path_2_log,thermo_vars)
     
-        run_time_array_with_all_realisations[fluid_name_index,no_srd_index,realisation_index,org_var_1_index, org_var_2_index]=run_time_reader(realisation_name_for_run_time) # need a new function that simply grabs the run time from end of the file 
+        run_time_array_unsorted_srd_bins[fluid_name_no_srd_tuple_index][fluid_name_index,realisation_index,org_var_1_index, org_var_2_index]=run_time_reader(realisation_name_for_run_time) # need a new function that simply grabs the run time from end of the file 
     
-    return run_time_array_with_all_realisations
+    return run_time_array_unsorted_srd_bins
     
 
 #%%
 
-run_time_array= log_run_time_reader(no_SRD_key,loc_no_SRD,org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,count_log,realisation_name_log,log_realisation_index,fluid_names,loc_fluid_name)
+run_time_array= log_run_time_reader(loc_no_SRD,org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,count_log,realisation_name_log,log_realisation_index,fluid_names,loc_fluid_name)
 
 
+#%%
+run_time_array_with_all_realisations=np.zeros((1,j_,org_var_log_1.size,org_var_log_2.size,))
+run_time_array_unsorted_srd_bins=()
+for i in range(0,fluid_name_array.shape[0]):
+    run_time_array_unsorted_srd_bins=run_time_array_unsorted_srd_bins+(run_time_array_with_all_realisations,)
+    
+    
 
+for i in range(1200,1220):
+    filename=realisation_name_log[i].split('_')
+    realisation_name_for_run_time=realisation_name_log[i]
+    realisation_index=int(float(realisation_name_log[i].split('_')[log_realisation_index]))
+    
+    fluid_identifier=filename[loc_fluid_name][4:]
+    print(fluid_identifier)
+    fluid_name_index=fluid_names.index(fluid_identifier)
+    print( fluid_name_index)
+    print(filename[loc_no_SRD])
+    fluid_name_array_fluid_col_index = np.where(fluid_name_array[:,0]==fluid_names[fluid_name_index][0])
+    print(fluid_name_array_fluid_col_index)
+    no_srd_row_index=np.where(filename[loc_no_SRD]==fluid_name_array[:,1])[0]
+    print(no_srd_row_index)
+    a = no_srd_row_index[:]
+    b =fluid_name_array_fluid_col_index[0].flatten()
+    name_number_comparison = [np.where(a==x) for x in b]
+    correct_fluid_index= np.where(name_number_comparison[:][:][:][:]==0)
+    
+    fluid_name_no_srd_tuple_index =fluid_name_array_fluid_col_index[0][correct_fluid_index[0]]
+    print(fluid_name_no_srd_tuple_index)
+
+#%%
+
+    if isinstance(filename[loc_org_var_log_1],int):
+        org_var_log_1_find_in_name=int(filename[loc_org_var_log_1])
+        org_var_1_index=np.where(org_var_log_1==org_var_log_1_find_in_name)[0][0]
+    else:
+        org_var_log_1_find_in_name=float(filename[loc_org_var_log_1])
+        org_var_1_index=np.where(org_var_log_1==org_var_log_1_find_in_name)[0][0]
+    
+    if isinstance(filename[loc_org_var_log_2],int):
+        org_var_log_2_find_in_name=int(filename[loc_org_var_log_2])
+        org_var_2_index= np.where(org_var_log_2==org_var_log_2_find_in_name)[0][0] 
+    else:
+        org_var_log_2_find_in_name=float(filename[loc_org_var_log_2])
+        org_var_2_index= np.where(org_var_log_2==org_var_log_2_find_in_name)[0][0] 
+        
+    # multiple swap numbers and swap rates
+    #log_file_tuple[np.where(swap_rate==swap_rate_org)[0][0]][np.where(swap_number==swap_number_org)[0][0],realisation_index,:,:]=log2numpy_reader(realisation_name_log[i],Path_2_log,thermo_vars)
+
+    run_time_array_unsorted_srd_bins[fluid_name_no_srd_tuple_index][fluid_name_index,realisation_index,org_var_1_index, org_var_2_index]=run_time_reader(realisation_name_for_run_time)
 # %%
