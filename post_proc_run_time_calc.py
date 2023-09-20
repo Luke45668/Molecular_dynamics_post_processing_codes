@@ -189,11 +189,11 @@ def log_run_time_reader(loc_no_SRD,org_var_log_1,loc_org_var_log_1,org_var_log_2
 #%%
 run_time_array_with_all_realisations=np.zeros((fluid_name_array.shape[0],j_,org_var_log_1.size,org_var_log_2.size,))
 run_time_array_unsorted_srd_bins=()
-#%%
+
 for i in range(0,fluid_name_array.shape[0]):
     run_time_array_unsorted_srd_bins=run_time_array_unsorted_srd_bins+(run_time_array_with_all_realisations,)
     
-#%%   
+ 
 
 #for i in range(0,count_log):
 #for i in range(0,120):
@@ -252,11 +252,12 @@ for i in range(0,count_log):
     # print(org_var_2_index)
     # print(run_time_reader(realisation_name_for_run_time))
     fluid_name_no_srd_index =fluid_name_array_fluid_col_index[0][correct_fluid_index]
-    print( fluid_name_no_srd_index)
+    #print( fluid_name_no_srd_index)
     
     run_time_array_with_all_realisations[fluid_name_no_srd_index,realisation_index,org_var_1_index, org_var_2_index]=run_time_reader(realisation_name_for_run_time)
     #print( run_time_array_unsorted_srd_bins[fluid_name_no_srd_tuple_index[0]])
 # %%
+plt.rcParams['text.usetex'] = True
 
 # run time vs swap rate
 #NOTE: need to consider this averaging 
@@ -265,45 +266,65 @@ for i in range(0,count_log):
 run_time_array_with_all_realisations_real_av=np.mean(run_time_array_with_all_realisations,axis=1)
 run_time_array_with_all_realisations_swap_av=np.mean(run_time_array_with_all_realisations_real_av,axis=1)
 run_time_array_with_all_realisations_swap_num_av=np.mean(run_time_array_with_all_realisations_swap_av,axis=1)
-for j in range(0,swap_number.size):
-    for i in range(0,fluid_name_array.shape[0]):
-   
-        plt.plot(swap_rate[:],run_time_array_with_all_realisations_real_av[i,:,j])
-        #plt.yscale('log')
-        plt.ylabel("$f_{p}[-]$")
-        plt.ylabel("$t_{\infty}[s]$", rotation=0)
 
-    plt.show()
 
-#%%
+def func4(x, a, b):
+   #return np.log(a) + np.log(b*x)
+   #return (a*(x**b))
+   #return 10**(a*np.log(x) + b)
+   return (a*x) +b 
+   #return np.log(a*x) +b
+
 # run time vs SRD count 
 plt.rcParams.update({'font.size': 15})
-fluid_names_=["Argon","Cyclohexane","Water","Nitrogen"]
+fluid_names_=["Argon","Hexane","Water","Nitrogen"] # are the labels correct
 linestyle=["--","-",":","-."]
 marker=["x","o","+","^"]
+swap_number_index=3
 no_srd_values= np.asarray(fluid_name_array[:,1] , dtype=float)
-#plt.plot(fluid_name_array[0:3,1],run_time_array_with_all_realisations_swap_num_av[0:3])
-#plt.plot(fluid_name_array[3:6,1],run_time_array_with_all_realisations_swap_num_av[3:6])
-#plt.plot(fluid_name_array[6:9,1],run_time_array_with_all_realisations_swap_num_av[6:9])
-i_=[0,3,6,9]
-for i in range(0,4):
-    #plt.figure(figsize=(20,5))
-   # linestyle=linestyle[i]
-    plt.scatter(np.flip(no_srd_values[i_[i]:i_[i]+3]),np.flip(run_time_array_with_all_realisations_swap_num_av[i_[i]:i_[i]+3]),label=str(fluid_names_[i]), marker=marker[i])
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.xlabel("$N_{SRD}[-]$")
-    plt.ylabel("$t_{\infty}[s]$", rotation=0)
+no_srd_values=np.flip(np.reshape(no_srd_values,(4,3)),axis=1)
+run_time_array_with_all_realisations_swap_av=np.flip(np.reshape(run_time_array_with_all_realisations_swap_av[:,swap_number_index],(4,3)),axis=1)
+# for i in range(0,2):
+#     run_time_array_with_all_realisations_swap_av_vstack=np.concatenate(run_time_array_with_all_realisations_swap_av[:,i],run_time_array_with_all_realisations_swap_av[:,i+1])
+# fitting_params=()
+# for i in range(0,4):
+#     fitting_params= fitting_params+(scipy.optimize.curve_fit(func4,no_srd_values[i,:],run_time_array_with_all_realisations_swap_av[i,:],method='lm',maxfev=5000)[0],)
+#     #fitting_params= fitting_params+(np.polyfit(no_srd_values[i,:],run_time_array_with_all_realisations_swap_av[i,:],3),)
+   
+run_time_array_with_all_realisations_swap_av_for_plot=np.concatenate((run_time_array_with_all_realisations_swap_av[:,0],run_time_array_with_all_realisations_swap_av[:,1],run_time_array_with_all_realisations_swap_av[:,2]),axis=0)
+no_srd_values=np.concatenate((no_srd_values[:,0],no_srd_values[:,1],no_srd_values[:,2]),axis=0)
 
-    plt.legend()
+plotting_data=np.array([no_srd_values,run_time_array_with_all_realisations_swap_av_for_plot])
 
+print(plotting_data[0,:]==no_srd_values)
+print(plotting_data[1,:]==run_time_array_with_all_realisations_swap_av_for_plot)
+
+plotting_data=plotting_data[:,plotting_data[0,:].argsort()]
+
+print(plotting_data[0,:]==no_srd_values)
+print(plotting_data[1,:]==run_time_array_with_all_realisations_swap_av_for_plot)
+
+
+fitting_params=scipy.optimize.curve_fit(func4,no_srd_values,run_time_array_with_all_realisations_swap_av_for_plot,method='lm',maxfev=5000)[0]
+y_residuals= func4(no_srd_values[:],fitting_params[0],fitting_params[1])-run_time_array_with_all_realisations_swap_av_for_plot
+std_error_in_fit= np.sqrt(np.mean(y_residuals**2)) 
+
+
+
+
+plt.rcParams.update({'font.size': 25})
+fontsize=35
+labelpadx=15
+labelpady=35
+print(run_time_array_with_all_realisations_swap_av_for_plot[:])
+print(no_srd_values[:])
+plt.scatter(no_srd_values[:],run_time_array_with_all_realisations_swap_av_for_plot[:], marker='x')
+plt.plot(no_srd_values[:],func4(no_srd_values[:],fitting_params[0],fitting_params[1]),label="$y="+str(sigfig.round(fitting_params[0],sigfigs=3))+"x+"+str(sigfig.round(fitting_params[1],sigfigs=3))+"$, $\sigma_{M}=\pm"+str(sigfig.round(std_error_in_fit,sigfigs=3))+"s$")
+plt.xlabel("$N_{SRD}[-]$", labelpad=labelpadx)
+plt.ylabel("$t_{\infty}[s]$", rotation=0,labelpad=labelpady)
+plt.legend(loc="best",  bbox_to_anchor=(1.05, 1.3) )
+plt.savefig("All_fluids_run_time_vs_particle_count_swap_number_"+str(swap_number[swap_number_index])+".pdf",dpi=500,bbox_inches='tight' )
 plt.show()
 
-
-
-
-
-
-    
 
 # %%

@@ -35,7 +35,7 @@ import fnmatch
 #%% loading in data 
 
 #file_search_strings=['flux_fitting_params_*','flux_ready_for_plotting_*','shear_rate_mean_error_of_both_cells_*','shear_rate_mean_of_both_cells_*']
-fluid_name='Nitrogen'
+fluid_name='H20'
 path_2_compiled_data= '/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/T_1_compiled_data_all_phi/'+str(fluid_name)+'_data'
 os.chdir(path_2_compiled_data)
 
@@ -83,8 +83,8 @@ org_var_1=np.array([3,7,15,30,60,150,300,600,900,1200])
 org_var_2=np.array([1,10,100,1000])
 #%%
 # need to make sure you note which fitting indices you use below
-org_var_1_fitting_start_index=6
-org_var_1_fitting_end_index=10
+org_var_1_fitting_start_index=2
+org_var_1_fitting_end_index=6
 
 
 size_of_new_data=org_var_1_fitting_end_index-org_var_1_fitting_start_index
@@ -149,7 +149,7 @@ for i in range(0,1):
           plt.legend(loc='upper right',bbox_to_anchor=(0.25,-0.1))
           #plt.legend(loc='best')
      plt.tight_layout()
-     plt.savefig(fluid_name+"_flux_vs_shear_swap_rates_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
+     #plt.savefig(fluid_name+"_flux_vs_shear_swap_rates_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
      
      plt.show() 
      
@@ -172,19 +172,22 @@ labelpadx=5
 labelpady=15
 shear_viscosity_abs_error_max=np.amax(shear_viscosity_abs_error,axis=0)
 for z in range(0,4):
-          x=phi[:]
+          x=box_side_length_scaled[:]
           y=shear_viscosity[:,z]
      
           #plt.scatter(x[:,i],y[:,i],label="$L=$"+str(box_side_length_scaled[z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2))+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=1)),marker='x')
           plt.plot(x,y,"--",label="$N_{v,x}=$"+str(org_var_2[z])+", $\Delta\eta_{max}=$"+str(sigfig.round(shear_viscosity_abs_error_max[z],sigfigs=2)),marker='x')
-          plt.xlabel('$\phi$', labelpad=labelpadx,fontsize=fontsize)
+          plt.xlabel('$L/\ell$', labelpad=labelpadx,fontsize=fontsize)
           plt.yscale('log')
           #plt.xscale('log')
           plt.ylabel('$\eta \\frac{\ell^{3}}{\epsilon\\tau}$',rotation=0,labelpad=labelpady,fontsize=fontsize)
           plt.legend()
 plt.tight_layout()     
-plt.savefig(fluid_name+"_shear_eta_vs_phi_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
+#plt.savefig(fluid_name+"_shear_eta_vs_phi_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
 plt.show() 
+
+swap_number_1_shear_visc_mean_with_std_dev_for_table=np.array([np.mean(shear_viscosity[:,0]),np.std(shear_viscosity[:,0])])
+np.save(fluid_name+"_shear_viscosity_table_data_swap_rates_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".npy",shear_viscosity)
 
 
 # %%
