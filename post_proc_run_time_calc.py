@@ -326,5 +326,3 @@ plt.legend(loc="best",  bbox_to_anchor=(1.05, 1.3) )
 plt.savefig("All_fluids_run_time_vs_particle_count_swap_number_"+str(swap_number[swap_number_index])+".pdf",dpi=500,bbox_inches='tight' )
 plt.show()
 
-
-# %%
