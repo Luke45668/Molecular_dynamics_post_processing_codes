@@ -112,7 +112,7 @@ def VP_organiser_and_reader(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisati
         no_SRD=filename[loc_no_SRD]
         z=no_SRD_key.index(no_SRD)
         realisation_index=filename[loc_Realisation_index]
-        j=int(float(realisation_index))
+        j=int(float(realisation_index))-1
         if isinstance(filename[loc_org_var_1], int):
             org_var_1_find_from_file_name=int(filename[loc_org_var_1])
             m=np.where(org_var_1==org_var_1_find_from_file_name)
@@ -125,16 +125,21 @@ def VP_organiser_and_reader(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisati
         else:    
             org_var_2_find_from_file_name=float(filename[loc_org_var_2])
             k=np.where(org_var_2==org_var_2_find_from_file_name)
-        realisation_name=realisation_name_VP[i]
+        
+        
         try: 
+            realisation_name=realisation_name_VP[i]
+            
             VP_data = velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave_freq,no_SRD,no_timesteps,VP_output_col_count)[0]
+            #print(VP_data)
             VP_data_upper[z,m,k,:,:,j] = VP_data[1:10,:]
             VP_data_lower[z,m,k,:,:,j] = VP_data[11:,:]
             
         except Exception as e:
             print('Velocity Profile reading failed')
+            print(realisation_name)
             error_count=error_count+1 
-            continue
+            break
         VP_z_data = velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave_freq,no_SRD,no_timesteps,VP_output_col_count)[1]     
        
         VP_z_data_upper[z,0,:] = VP_z_data[1:10].astype('float64')* box_side_length_scaled.T    
@@ -259,7 +264,7 @@ def Mom_organiser_and_reader(mom_data,count_mom,realisation_name_Mom,no_SRD_key,
         z=no_SRD_key.index(no_SRD)
     
         realisation_index=filename[7]
-        j=int(float(realisation_index))
+        j=int(float(realisation_index))-1
         if isinstance(filename[loc_org_var_mom_1],int):
             org_var_mom_1_find_in_name=int(filename[loc_org_var_mom_1])
             tuple_index=np.where(org_var_mom_1==org_var_mom_1_find_in_name)[0][0]
@@ -276,18 +281,18 @@ def Mom_organiser_and_reader(mom_data,count_mom,realisation_name_Mom,no_SRD_key,
         
         realisation_name=realisation_name_Mom[i]
         
-        try:
-           mom_data[tuple_index][z,array_index_1,j,:]=mom2numpy_f(realisation_name,Path_2_mom_file)  
+        #try:
+        mom_data[tuple_index][z,array_index_1,j,:]=mom2numpy_f(realisation_name,Path_2_mom_file)  
         
         
 
         
             
-        except Exception as e:
-            print('Mom Data faulty')
-            error_count_mom=error_count_mom+1 
-            failed_list_realisations.append(realisation_name)
-            break
+        # except Exception as e:
+        #     print('Mom Data faulty')
+        #     error_count_mom=error_count_mom+1 
+        #     failed_list_realisations.append(realisation_name)
+        #     break
     return mom_data,error_count_mom,failed_list_realisations
 
 # Averaging for one file 

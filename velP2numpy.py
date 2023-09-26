@@ -41,8 +41,10 @@ def velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave
         # use this version wehn averaging freqency is close eq steps 
         #VP_data_start_line= (str(VP_ave_freq+equilibration_timesteps)+" "+str(chunk))+" "#+no_SRD)# can we put a wild card in for no_SRD
         # use the versio  below when averaging frequency is much larger than eq steps 
-        VP_data_start_line= (str(VP_ave_freq+equilibration_timesteps)+" "+str(chunk))+" "#+no_SRD)# can we put a wild card in for no_SRD
-        VP_data_end_line =(str(int(equilibration_timesteps+float(no_timesteps)))+" "+str(chunk))#+" "+no_SRD) 
+        # VP_data_start_line= (str(VP_ave_freq+equilibration_timesteps)+" "+str(chunk))+" "#+no_SRD)# can we put a wild card in for no_SRD
+        # VP_data_end_line =(str(int(equilibration_timesteps+float(no_timesteps)))+" "+str(chunk))#+" "+no_SRD) 
+        VP_data_start_line= (str(VP_ave_freq)+" "+str(chunk))+" "#+no_SRD)# can we put a wild card in for no_SRD
+        VP_data_end_line =(str(int(float(no_timesteps)))+" "+str(chunk))#+" "+no_SRD) 
         #SRD_temp_lambda_start_line = "SRD temperature & lamda ="
         #SRD_temp_lambda_end_line = "SRD max distance & max velocity"# re.compile(b"Loop time of [+-]?[0-9]+\.[0-9]+ on . procs for "+bytes(total_no_timesteps,'utf-8')) 
         
@@ -182,7 +184,7 @@ def velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave
             count=count+1
         VP_z_data = VP_numpy_array[:,1]   
                 
-        print(VP_final_array)
+        #print(VP_final_array)
         return VP_final_array,VP_z_data 
                 
     

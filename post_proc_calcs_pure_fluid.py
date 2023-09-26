@@ -35,26 +35,29 @@ from post_MPCD_MP_processing_module import *
 
 # define key inputs 
 j_=3
-swap_rate = np.array([3,7,15,30,60,150,300,600,900,1200]) # values chosen from original mp paper
-swap_number = np.array([1,10,100,1000])
+
+swap_rate = np.array([15,150,600])
+# for a run with missing 300 data 
+#swap_rate = np.array([3,7,15,30,60,150,600])
+swap_number = np.array([1])
 equilibration_timesteps=1000
-VP_ave_freq =1000
+VP_ave_freq =10000
 chunk = 20
 dump_freq=10000 # if you change the timestep rememebr to chaneg this 
 thermo_freq = 10000
 scaled_temp=1
 scaled_timestep=0.01
-realisation=np.array([0.0,1.0,2.0])
+realisation=np.array([1,2,3])
 VP_output_col_count = 4 
 r_particle =25e-6 # for some solutions, rememebrr to check if its 25 or 10
-phi=0.005
+phi=0.0577777778
 N=2
 Vol_box_at_specified_phi=(N* (4/3)*np.pi*r_particle**3 )/phi
 box_side_length=np.cbrt(Vol_box_at_specified_phi)
-fluid_name='Nitrogen'
+fluid_name='Ar'
 run_number=''
-batchcode='84688'
-no_timesteps=4000000 # rememebr to change this depending on run 
+batchcode='966397'
+no_timesteps=2000000 # rememe change this depending on run 
 
 # grabbing file names 
 
@@ -70,19 +73,6 @@ dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 TP_general_name_string='temp.'+fluid_name+'*_VACF_output_*_no_rescale_*'
 
 
-#filepath= 'T_1_phi_0.0005_data/C6H14_data_T_1_phi_0.0005/run_583375'
-#filepath= 'T_1_phi_0.0005_data/H20_data_T_1_phi_0.0005/run_952534'
-filepath='T_1_phi_0.005_data/H20_data_T_1_phi_0.005/run_835707'
-#filepath='T_1_phi_0.005_data/Nitrogen_data_T_1_phi_0.005/run_84688'
-#filepath='T_1_phi_0.0005_data/Ar_data_T_1_phi_0.0005/run_305089'
-##filepath='T_1_phi_0.00005_data/Ar_data/run_236898'
-#filepath='T_1_phi_0.00005_data/H20_data/run_669430'
-#filepath='T_1_phi_0.00005_data/Nitrogen_data/run_983771'
-#filepath='T_1_phi_0.00005_data/C6H14_data/run_96617'
-#filepath='T_1_phi_0.0005_data/Nitrogen_data_T_1_phi_0.0005/run_25419'
-#filepath='/T_1_phi_0.005_data/C6H14_data_T_1_phi_0.005/run_537337'
-filepath='T_1_phi_0.005_data/Ar_data_T_1_phi_0.005/run_327740'
-filepath='T_1_phi_0.005_data/Nitrogen_data_T_1_phi_0.005/run_84688'
 
 
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
@@ -210,10 +200,10 @@ import sigfig
 lengthscale= sigfig.round(lengthscale,sigfigs=3)
 box_size_nd= box_side_length_scaled 
 # get rid of this on laptop or code will fail 
-# plt.rcParams.update({
-#     "text.usetex": True,
-#     "font.family": "Helvetica"
-# })
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "Helvetica"
+})
 
 org_var_1_index_start=0
 org_var_1_index_end=10
@@ -272,7 +262,7 @@ VP_z_data_upper=np.load("VP_z_data_upper_"+name_of_run_for_save+".npy")
 
 
 # %%
-truncation_timestep=1000000 # for H20 and Nitrogen 
+truncation_timestep=5000000 # for H20 and Nitrogen 
 truncation_and_SS_averaging_data=  truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,shear_rate_lower_error,timestep_points,pearson_coeff_lower,pearson_coeff_upper,shear_rate_upper,shear_rate_lower,VP_ave_freq,truncation_timestep,VP_data_lower_realisation_averaged,VP_data_upper_realisation_averaged)
 standard_deviation_upper_error=truncation_and_SS_averaging_data[0]
 standard_deviation_lower_error=truncation_and_SS_averaging_data[1]
@@ -724,15 +714,44 @@ for k in range(0,org_var_1.size):
            # ax2.legend(frameon=False,loc=0,bbox_to_anchor=(legend_x_pos, legend_y_pos)) 
             ax3.plot(y_1[:],x_1[k,3,:],label='$f_p=${}'.format(org_var_1[k]),marker='x')
             ax3.set_ylabel('$\\frac{v_{x}\\tau}{\ell}$',rotation=0,labelpad=labelpady,fontsize=fontsize )
-            ax3.set_xlabel('$L_{z}\ell^{-1}$',rotation=0,labelpad=labelpadx)
+            ax3.set_xlabel('$L_{z}/\ell$',rotation=0,labelpad=labelpadx)
             #ax3.legend(frameon=False,loc=0,bbox_to_anchor=(legend_x_pos, legend_y_pos))   
             ax4.plot(y_1[:],x_1[k,3,:],label='$f_p=${}'.format(org_var_1[k]),marker='x')
             #ax4.set_ylabel('$v_{x}\ [\\frac{\\tau}{\ell}]$',rotation=0,labelpad=labelpady )
-            ax4.set_xlabel('$L_{z}\ell^{-1}$',rotation=0,labelpad=labelpadx)
+            ax4.set_xlabel('$L_{z}/\ell$',rotation=0,labelpad=labelpadx)
             ax4.legend(frameon=False,loc=0,bbox_to_anchor=(1,2.4))
             plt.subplots_adjust(wspace=0.2, hspace=0.24)
                
 plt.show()
+#%% Calculating Reynolds number then plotting against swap rate for swap number 1 as the viscosity is very small for high swap numbers
+box_size_index_for_viscosity=2 # change this for all computes
+#H20 data 
+#shear_viscosity_table=np.load("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/T_1_compiled_data_all_phi/plots_and_shear_viscosity_data/H20_shear_viscosity_table_data_swap_rates_15_150_run_number_952534_835707_669430.npy")[box_size_index_for_viscosity,0]
+# scaled_density= (9173 * 1.826507356738251 )/(box_side_length_scaled**3) # for phi=0.005
+# effective_SRD_length=  np.cbrt((14.846573**3)/ 17.916016) # for phi=0.005
+#scaled_density= (39362* 4.256585191852455 )/(box_side_length_scaled**3) # for phi=0.0005
+#effective_SRD_length=  np.cbrt((19.683675**3)/ 17.916249) # for phi=0.0005
+#scaled_density= (6.611095651493668  * 253440)/ (box_side_length_scaled**3) # phi=5e-3
+#effective_SRD_length=  np.cbrt((22.970562**3)/ 18.333333) # for phi=5e-03
+#Nitrogen 
+shear_viscosity_table=np.load("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/T_1_compiled_data_all_phi/plots_and_shear_viscosity_data//Nitrogen_shear_viscosity_table_data_swap_rates_300_1200_run_number_25419_84688_983771.npy")[box_size_index_for_viscosity,0]
+scaled_density= (1.2716921543217705   * 416645)/ (box_side_length_scaled**3) # phi=5e-3
+effective_SRD_length=  np.cbrt((601.15279**3)/ 17.083316) # for phi=5e-03
+
+
+kinematic_viscosity= (shear_viscosity_table/scaled_density)# /1.612e-6 # need tocalculate this 
+Reynolds_number_upper=np.zeros((10)) # only for swap number 1 
+Reynolds_number_lower=np.zeros((10))
+for i in range(0, swap_rate.size):
+  Reynolds_number_upper [i]= ((effective_SRD_length)**2)* (shear_rate_upper_steady_state_mean[0,i,0]) / kinematic_viscosity
+  Reynolds_number_lower [i]= (box_side_length_scaled[0,0]/2)* np.abs(VP_steady_state_data_lower_truncated_time_averaged[0,i,0,:]).max() / kinematic_viscosity
+
+print(Reynolds_number_upper)
+
+
+
+
+
 # %% saving all the arrays which are needed for plots
 # need to save orginal untruncated VP / shear rate data 
 

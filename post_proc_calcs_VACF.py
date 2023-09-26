@@ -20,7 +20,7 @@ import pandas as pd
 #import pyswarms as ps
 import sigfig
 plt.rcParams.update(plt.rcParamsDefault)
-plt.rcParams['text.usetex'] = True
+#plt.rcParams['text.usetex'] = True
 from mpl_toolkits import mplot3d
 from matplotlib.gridspec import GridSpec
 #import seaborn as sns
@@ -41,29 +41,29 @@ from post_MPCD_MP_processing_module import *
 
 # define key inputs 
 j_=3
-swap_rate = np.array([3,7,15,30,60,150,300,600])# values chosen from original mp paper
-swap_rate = np.array([3,7,15,30,60,150,600])
+
+swap_rate = np.array([15,150,600])
 # for a run with missing 300 data 
 #swap_rate = np.array([3,7,15,30,60,150,600])
 swap_number = np.array([1])
 equilibration_timesteps=1000
-VP_ave_freq =1000
+VP_ave_freq =10000
 chunk = 20
 dump_freq=10000 # if you change the timestep rememebr to chaneg this 
-thermo_freq = 10
+thermo_freq = 10000
 scaled_temp=1
 scaled_timestep=0.01
-realisation=np.array([0.0,1.0,2.0])
+realisation=np.array([1,2,3])
 VP_output_col_count = 4 
 r_particle =25e-6 # for some solutions, rememebrr to check if its 25 or 10
-phi=0.0005
+phi=0.0577777778
 N=2
 Vol_box_at_specified_phi=(N* (4/3)*np.pi*r_particle**3 )/phi
 box_side_length=np.cbrt(Vol_box_at_specified_phi)
-fluid_name='H20'
+fluid_name='Ar'
 run_number=''
-batchcode='908583'
-no_timesteps=3000000 # rememebr to change this depending on run 
+batchcode='966397'
+no_timesteps=2000000 # rememebr to change this depending on run 
 
 # grabbing file names 
 
@@ -71,7 +71,7 @@ VP_general_name_string='vel.'+fluid_name+'*_VACF_output_*_no_rescale_*'
 
 Mom_general_name_string='mom.'+fluid_name+'*_VACF_out_*_no_rescale_*'
 
-log_general_name_string='log.'+fluid_name+'_*_wall_VACF_output_no_rescale_*'
+log_general_name_string='log.'+fluid_name+'_*_wall_pure_output_no_rescale_*'
                          #log.H20_no466188_wall_VACF_output_no_rescale_
 TP_general_name_string='temp.'+fluid_name+'*_VACF_output_*_no_rescale_*'
 
@@ -80,7 +80,8 @@ dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 
 
 
-filepath='VACF_temp_profile_tests/run_'+batchcode
+#filepath='VACF_temp_profile_tests/run_'+batchcode
+filepath='pure_fluid_new_method_validations/T_1/'+fluid_name
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
 realisation_name_VP=realisation_name_info[1]
@@ -141,6 +142,7 @@ org_var_2=swap_number #spring_constant
 loc_org_var_2=22#25
 #VP_raw_data= VP_organiser_and_reader(loc_no_SRD,loc_EF,loc_SN,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,swap_number,swap_rate,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
 #%% Velocity profiles 
+
 VP_raw_data=VP_organiser_and_reader(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,org_var_1,org_var_2,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
 
 VP_data_upper=VP_raw_data[0]
@@ -158,7 +160,7 @@ else:
 
 # box_size_loc=9
 # lengthscale=box_side_length/float(filename[box_size_loc])
-#%% Temperature profiles
+# Temperature profiles
 # as long as the VP data have the same structure as the TP data this will work 
 TP_raw_data=VP_organiser_and_reader(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,org_var_1,org_var_2,no_SRD_key,realisation_name_TP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
 
@@ -189,13 +191,14 @@ log_SN=23
 log_K=27
 log_realisation_index=8
 #def log_file_reader_and_organiser(count_log,):
-log_file_col_count=5
-log_file_row_count=((no_timesteps)/thermo_freq) +1 # to fit full log file  not sure on it 
+log_file_col_count=4
+log_file_row_count=((no_timesteps)/thermo_freq) +2 # to fit full log file  not sure on it 
 log_file_tuple=()
 Path_2_log='/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/'+filepath
-thermo_vars='         KinEng          Temp          TotEng       c_vacf[4]   '
+#thermo_vars='         KinEng          Temp          TotEng       c_vacf[4]   '
+thermo_vars='         KinEng          Temp          TotEng    '
 from log2numpy import * 
-total_cols_log=5
+total_cols_log=4
 org_var_log_1=swap_rate
 loc_org_var_log_1=log_EF
 org_var_log_2=swap_number#spring_constant
@@ -297,11 +300,8 @@ height_plot=10
 legendx=1
 legend_y_pos=1
 def func4(x, a, b):
-   #return np.log(a) + np.log(b*x)
-   #return (a*(x**b))
-   #return 10**(a*np.log(x) + b)
-   #return (a*x) +b 
    return a * np.exp(b*x)
+
 VACF_fitting_params=()
 VACF_covariance_time=()
 VACF_std_error=()
@@ -317,21 +317,13 @@ for k in range(0,org_var_1.size):
 sample_rate=25
 
 for k in range(0,org_var_1.size):
-#for k in range(0,1):
-    #plotting energy vs time 
-   
     for i in range(org_var_2.size):
-        #plotting energy vs time 
-        #plt.plot(averaged_log_file[k,i,:,0],averaged_log_file[k,i,:,4],label='$f_v=${}'.format(org_var_2[i]))
+        
         plt.scatter(averaged_log_file[k,i,:VACF_cut_off:sample_rate,0],averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],label='$f_p=${}'.format(org_var_1[k]))
         plt.plot(averaged_log_file[k,i,:VACF_cut_off:sample_rate,0],func4(averaged_log_file[k,i,:VACF_cut_off:sample_rate,0],VACF_fitting_params[k][0],VACF_fitting_params[k][1]))
-        #plt.xscale('log')
-        #plt.yscale('log')
         plt.xlabel('$N_{t}[-]$',fontsize=fontsize)
         plt.ylabel('$C_{\\nu}(N_{c}\Delta t)$', rotation=0,fontsize=fontsize,labelpad=labelpad)
-       # plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+",All $f_{v_{x}}=$, $N_{v,x}=$"+str(org_var_1[k])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
-        #plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+", All $K$, $f_{v,x}=$"+str(org_var_1[k])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
-        
+       
         plt.legend(loc=7,bbox_to_anchor=(1.55, 0.5))
         print(VACF_fitting_params)
 plt.savefig(fluid_name+"_All_swaps_VACF_sample_rate_"+str(sample_rate)+"_cut_off_"+str(VACF_cut_off)+"_batch_"+str(batchcode)+".pdf",dpi=500, bbox_inches='tight')
@@ -346,36 +338,56 @@ for k in range(0,org_var_1.size):
         VACF_covariance_time = VACF_covariance_time +(VACF_fit_calc[1],)
     
        
-#for k in range(0,org_var_1.size):
+
 number_of_data_points= VACF_cut_off/sample_rate
 standard_error_fit= ()
-#for k in range(0,1):
 
-#for k in range(0,org_var_1.size):
 for k in range(0,1):
-
-    #plotting VACF vs time 
-   
     for i in range(org_var_2.size):
-        #plotting energy vs time 
-        #plt.plot(averaged_log_file[k,i,:,0],averaged_log_file[k,i,:,4],label='$f_v=${}'.format(org_var_2[i]))
         
         standard_error_fit=standard_error_fit + (np.sqrt(np.mean(((func4(time_vector_from_timestep[:VACF_cut_off:sample_rate],VACF_fitting_params_time[k][0],VACF_fitting_params_time[k][1])- averaged_log_file[k,i,:VACF_cut_off:sample_rate,4])**2)/number_of_data_points)),) 
         plt.scatter(time_vector_from_timestep[:VACF_cut_off:sample_rate],averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],marker='x')#,label='$f_p=${}'.format(org_var_1[k]))
         plt.plot(time_vector_from_timestep[:VACF_cut_off:sample_rate],func4(time_vector_from_timestep[:VACF_cut_off:sample_rate],VACF_fitting_params_time[k][0],VACF_fitting_params_time[k][1]),'--',label= "$y=ae^{bx}$, $a=$"+str(sigfig.round(VACF_fitting_params_time[k][0],sigfigs=4))+" and $b=$"+str(sigfig.round(VACF_fitting_params_time[k][1],sigfigs=4))+", $\sigma_{m}=$"+str(sigfig.round(standard_error_fit[k],sigfigs=4)))
-        # epsilon is the mean square deviation from the fit 
-        # sigfig.round(VACF_fitting_params_time[k][0],sigfigs=3)
-        #plt.xscale('log')
-        #plt.yscale('log')
         plt.xlabel('$t/\\tau$')
         plt.ylabel('$C_{\\nu}(N_{c}\Delta t)$', rotation=0,labelpad=labelpad)
-       # plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+",All $f_{v_{x}}=$, $N_{v,x}=$"+str(org_var_1[k])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
-        #plt.title(fluid_name+" simulation run $\phi=$"+str(phi)+", All $K$, $f_{v,x}=$"+str(org_var_1[k])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
-        
+      
         plt.legend(loc=7,bbox_to_anchor=(1.3, -0.35))
         print(VACF_fitting_params)
 plt.savefig(fluid_name+"_VACF_sample_rate_"+str(sample_rate)+"_cut_off_"+str(VACF_cut_off)+"_batch_"+str(batchcode)+".pdf",dpi=500, bbox_inches='tight')
 plt.show()
+#%% VACF integral for diffusivity for unormalised VACF
+degrees_of_freedom = 3
+#play with cut off till the integral value remains approximately constant
+VACF_cut_off=300
+fontsize=20
+labelpadx=15
+labelpady=50
+labelpad=50
+width_plot=15
+height_plot=10
+legendx=1
+legend_y_pos=1
+sample_rate=1
+
+
+for k in range(0,1):
+    for i in range(org_var_2.size):
+       
+        plt.plot(time_vector_from_timestep[:VACF_cut_off:sample_rate],averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],marker='x')#,label='$f_p=${}'.format(org_var_1[k]))
+        plt.xlabel('$t/\\tau$')
+        plt.ylabel('$C_{\\nu}(N_{c}\Delta t)$', rotation=0,labelpad=labelpad)
+      
+        plt.legend(loc=7,bbox_to_anchor=(1.3, -0.35))
+        
+#plt.savefig(fluid_name+"_All_swaps_VACF_sample_rate_"+str(sample_rate)+"_cut_off_"+str(VACF_cut_off)+"_batch_"+str(batchcode)+".pdf",dpi=500, bbox_inches='tight')
+plt.show()
+
+diffusivity= np.trapz(averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],time_vector_from_timestep[:VACF_cut_off:sample_rate], dx=0.0001,axis=0)/degrees_of_freedom
+print(diffusivity)
+
+
+
+
 #%% reading in mom files (much faster)
 #  obtaining the mom data size
 #Path_2_mom_file="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/"+simulation_file
@@ -420,7 +432,7 @@ VP_data_lower_realisation_averaged=VP_shear_rate_and_stat_data[5]
 VP_data_upper_realisation_averaged=VP_shear_rate_and_stat_data[6]
 shear_rate_upper_error=VP_shear_rate_and_stat_data[7]
 shear_rate_lower_error=VP_shear_rate_and_stat_data[8]
-#%% TP data
+# TP data
 org_var_1=swap_rate
 org_var_2=swap_number
 
@@ -437,13 +449,13 @@ import sigfig
 lengthscale= sigfig.round(lengthscale,sigfigs=3)
 box_size_nd= box_side_length_scaled 
 # get rid of this on laptop or code will fail 
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "Helvetica"
-})
+# plt.rcParams.update({
+#     "text.usetex": True,
+#     "font.family": "Helvetica"
+# })
 
 org_var_1_index_start=0
-org_var_1_index_end=6
+org_var_1_index_end=3
 org_var_2_index_start=0
 org_var_2_index_end=1
 
@@ -507,7 +519,7 @@ VP_z_data_upper=np.load("VP_z_data_upper_"+name_of_run_for_save+".npy")
 
 
 # %%
-truncation_timestep=300000 # for H20 and Nitrogen 
+truncation_timestep=200000 # for H20 and Nitrogen 
 truncation_and_SS_averaging_data=  truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,shear_rate_lower_error,timestep_points,pearson_coeff_lower,pearson_coeff_upper,shear_rate_upper,shear_rate_lower,VP_ave_freq,truncation_timestep,VP_data_lower_realisation_averaged,VP_data_upper_realisation_averaged)
 standard_deviation_upper_error=truncation_and_SS_averaging_data[0]
 standard_deviation_lower_error=truncation_and_SS_averaging_data[1]
@@ -515,11 +527,15 @@ pearson_coeff_upper_mean_SS=truncation_and_SS_averaging_data[2]
 pearson_coeff_lower_mean_SS=truncation_and_SS_averaging_data[3]
 pearson_coeff_mean_SS= (np.abs(pearson_coeff_lower_mean_SS)+np.abs(pearson_coeff_upper_mean_SS))*0.5
 shear_rate_lower_steady_state_mean=truncation_and_SS_averaging_data[4]
+print(shear_rate_lower_steady_state_mean)
 shear_rate_upper_steady_state_mean=truncation_and_SS_averaging_data[5]
+print(shear_rate_upper_steady_state_mean)
 VP_steady_state_data_lower_truncated_time_averaged=truncation_and_SS_averaging_data[6]
 VP_steady_state_data_upper_truncated_time_averaged=truncation_and_SS_averaging_data[7]
 shear_rate_upper_steady_state_mean_error=truncation_and_SS_averaging_data[8]
+print(shear_rate_upper_steady_state_mean_error)
 shear_rate_lower_steady_state_mean_error=truncation_and_SS_averaging_data[9]
+print(shear_rate_lower_steady_state_mean_error)
 
 truncation_and_SS_averaging_data_TP=  truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,shear_rate_lower_error,timestep_points,pearson_coeff_lower,pearson_coeff_upper,shear_rate_upper,shear_rate_lower,VP_ave_freq,truncation_timestep,TP_data_lower_realisation_averaged,TP_data_upper_realisation_averaged)
 
@@ -528,38 +544,38 @@ TP_steady_state_data_upper_truncated_time_averaged=truncation_and_SS_averaging_d
 
 
 # could probably vectorise this or use a method 
-error_count = 0
-for z in range(0,number_of_solutions):
-    for k in range(org_var_1_index_start,org_var_1_index_end):
-            for m in range(org_var_2_index_start,org_var_2_index_end):
+# error_count = 0
+# for z in range(0,number_of_solutions):
+#     for k in range(org_var_1_index_start,org_var_1_index_end):
+#             for m in range(org_var_2_index_start,org_var_2_index_end):
                  
                  
-                 if pearson_coeff_mean_SS[z,k,m]<0.7:
-                     print('Non-linear simulation run please inspect')
-                     error_count=error_count +1 
-                 else:
-                     print('Great success')
+#                  if pearson_coeff_mean_SS[z,k,m]<0.7:
+#                      print('Non-linear simulation run please inspect')
+#                      error_count=error_count +1 
+#                  else:
+#                      print('Great success')
                      
   
                     
-print('Non-linear simulation count: ',error_count)
-marker=['x','o','+','^',"1","X","d","*","P","v"]
-for z in range(0,number_of_solutions):
-    for k in range(org_var_1_index_start,org_var_1_index_end):
-            for m in range(org_var_2_index_start,org_var_2_index_end):
-              plt.scatter(org_var_2[m],pearson_coeff_mean_SS[z,k,m],marker=marker[k])
-              plt.xlabel('$f_{v,x}[-]$')
-              #plt.xlabel('$K[\\frac{\\tau}{\mu}]$')
-              #plt.xscale('log')
-              plt.ylabel('$P_{C}[-]$',rotation=0,labelpad=30)
-    #plt.legend(loc=7,bbox_to_anchor=(1.3, 0.5))
+# print('Non-linear simulation count: ',error_count)
+# marker=['x','o','+','^',"1","X","d","*","P","v"]
+# for z in range(0,number_of_solutions):
+#     for k in range(org_var_1_index_start,org_var_1_index_end):
+#             for m in range(org_var_2_index_start,org_var_2_index_end):
+#               plt.scatter(org_var_2[m],pearson_coeff_mean_SS[z,k,m],marker=marker[k])
+#               plt.xlabel('$f_{v,x}[-]$')
+#               #plt.xlabel('$K[\\frac{\\tau}{\mu}]$')
+#               #plt.xscale('log')
+#               plt.ylabel('$P_{C}[-]$',rotation=0,labelpad=30)
+#     #plt.legend(loc=7,bbox_to_anchor=(1.3, 0.5))
               
-    plt.show()
+#     plt.show()
 
-print('Non-linear simulation count: ',error_count)
+# print('Non-linear simulation count: ',error_count)
                 
 
-
+#%% checking grad of datta
 #assess gradient of truncated shear rate data to determine steady state
 # can then truncate again 
 slope_shear_rate_upper=  np.zeros((number_of_solutions,org_var_1.size,org_var_2.size))
@@ -587,11 +603,11 @@ print("if no fail statements, data can be considered steady")
 for z in range(0,number_of_solutions): 
      for m in range(org_var_1_index_start,org_var_1_index_end):
         #for k in range(org_var_2_index_start,org_var_2_index_end):
-            plt.yscale('log')
+           # plt.yscale('log')
             plt.ylabel(' $d \dot{\gamma}/d t\ [1/\\tau^{2}]$',rotation=0)
-            #plt.xlabel('$f_{v,x}[-]$')
-            plt.xlabel('$K[\\frac{\\tau}{\mu}]$')
-            plt.xscale('log')
+            plt.xlabel('$f_{v,x}[-]$')
+            #plt.xlabel('$K[\\frac{\\tau}{\mu}]$')
+            #plt.xscale('log')
             plt.scatter(org_var_2[:],slope_shear_rate_upper[z,m,:])
             plt.scatter(org_var_2[:],slope_shear_rate_lower[z,m,:])
             #plt.title("Needs a title")
@@ -664,15 +680,30 @@ def func4(x, a, b):
 
 
 
-org_var_1_fitting_start_index=6
-org_var_1_fitting_end_index=10
+org_var_1_fitting_start_index=0
+org_var_1_fitting_end_index=3
+size_of_new_data=org_var_1_fitting_end_index-org_var_1_fitting_start_index
+#shear_rate_error_of_both_cell_mean_over_all_points_relative = shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]/shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
+shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative= np.mean(shear_rate_mean_error_of_both_cells_relative[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
+
+# mean_flux_ready_for_plotting=np.mean(flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
+# mean_flux_ready_for_plotting_relative_error=np.zeros((org_var_2.size))
+# mean_error_in_fit =np.zeros((org_var_2.size))
+y_residual_in_fit=np.zeros((number_of_solutions,size_of_new_data,org_var_2.size))
 for z in range(0,number_of_solutions):    
     for i in range(0,org_var_2.size):
       
         flux_vs_shear_regression_line_params= flux_vs_shear_regression_line_params+(scipy.optimize.curve_fit(func4,shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],method='lm',maxfev=5000)[0],)
+        y_residual_in_fit[z,:,i]=func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0] ,flux_vs_shear_regression_line_params[i][1])-flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i]
+        
+        #mean_error_in_fit[i] = np.sqrt(np.mean((func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0] ,flux_vs_shear_regression_line_params[i][1])-flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i])**2))
+        #mean_flux_ready_for_plotting_relative_error[i]=mean_error_in_fit[i]/mean_flux_ready_for_plotting[i]
         #print(scipy.optimize.curve_fit(func4,shear_rate_mean_of_both_cells[z,:,i],flux_ready_for_plotting[z,i,:],method='lm',maxfev=5000)[0])
 
-params=flux_vs_shear_regression_line_params 
+params=flux_vs_shear_regression_line_params
+relative_y_residual_mean= np.mean(y_residual_in_fit/flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
+
+total_error_relative_in_flux_fit= relative_y_residual_mean+shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative
 
 #%% px vs time
 #calculating error of flux
@@ -729,9 +760,12 @@ labelpady=55
 fontsize=20
 count=1
 org_var_1_index=org_var_1_fitting_start_index
-org_var_2_index=4
+org_var_2_index=1
 plt.rcParams.update({'font.size': 15})
 
+       
+shear_viscosity=[]
+gradient_of_fit=[]
        
 #plotting_flux_vs_shear_rate(func4,labelpadx,labelpady,params,fontsize,box_side_length_scaled,number_of_solutions,flux_ready_for_plotting,org_var_1_index,shear_rate_mean_of_both_cells)
 def plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelpadx,labelpady,params,fontsize,box_side_length_scaled,number_of_solutions,flux_ready_for_plotting,org_var_1_index,shear_rate_mean_of_both_cells):
@@ -756,32 +790,22 @@ def plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelp
                 plt.plot(x[:,i],func4(x[:,i],params[j][0],params[j][1]))
                 #plt.fill_between(y[:,i], x_neg_error[i,:], x_pos_error[i,:])
                 #plt.xscale('log')
-                plt.xlabel('log($\dot{\gamma}\ [\\tau]$)', labelpad=labelpadx,fontsize=fontsize)
+                plt.xlabel('$log(\dot{\gamma}\\tau)$', labelpad=labelpadx,fontsize=fontsize)
                 #plt.yscale('log')
-                plt.ylabel('log($J_{z}(p_{x})$$\ [\\frac{\\tau^{3}}{\mu}]$)',rotation=0,labelpad=labelpady,fontsize=fontsize)
+                plt.ylabel('$log(J_{z}(p_{x})$$\ \\frac{\\tau^{3}}{\\varepsilon})$',rotation=0,labelpad=labelpady,fontsize=fontsize)
                 plt.legend()
-                plt.show() 
-                shear_viscosity=10** (params[i][1])
+                #plt.show() 
+                shear_viscosity_=10** (params[i][1])
+                shear_viscosity.append(shear_viscosity_)
+                shear_viscosity_abs_error = shear_viscosity_*total_error_relative_in_flux_fit[z,i]
+                
                 grad_fit=(params[i][0])
-                print('Dimensionless_shear_viscosity:',shear_viscosity)
-                print('Grad of fit =',grad_fit)
-            #else: 
-                # j=z*(i+4)
-                # plt.scatter(x[:,i],y[i,:],label='$L=${}'.format(np.around(box_side_length_scaled[0,z]),decimals=0),marker='x')
-                # plt.errorbar(x[:,i],y[i,:],xerr=x_pos_error[:,i],ls ='',capsize=3,color='r')
-                # plt.plot(x[:,i],func4(x[:,i],params[j][0],params[j][1]))
-                # #plt.fill_between(y[:,i], x_neg_error[i,:], x_pos_error[i,:])
-                # #plt.xscale('log')
-                # plt.xlabel('log($\dot{\gamma}\ [\\tau]$)', labelpad=labelpadx,fontsize=fontsize)
-                # #plt.yscale('log')
-                # plt.ylabel('log($J_{z}(p_{x})$$\ [\\frac{\\tau^{3}}{\mu}]$)',rotation=0,labelpad=labelpady,fontsize=fontsize)
-                # plt.legend()
-                # plt.show() 
-                # plt.show() 
-                # shear_viscosity=10** (params[i][1])
-                # grad_fit=(params[i][0])
-                # print('Dimensionless_shear_viscosity:',shear_viscosity)
-                # print('Grad of fit =',grad_fit)
+                grad_fit_abs_error= grad_fit*shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative[i]
+                gradient_of_fit.append(grad_fit)
+                print('Dimensionless_shear_viscosity:',shear_viscosity_,',abs error',shear_viscosity_abs_error)
+                print('Grad of fit =',grad_fit,',abs error', grad_fit_abs_error)
+                plt.show() 
+           
         
                     
 plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelpadx,labelpady,params,fontsize,box_side_length_scaled,number_of_solutions,flux_ready_for_plotting,org_var_1_index,shear_rate_mean_of_both_cells)    
@@ -794,6 +818,9 @@ plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelpadx,
 
 #dimensionful_shear_viscosity= shear_viscosity * mass_scale / lengthscale*timescale
 #plotting qll 4 SS V_Ps
+
+
+
 #%%
 # need to fix legend location 
 plt.rcParams.update({'font.size': 25})
