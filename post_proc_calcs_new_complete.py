@@ -460,7 +460,7 @@ def plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_va
                 plt.plot(timestep_points[0,0,0,:],shear_rate_lower[z,m,k,:])
                 plt.xlabel('$N_{t}[-]$')
                 plt.ylabel('$\dot{\gamma}[\\tau]$',rotation='horizontal')
-                plt.title(fluid_name+" simulation run with all $f_{v,x}$ and all $N_{v,x}$, $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
+                plt.title(fluid_name+" simulation run with all $f_{v,x}$ and all $N_{v,x}$, $\\bar{T}="+str(scaled_temp)+"$, $L/\ell="+str(box_side_length_scaled[0,z])+"$")
                 #plt.title(fluid_name+" simulation run with all $K$ and $f_{v,x}=$"+str(org_var_1[m])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
                 
         plt.show()
@@ -519,20 +519,31 @@ pearson_coeff_upper_mean_SS=truncation_and_SS_averaging_data[2]
 pearson_coeff_lower_mean_SS=truncation_and_SS_averaging_data[3]
 pearson_coeff_mean_SS= (np.abs(pearson_coeff_lower_mean_SS)+np.abs(pearson_coeff_upper_mean_SS))*0.5
 shear_rate_lower_steady_state_mean=truncation_and_SS_averaging_data[4]
-print(shear_rate_lower_steady_state_mean)
+#print(shear_rate_lower_steady_state_mean)
 shear_rate_upper_steady_state_mean=truncation_and_SS_averaging_data[5]
-print(shear_rate_upper_steady_state_mean)
+#print(shear_rate_upper_steady_state_mean)
 VP_steady_state_data_lower_truncated_time_averaged=truncation_and_SS_averaging_data[6]
 VP_steady_state_data_upper_truncated_time_averaged=truncation_and_SS_averaging_data[7]
 shear_rate_upper_steady_state_mean_error=truncation_and_SS_averaging_data[8]
-print(shear_rate_upper_steady_state_mean_error)
+#print(shear_rate_upper_steady_state_mean_error)
 shear_rate_lower_steady_state_mean_error=truncation_and_SS_averaging_data[9]
-print(shear_rate_lower_steady_state_mean_error)
+#print(shear_rate_lower_steady_state_mean_error)
+
+mean_fitting_error= (np.abs(shear_rate_upper_steady_state_mean_error)+np.abs(shear_rate_lower_steady_state_mean_error))*0.5
+#print(mean_fitting_error)
+if np.any(mean_fitting_error<0.0005):
+    print("All data accepts linear fit")
+
+else:
+   
+     print("Check curve fitting error")
 
 truncation_and_SS_averaging_data_TP=  truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,shear_rate_lower_error,timestep_points,pearson_coeff_lower,pearson_coeff_upper,shear_rate_upper,shear_rate_lower,VP_ave_freq,truncation_timestep,TP_data_lower_realisation_averaged,TP_data_upper_realisation_averaged)
 
 TP_steady_state_data_lower_truncated_time_averaged=truncation_and_SS_averaging_data_TP[6]
 TP_steady_state_data_upper_truncated_time_averaged=truncation_and_SS_averaging_data_TP[7]
+
+# need to write code that checks the errors 
 
 
 #%%plotting qll 4 SS V_Ps
@@ -695,7 +706,7 @@ def mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,org_var_1,
 flux_ready_for_plotting=mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,org_var_1,truncation_timestep,org_var_2,scaled_timestep,no_timesteps,box_side_length_scaled[0,0],mom_data)[0]
 mom_data_realisation_averaged_truncated=mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,org_var_1,truncation_timestep,org_var_2,scaled_timestep,no_timesteps,box_side_length_scaled[0,0],mom_data)[1]
 
-# flux vs shear regression line 
+
 
 shear_rate_mean_of_both_cells=(((np.abs(shear_rate_lower_steady_state_mean)+np.abs(shear_rate_upper_steady_state_mean))*0.5))
 shear_rate_mean_error_of_both_cells=(np.abs(shear_rate_lower_steady_state_mean_error)+np.abs(shear_rate_upper_steady_state_mean_error))*0.5
@@ -722,18 +733,19 @@ def func4(x, a, b):
 
 
 org_var_1_fitting_start_index=0
-org_var_1_fitting_end_index=7
+org_var_1_fitting_end_index=4
 size_of_new_data=org_var_1_fitting_end_index-org_var_1_fitting_start_index
 #shear_rate_error_of_both_cell_mean_over_all_points_relative = shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]/shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
-shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative= np.mean(shear_rate_mean_error_of_both_cells_relative[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
-
+shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative= np.zeros((box_side_length_scaled.size))
 # mean_flux_ready_for_plotting=np.mean(flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
 # mean_flux_ready_for_plotting_relative_error=np.zeros((org_var_2.size))
 # mean_error_in_fit =np.zeros((org_var_2.size))
 y_residual_in_fit=np.zeros((number_of_solutions,size_of_new_data,org_var_2.size))
 for z in range(0,number_of_solutions):    
+    shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative[z]= np.mean(shear_rate_mean_error_of_both_cells_relative[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=0)
+
     for i in range(0,org_var_2.size):
-      
+        
         flux_vs_shear_regression_line_params= flux_vs_shear_regression_line_params+(scipy.optimize.curve_fit(func4,shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],method='lm',maxfev=5000)[0],)
         y_residual_in_fit[z,:,i]=func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0] ,flux_vs_shear_regression_line_params[i][1])-flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i]
         
@@ -842,7 +854,7 @@ def plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelp
                 shear_viscosity_abs_error.append(shear_viscosity_*total_error_relative_in_flux_fit[z,i])
                 
                 grad_fit=(params[z][0])
-                grad_fit_abs_error= grad_fit*shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative[i]
+                grad_fit_abs_error= grad_fit*shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative[z]
                 gradient_of_fit.append(grad_fit)
                 print('Dimensionless_shear_viscosity:',shear_viscosity_,',abs error',shear_viscosity_abs_error)
                 print('Grad of fit =',grad_fit,',abs error', grad_fit_abs_error)
@@ -979,7 +991,7 @@ org_var_1_index=org_var_1_fitting_start_index
 org_var_2_index=1
 plt.rcParams.update({'font.size': 15})
 
-shear_viscosity=[]
+# shear_viscosity=[]
 gradient_of_fit=[]
 
 flux_fitting_params=flux_vs_shear_regression_line_params
@@ -1015,6 +1027,7 @@ plt.show()
      
 #%%
 ##%% shear viscosity vs box size
+# need to add error bars to this 
 labelpadx=5
 labelpady=15
 #shear_viscosity_abs_error_max=np.amax(shear_viscosity_abs_error,axis=0)
