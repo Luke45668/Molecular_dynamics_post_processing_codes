@@ -140,10 +140,11 @@ def VP_organiser_and_reader(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisati
             print(realisation_name)
             error_count=error_count+1 
             break
+            
         VP_z_data = velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave_freq,no_SRD,no_timesteps,VP_output_col_count)[1]     
-       
-        VP_z_data_upper[z,0,:] = VP_z_data[1:10].astype('float64')* box_side_length_scaled.T    
-        VP_z_data_lower[z,0,:] = VP_z_data[11:].astype('float64')* box_side_length_scaled.T
+        
+        VP_z_data_upper[:,0,:] = VP_z_data[1:10].astype('float64')* box_side_length_scaled.T    
+        VP_z_data_lower[:,0,:] = VP_z_data[11:].astype('float64')* box_side_length_scaled.T
         
     return VP_data_upper,VP_data_lower,error_count,filename,VP_z_data_upper,VP_z_data_lower
 
