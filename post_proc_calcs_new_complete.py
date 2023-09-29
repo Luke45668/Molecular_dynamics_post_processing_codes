@@ -474,7 +474,7 @@ plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_var_1_
 # need to save this plot 
 # saving this data 
 #%%
-name_of_run_for_save=fluid_name+"_phi_"+str(phi)+"_pure_fluid_notsteps_"+str(no_timesteps)+"_"+str(scaled_timestep)+"_scaled_box_size_"+str(np.round(box_side_length_scaled[0][0]))+"_run_"+batchcode
+name_of_run_for_save=fluid_name+"_scaled_box_size_"+str(box_side_length_scaled[0,0])+"_"+str(box_side_length_scaled[0,-1])+"_"
 print(name_of_run_for_save)
 np.save("timestep_points_"+name_of_run_for_save,timestep_points)
 np.save("shear_rate_lower_"+name_of_run_for_save,shear_rate_lower)
@@ -491,7 +491,7 @@ np.save("shear_rate_lower_error_"+name_of_run_for_save,shear_rate_lower_error)
 
 #%% loading in data option need to make this run 
 
-name_of_run_for_save=fluid_name+"_phi_"+str(phi)+"_pure_fluid_notsteps_"+str(no_timesteps)+"_"+str(scaled_timestep)+"_scaled_box_size_"+str(np.round(box_side_length_scaled[0][0]))+"_run_"+batchcode
+name_of_run_for_save=fluid_name+"_scaled_box_size_"+str(box_side_length_scaled[0,0])+"_"+str(box_side_length_scaled[0,:-1])+"_"
 print(name_of_run_for_save)
 timestep_points=np.load("timestep_points_"+name_of_run_for_save+".npy")
 shear_rate_lower=np.load("shear_rate_lower_"+name_of_run_for_save+".npy")
@@ -733,7 +733,7 @@ def func4(x, a, b):
 
 
 org_var_1_fitting_start_index=0
-org_var_1_fitting_end_index=4
+org_var_1_fitting_end_index=7
 size_of_new_data=org_var_1_fitting_end_index-org_var_1_fitting_start_index
 #shear_rate_error_of_both_cell_mean_over_all_points_relative = shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]/shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
 shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative= np.zeros((box_side_length_scaled.size))
@@ -1027,16 +1027,18 @@ plt.show()
      
 #%%
 ##%% shear viscosity vs box size
-# need to add error bars to this 
+#NOTE: need to add error bars to this 
 labelpadx=5
 labelpady=15
 #shear_viscosity_abs_error_max=np.amax(shear_viscosity_abs_error,axis=0)
 for z in range(0,1):
           x=box_side_length_scaled[0,:]
           y=shear_viscosity[:]
+          y_error_bar=np.abs(shear_viscosity_abs_error[:])
      
           #plt.scatter(x[:,i],y[:,i],label="$L=$"+str(box_side_length_scaled[z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2))+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=1)),marker='x')
-          plt.plot(x,y,"--",marker= 'x')#label="$N_{v,x}=$"+str(org_var_2[z])+", $\Delta\eta_{max}=$"+str(sigfig.round(shear_viscosity_abs_error_max[z],sigfigs=2)),marker='x')
+          #plt.plot(x,y,"--",marker= 'x')#label="$N_{v,x}=$"+str(org_var_2[z])+", $\Delta\eta_{max}=$"+str(sigfig.round(shear_viscosity_abs_error_max[z],sigfigs=2)),marker='x')
+          plt.errorbar(x,y,yerr=y_error_bar,capsize=3,color='r')
           plt.xlabel('$L/\ell$', labelpad=labelpadx,fontsize=fontsize)
           #plt.yscale('log')
           #plt.xscale('log')
