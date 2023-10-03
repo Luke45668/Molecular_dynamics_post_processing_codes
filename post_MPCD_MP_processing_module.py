@@ -396,6 +396,7 @@ def truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,s
     shear_rate_upper=shear_rate_upper[:,:,:,truncation_index:]
     shear_rate_upper_error=shear_rate_upper_error[:,:,:,truncation_index:]
     shear_rate_lower=shear_rate_lower[:,:,:,truncation_index:]
+    
     shear_rate_lower_error=shear_rate_lower_error[:,:,:,truncation_index:]
     pearson_coeff_upper=pearson_coeff_upper[:,:,:,truncation_index:]
     pearson_coeff_lower=pearson_coeff_lower[:,:,:,truncation_index:]
@@ -407,16 +408,19 @@ def truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,s
     VP_steady_state_data_upper_truncated_time_averaged=np.mean(VP_steady_state_data_upper_truncated,axis=4)
     shear_rate_upper_steady_state_mean = np.mean(shear_rate_upper, axis=3)
     shear_rate_lower_steady_state_mean = np.mean(shear_rate_lower, axis=3)
+    standard_deviation_upper_SS=np.std(shear_rate_upper,axis=3)
+    standard_deviation_lower_SS=np.std(shear_rate_lower,axis=3)
+    
+    
     shear_rate_upper_steady_state_mean_error = np.mean(shear_rate_upper_error, axis=3)
     shear_rate_lower_steady_state_mean_error = np.mean(shear_rate_lower_error, axis=3)
     pearson_coeff_lower_mean_SS=np.mean(pearson_coeff_lower,axis=3)
     pearson_coeff_upper_mean_SS=np.mean(pearson_coeff_upper,axis=3) 
     
     
-    standard_deviation_upper_SS=np.std(pearson_coeff_upper,axis=3)
-    standard_deviation_lower_SS=np.std(pearson_coeff_lower,axis=3)
-    standard_deviation_upper_error=standard_deviation_upper_SS/ pearson_coeff_lower_mean_SS
-    standard_deviation_lower_error=standard_deviation_lower_SS/pearson_coeff_lower_mean_SS
+    
+    standard_deviation_upper_error=standard_deviation_upper_SS/ shear_rate_upper_steady_state_mean
+    standard_deviation_lower_error=standard_deviation_lower_SS/shear_rate_lower_steady_state_mean
 
     return standard_deviation_upper_error,standard_deviation_lower_error,pearson_coeff_upper_mean_SS,pearson_coeff_lower_mean_SS,shear_rate_lower_steady_state_mean,shear_rate_upper_steady_state_mean,VP_steady_state_data_lower_truncated_time_averaged,VP_steady_state_data_upper_truncated_time_averaged,shear_rate_upper_steady_state_mean_error,shear_rate_lower_steady_state_mean_error
     

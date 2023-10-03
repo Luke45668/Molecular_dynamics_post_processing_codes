@@ -43,6 +43,9 @@ from post_MPCD_MP_processing_module import *
 j_=3
 
 swap_rate=np.array([15,30,60,120,240,480,600])
+swap_rate=np.array([15])
+vel_target=np.array([1,0.1,0.001,0.0001,0.00001,0.000001]) #test 1
+vel_target=np.array([1,0.8,0.6,0.4,0.2,0.1,0.08,0.06,0.04,0.02,0.01]) 
 swap_number=np.array([1])
 fluid_name='genericSRD'
 equilibration_timesteps=1000
@@ -62,25 +65,34 @@ box_side_length=np.cbrt(Vol_box_at_specified_phi)
 fluid_name='genericSRD'
 run_number=''
 batchcode='966397'
-no_timesteps=3000000 # rememebr to change this depending on run 
+no_timesteps=1500000 # rememebr to change this depending on run 
 
 # grabbing file names 
 
-VP_general_name_string='vel.'+fluid_name+'*_VACF_output_*_no_rescale_*'
+# VP_general_name_string='vel.'+fluid_name+'*_VACF_output_*_no_rescale_*'
 
-Mom_general_name_string='mom.'+fluid_name+'*_VACF_out_*_no_rescale_*'
+# Mom_general_name_string='mom.'+fluid_name+'*_VACF_out_*_no_rescale_*'
 
-log_general_name_string='log.'+fluid_name+'_*_wall_pure_output_no_rescale_*'
+# log_general_name_string='log.'+fluid_name+'_*_wall_pure_output_no_rescale_*'
+#                          #log.H20_no466188_wall_VACF_output_no_rescale_
+# TP_general_name_string='temp.'+fluid_name+'*_VACF_output_*_no_rescale_*'
+
+# dump_general_name_string='test_run_dump_'+fluid_name+'_*'
+
+VP_general_name_string='vel.'+fluid_name+'**'
+
+Mom_general_name_string='mom.'+fluid_name+'**'
+
+log_general_name_string='log.'+fluid_name+'_**'
                          #log.H20_no466188_wall_VACF_output_no_rescale_
-TP_general_name_string='temp.'+fluid_name+'*_VACF_output_*_no_rescale_*'
+TP_general_name_string='temp.'+fluid_name+'**'
 
 dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 
 
-
-
 #filepath='VACF_temp_profile_tests/run_'+batchcode
 filepath='pure_fluid_new_method_validations/T_1/production_runs'
+filepath='pure_fluid_new_method_validations/T_1/vel_swap_test_all'
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
 realisation_name_VP=realisation_name_info[1]
@@ -138,6 +150,9 @@ Path_2_VP="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac
 #reading in velocity profiles, avoid if possible
 org_var_1=swap_rate
 loc_org_var_1=20
+org_var_1=vel_target
+loc_org_var_1=24
+
 org_var_2=swap_number #spring_constant
 loc_org_var_2=22#25
 #VP_raw_data= VP_organiser_and_reader(loc_no_SRD,loc_EF,loc_SN,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,swap_number,swap_rate,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
@@ -384,10 +399,47 @@ print(diffusivity)
 #  obtaining the mom data size
 #Path_2_mom_file="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/"+simulation_file
 Path_2_mom_file=Path_2_VP
-org_var_mom_1=swap_rate
-loc_org_var_mom_1=20
+#org_var_mom_1=swap_rate
+#loc_org_var_mom_1=20
+loc_org_var_mom_1=24
+org_var_mom_1=vel_target
 org_var_mom_2=swap_number #spring_constant 
 loc_org_var_mom_2=22#25
+#only need this version for using a single swap rate 
+def mom_file_data_size_reader(j_,number_of_solutions,count_mom,realisation_name_Mom,no_SRD_key,org_var_mom_1,org_var_mom_2,Path_2_mom_file):
+    from mom2numpy import mom2numpy_f
+    pass_count=0
+    size_list=[]
+    
+    for i in range(0,count_mom):
+       
+        
+        realisation_name=realisation_name_Mom[i]
+        
+        
+        
+        mom_data_test=mom2numpy_f(realisation_name,Path_2_mom_file)  
+        size_list.append(mom_data_test.shape)
+        
+        pass_count=pass_count+1 
+    
+    size_list.sort()
+    size_list.reverse()
+    size_list=list(dict.fromkeys(size_list))
+    size_array=np.array(size_list)
+    
+    mom_data=()
+    #for i in range(0,size_array.size):
+    for i in range(0,org_var_mom_1.size):
+        
+            #mom_data= mom_data+(np.zeros((number_of_solutions,org_var_mom_2.size,j_,(size_array[i,0]))),)
+            
+            mom_data= mom_data+(np.zeros((number_of_solutions,org_var_mom_2.size,j_,(size_array[0,0]))),)
+            
+         
+         
+    return size_array,mom_data,pass_count
+
 mom_data_pre_process= mom_file_data_size_reader(j_,number_of_solutions,count_mom,realisation_name_Mom,no_SRD_key,org_var_mom_1,org_var_mom_2,Path_2_mom_file)
 size_array=mom_data_pre_process[0]
 mom_data= mom_data_pre_process[1]
@@ -410,10 +462,11 @@ if error_count_mom !=0:
 else:
     print("Mom data import success")
 
-
+#%%
 # Now assess the steady state of the VP data 
-org_var_1=swap_rate
-org_var_2=swap_number#spring_constant 
+# org_var_1=swap_rate
+# org_var_2=swap_number#spring_constant 
+ 
 VP_shear_rate_and_stat_data=VP_data_averaging_and_stat_test_data(VP_z_data_upper,VP_z_data_lower,no_timesteps,VP_data_lower,VP_data_upper,number_of_solutions,org_var_1,org_var_2,VP_ave_freq)
 pearson_coeff_upper=VP_shear_rate_and_stat_data[0]
 shear_rate_upper=VP_shear_rate_and_stat_data[1]
@@ -425,8 +478,7 @@ VP_data_upper_realisation_averaged=VP_shear_rate_and_stat_data[6]
 shear_rate_upper_error=VP_shear_rate_and_stat_data[7]
 shear_rate_lower_error=VP_shear_rate_and_stat_data[8]
 # TP data
-org_var_1=swap_rate
-org_var_2=swap_number
+
 
 TP_shear_rate_and_stat_data=VP_data_averaging_and_stat_test_data(TP_z_data_upper,TP_z_data_lower,no_timesteps,TP_data_lower,TP_data_upper,number_of_solutions,org_var_1,org_var_2,VP_ave_freq)
 
@@ -447,7 +499,7 @@ box_size_nd= box_side_length_scaled
 # })
 
 org_var_1_index_start=0
-org_var_1_index_end=7
+org_var_1_index_end=11
 org_var_2_index_start=0
 org_var_2_index_end=1
 
@@ -483,6 +535,8 @@ np.save("pearson_coeff_upper_"+name_of_run_for_save,pearson_coeff_lower)
 np.save("pearson_coeff_lower_"+name_of_run_for_save,pearson_coeff_upper)
 np.save("VP_data_lower_realisation_averaged_"+name_of_run_for_save,VP_data_lower_realisation_averaged)
 np.save("VP_data_upper_realisation_averaged_"+name_of_run_for_save,VP_data_upper_realisation_averaged)
+np.save("TP_data_lower_realisation_averaged_"+name_of_run_for_save,TP_data_lower_realisation_averaged)
+np.save("TP_data_upper_realisation_averaged_"+name_of_run_for_save,TP_data_upper_realisation_averaged)
 np.save("VP_z_data_lower_"+name_of_run_for_save,VP_z_data_lower)
 np.save("VP_z_data_upper_"+name_of_run_for_save,VP_z_data_upper)
 np.save("shear_rate_upper_error_"+name_of_run_for_save,shear_rate_upper_error)
@@ -491,7 +545,7 @@ np.save("shear_rate_lower_error_"+name_of_run_for_save,shear_rate_lower_error)
 
 #%% loading in data option need to make this run 
 
-name_of_run_for_save=fluid_name+"_scaled_box_size_"+str(box_side_length_scaled[0,0])+"_"+str(box_side_length_scaled[0,:-1])+"_"
+name_of_run_for_save=fluid_name+"_scaled_box_size_"+str(box_side_length_scaled[0,0])+"_"+str(box_side_length_scaled[0,-1])+"_"
 print(name_of_run_for_save)
 timestep_points=np.load("timestep_points_"+name_of_run_for_save+".npy")
 shear_rate_lower=np.load("shear_rate_lower_"+name_of_run_for_save+".npy")
@@ -500,6 +554,9 @@ pearson_coeff_lower=np.load("pearson_coeff_upper_"+name_of_run_for_save+".npy")
 pearson_coeff_upper=np.load("pearson_coeff_lower_"+name_of_run_for_save+".npy")
 VP_data_lower_realisation_averaged=np.load("VP_data_lower_realisation_averaged_"+name_of_run_for_save+".npy")
 VP_data_upper_realisation_averaged=np.load("VP_data_upper_realisation_averaged_"+name_of_run_for_save+".npy")
+TP_data_lower_realisation_averaged=np.load("TP_data_lower_realisation_averaged_"+name_of_run_for_save+".npy")
+TP_data_upper_realisation_averaged=np.load("TP_data_upper_realisation_averaged_"+name_of_run_for_save+".npy")
+shear_rate_upper_error=np.load("shear_rate_upper_error_"+name_of_run_for_save+".npy")
 shear_rate_upper_error=np.load("shear_rate_upper_error_"+name_of_run_for_save+".npy")
 shear_rate_lower_error=np.load("shear_rate_lower_error_"+name_of_run_for_save+".npy")
 VP_z_data_lower=np.load("VP_z_data_lower_"+name_of_run_for_save+".npy")
@@ -511,10 +568,12 @@ VP_z_data_upper=np.load("VP_z_data_upper_"+name_of_run_for_save+".npy")
 
 
 # %%
+
 truncation_timestep=200000 # for H20 and Nitrogen 
 truncation_and_SS_averaging_data=  truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,shear_rate_lower_error,timestep_points,pearson_coeff_lower,pearson_coeff_upper,shear_rate_upper,shear_rate_lower,VP_ave_freq,truncation_timestep,VP_data_lower_realisation_averaged,VP_data_upper_realisation_averaged)
-standard_deviation_upper_error=truncation_and_SS_averaging_data[0]
-standard_deviation_lower_error=truncation_and_SS_averaging_data[1]
+shear_rate_standard_deviation_upper_error_relative=truncation_and_SS_averaging_data[0] # error from fluctuations
+shear_rate_standard_deviation_lower_error_relative=truncation_and_SS_averaging_data[1]# error from fluctuations 
+shear_rate_standard_deviation_both_cell_error_relative= (np.abs(shear_rate_standard_deviation_upper_error_relative)+np.abs(shear_rate_standard_deviation_lower_error_relative)) * 0.5 
 pearson_coeff_upper_mean_SS=truncation_and_SS_averaging_data[2]
 pearson_coeff_lower_mean_SS=truncation_and_SS_averaging_data[3]
 pearson_coeff_mean_SS= (np.abs(pearson_coeff_lower_mean_SS)+np.abs(pearson_coeff_upper_mean_SS))*0.5
@@ -524,9 +583,9 @@ shear_rate_upper_steady_state_mean=truncation_and_SS_averaging_data[5]
 #print(shear_rate_upper_steady_state_mean)
 VP_steady_state_data_lower_truncated_time_averaged=truncation_and_SS_averaging_data[6]
 VP_steady_state_data_upper_truncated_time_averaged=truncation_and_SS_averaging_data[7]
-shear_rate_upper_steady_state_mean_error=truncation_and_SS_averaging_data[8]
-#print(shear_rate_upper_steady_state_mean_error)
-shear_rate_lower_steady_state_mean_error=truncation_and_SS_averaging_data[9]
+shear_rate_upper_steady_state_mean_error=truncation_and_SS_averaging_data[8] # error in fitting velocity profile
+#print(shear_rate_upper_steady_state_mean_error
+shear_rate_lower_steady_state_mean_error=truncation_and_SS_averaging_data[9]# error in fitting velocity profile
 #print(shear_rate_lower_steady_state_mean_error)
 
 mean_fitting_error= (np.abs(shear_rate_upper_steady_state_mean_error)+np.abs(shear_rate_lower_steady_state_mean_error))*0.5
@@ -558,7 +617,7 @@ height_plot=6
 legend_x_pos=1
 legend_y_pos=1
 org_var_1_index_start=0
-org_var_1_index_end=7
+org_var_1_index_end=11
 org_var_2_index_start=0
 org_var_2_index_end=1
 # need to add all these settings for every plot
@@ -589,6 +648,7 @@ def plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,lege
                 ax1.plot(y_1[:],x_1[:],label='$f_p=${}'.format(org_var_1[k]),marker='x')
                 ax1.set_ylabel('$v_{x}\ [\\frac{\\tau}{\ell}]$',rotation=0,labelpad=labelpady )
                 ax1.set_xlabel('$L_{z}\ [\ell^{-1}]$',rotation=0,labelpad=labelpadx,)
+                ax1.set_title('$\\bar{L}='+str(box_side_length_scaled[0,z])+'$')
                 ax1.legend(frameon=False,loc=0,bbox_to_anchor=(legend_x_pos, legend_y_pos))       
         plt.show()
     
@@ -657,7 +717,8 @@ for z in range(0,number_of_solutions):
         #for k in range(org_var_2_index_start,org_var_2_index_end):
            # plt.yscale('log')
             plt.ylabel(' $d \dot{\gamma}/d t\ [1/\\tau^{2}]$',rotation=0)
-            plt.xlabel('$f_{v,x}[-]$')
+            plt.xlabel('$f_{p}[-]$')
+            plt.xlabel('$+v_{target}$')
             #plt.xlabel('$K[\\frac{\\tau}{\mu}]$')
             #plt.xscale('log')
             plt.scatter(org_var_1[:],slope_shear_rate_upper[z,:,0])
@@ -703,40 +764,75 @@ def mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,org_var_1,
     
     return flux_ready_for_plotting,mom_data_realisation_averaged_truncated
 #%%
-flux_ready_for_plotting=mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,org_var_1,truncation_timestep,org_var_2,scaled_timestep,no_timesteps,box_side_length_scaled[0,0],mom_data)[0]
-mom_data_realisation_averaged_truncated=mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,org_var_1,truncation_timestep,org_var_2,scaled_timestep,no_timesteps,box_side_length_scaled[0,0],mom_data)[1]
+# only use this version for varying vel swap 
+#def mom_data_averaging_and_flux_calc(org_var_1,org_var_2,box_size_key,number_of_solutions,swap_number,truncation_timestep,swap_rate,scaled_timestep,no_timesteps,box_side_length_scaled,mom_data):
+mom_data_realisation_averaged=()
+number_swaps_before_truncation=(np.ceil(truncation_timestep/swap_rate)).astype(int)
+mom_data_realisation_averaged_truncated=()
+flux_x_momentum_z_direction=np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
+total_run_time=scaled_timestep* (no_timesteps-truncation_timestep)
+
+flux_ready_for_plotting=np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
+for z in range(0,number_of_solutions):    
+    for i in range(0,org_var_1.size):
+        box_area_nd=float(box_size_key[z])**2
+        mom_data_realisation_averaged=mom_data_realisation_averaged+(np.mean(mom_data[i],axis=2),)
+        #print(mom_data_realisation_averaged[i])
+
+
+    #for i in range(0,swap_rate.size):
+
+        mom_data_realisation_averaged_truncated=mom_data_realisation_averaged_truncated+(mom_data_realisation_averaged[i][:,:,number_swaps_before_truncation[0]:],)
+        
+        #print(mom_data_realisation_averaged_truncated[i])
+
+    # now apply the MP formula 
+        mom_difference= mom_data_realisation_averaged_truncated[i][z,:,-1]-mom_data_realisation_averaged_truncated[i][z,:,0]
+        flux_x_momentum_z_direction[z,:,i]=(mom_difference)/(2*total_run_time*float(box_area_nd))
+        
+flux_ready_for_plotting=np.log((np.abs(flux_x_momentum_z_direction)))
+    
+   # return flux_ready_for_plotting,mom_data_realisation_averaged_truncated
+
+#flux_ready_for_plotting=mom_data_averaging_and_flux_calc(org_var_1,org_var_2,box_size_key,number_of_solutions,org_var_1,truncation_timestep,org_var_2,scaled_timestep,no_timesteps,box_side_length_scaled[0,0],mom_data)[0]
+#mom_data_realisation_averaged_truncated=mom_data_averaging_and_flux_calc(org_var_1,org_var_2,box_size_key,number_of_solutions,org_var_1,truncation_timestep,org_var_2,scaled_timestep,no_timesteps,box_side_length_scaled[0,0],mom_data)[1]
 
 
 
 shear_rate_mean_of_both_cells=(((np.abs(shear_rate_lower_steady_state_mean)+np.abs(shear_rate_upper_steady_state_mean))*0.5))
-shear_rate_mean_error_of_both_cells=(np.abs(shear_rate_lower_steady_state_mean_error)+np.abs(shear_rate_upper_steady_state_mean_error))*0.5
-print(shear_rate_mean_of_both_cells.shape)
-print(shear_rate_mean_error_of_both_cells.shape)
-shear_rate_mean_error_of_both_cells_relative=shear_rate_mean_error_of_both_cells/shear_rate_mean_of_both_cells
+shear_rate_mean_error_of_both_cells=np.sqrt(((shear_rate_lower_steady_state_mean_error**2)+(shear_rate_upper_steady_state_mean_error**2))*0.5)
+# print(shear_rate_mean_of_both_cells.shape)
+# print(shear_rate_mean_error_of_both_cells.shape)
+shear_rate_mean_error_of_both_cells_relative=(shear_rate_mean_error_of_both_cells/shear_rate_mean_of_both_cells) 
 shear_rate_mean_of_both_cells=np.log(((np.abs(shear_rate_lower_steady_state_mean)+np.abs(shear_rate_upper_steady_state_mean))*0.5))
 shear_rate_mean_error_of_both_cells=shear_rate_mean_of_both_cells*shear_rate_mean_error_of_both_cells_relative
-
-print(shear_rate_mean_of_both_cells.shape)
-print(shear_rate_mean_error_of_both_cells.shape)
+shear_rate_mean_error_of_both_cells=shear_rate_mean_of_both_cells*shear_rate_standard_deviation_both_cell_error_relative
+# print(shear_rate_mean_of_both_cells.shape)
+# print(shear_rate_mean_error_of_both_cells.shape)
 
 flux_vs_shear_regression_line_params=()
 x=shear_rate_mean_of_both_cells
 #shear_rate_mean_of_both_cells=np.reshape(shear_rate_mean_of_both_cells,(flux_ready_for_plotting.shape))
 # fiting params
-def func4(x, a, b):
-   #return np.log(a) + np.log(b*x)
-   #return (a*(x**b))
-   #return 10**(a*np.log(x) + b)
-   return (a*x) +b 
-   #return a*np.log(b*x)+c
+# def func4(x, a, b):
+#    #return np.log(a) + np.log(b*x)
+#    #return (a*(x**b))
+#    #return 10**(a*np.log(x) + b)
+#    return (a*x) +b 
+#    #return a*np.log(b*x)+c
+
+def func4(x,c):
+    
+    return x + c
 
 
 
 org_var_1_fitting_start_index=0
-org_var_1_fitting_end_index=7
+org_var_1_fitting_end_index=11
 size_of_new_data=org_var_1_fitting_end_index-org_var_1_fitting_start_index
 #shear_rate_error_of_both_cell_mean_over_all_points_relative = shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]/shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
 shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative= np.zeros((box_side_length_scaled.size))
+relative_y_residual_mean=np.zeros((box_side_length_scaled.size))
 # mean_flux_ready_for_plotting=np.mean(flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
 # mean_flux_ready_for_plotting_relative_error=np.zeros((org_var_2.size))
 # mean_error_in_fit =np.zeros((org_var_2.size))
@@ -746,15 +842,28 @@ for z in range(0,number_of_solutions):
 
     for i in range(0,org_var_2.size):
         
-        flux_vs_shear_regression_line_params= flux_vs_shear_regression_line_params+(scipy.optimize.curve_fit(func4,shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],method='lm',maxfev=5000)[0],)
-        y_residual_in_fit[z,:,i]=func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0] ,flux_vs_shear_regression_line_params[i][1])-flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i]
+        # with varaible swap rate 
+        # flux_vs_shear_regression_line_params= flux_vs_shear_regression_line_params+(scipy.optimize.curve_fit(func4,shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],method='lm',maxfev=5000)[0],)
+        # #y_residual_in_fit[z,:,i]=func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0] ,flux_vs_shear_regression_line_params[i][1])-flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i]
+        # y_residual_in_fit[z,:,i]=func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0])-flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i]
         
+         # with only one swap rate 
+        flux_vs_shear_regression_line_params= flux_vs_shear_regression_line_params+(scipy.optimize.curve_fit(func4,shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_ready_for_plotting[z,i,org_var_1_fitting_start_index:org_var_1_fitting_end_index],method='lm',maxfev=5000)[0],)
+        #y_residual_in_fit[z,:,i]=func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0] ,flux_vs_shear_regression_line_params[i][1])-flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i]
+        y_residual_in_fit[z,:,i]=func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0])-flux_ready_for_plotting[z,i,org_var_1_fitting_start_index:org_var_1_fitting_end_index]
+        print(y_residual_in_fit.shape)
+        print(flux_ready_for_plotting[z,i,org_var_1_fitting_start_index:org_var_1_fitting_end_index].shape)
+        relative_y_residual_mean[z]= np.abs(np.mean(y_residual_in_fit[z,:,i]/flux_ready_for_plotting[z,i,org_var_1_fitting_start_index:org_var_1_fitting_end_index],axis=0))
+
+
         #mean_error_in_fit[i] = np.sqrt(np.mean((func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0] ,flux_vs_shear_regression_line_params[i][1])-flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i])**2))
         #mean_flux_ready_for_plotting_relative_error[i]=mean_error_in_fit[i]/mean_flux_ready_for_plotting[i]
         #print(scipy.optimize.curve_fit(func4,shear_rate_mean_of_both_cells[z,:,i],flux_ready_for_plotting[z,i,:],method='lm',maxfev=5000)[0])
 
 params=flux_vs_shear_regression_line_params
-relative_y_residual_mean= np.mean(y_residual_in_fit/flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1)
+#relative_y_residual_mean= np.abs(np.mean(y_residual_in_fit/flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1))
+# only for vel swap tests 
+#relative_y_residual_mean= np.abs(np.mean(y_residual_in_fit/flux_ready_for_plotting[z,i,org_var_1_fitting_start_index:org_var_1_fitting_end_index],axis=1))
 
 total_error_relative_in_flux_fit= relative_y_residual_mean+shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative
 
@@ -827,10 +936,13 @@ def plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelp
     for z in range(0,number_of_solutions):
         
         
+       
         x=shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
+        
         x_pos_error=np.abs(shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:])
         #y_pos_error=np.abs(abs_error_in_flux[z,:,:])
         y=flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
+        
         
         for i in range(0,org_var_2_index):
         
@@ -841,7 +953,8 @@ def plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelp
                 # need to add legend to this 
                 plt.scatter(x[:,i],y[:,i],label='$L=${}'.format(np.around(box_side_length_scaled[0,z]),decimals=0),marker='x')
                 plt.errorbar(x[:,i],y[:,i],xerr=x_pos_error[:,i],ls ='',capsize=3,color='r')
-                plt.plot(x[:,i],func4(x[:,i],params[z][0],params[z][1]))
+               # plt.plot(x[:,i],func4(x[:,i],params[z][0],params[z][1]))
+                plt.plot(x[:,i],func4(x[:,i],params[z][0]))
                 #plt.fill_between(y[:,i], x_neg_error[i,:], x_pos_error[i,:])
                 #plt.xscale('log')
                 plt.xlabel('$log(\dot{\gamma}\\tau)$', labelpad=labelpadx,fontsize=fontsize)
@@ -849,15 +962,16 @@ def plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelp
                 plt.ylabel('$log(J_{z}(p_{x})$$\ \\frac{\\tau^{3}}{\\varepsilon})$',rotation=0,labelpad=labelpady,fontsize=fontsize)
                 plt.legend()
                 #plt.show() 
-                shear_viscosity_=10** (params[z][1])
+                shear_viscosity_=10** (params[z][0])
                 shear_viscosity.append(shear_viscosity_)
                 shear_viscosity_abs_error.append(shear_viscosity_*total_error_relative_in_flux_fit[z,i])
                 
-                grad_fit=(params[z][0])
-                grad_fit_abs_error= grad_fit*shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative[z]
-                gradient_of_fit.append(grad_fit)
+                # grad_fit=(params[z][0])
+                # grad_fit_abs_error= grad_fit*shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative[z]
+                # gradient_of_fit.append(grad_fit)
+                
                 print('Dimensionless_shear_viscosity:',shear_viscosity_,',abs error',shear_viscosity_abs_error)
-                print('Grad of fit =',grad_fit,',abs error', grad_fit_abs_error)
+                #print('Grad of fit =',grad_fit,',abs error', grad_fit_abs_error)
                 plt.show() 
 
     
@@ -865,6 +979,8 @@ def plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelp
         
                     
 plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelpadx,labelpady,params,fontsize,box_side_length_scaled,number_of_solutions,flux_ready_for_plotting,org_var_1_index,shear_rate_mean_of_both_cells)    
+# grad_fit_abs_error= np.array([gradient_of_fit])*shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative
+# gradient_of_fit=np.array([gradient_of_fit])
 # need to adjust this so we get the visocsities of both plots 
 # shear_viscosity=10** (params[0][1])
 # grad_fit=(params[0][0])
@@ -876,6 +992,48 @@ plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelpadx,
 #plotting qll 4 SS V_Ps
 
 
+#%% plotting with only one swap rate 
+marker=['x','o','+','^',"1","X","d","*","P","v"]
+for z in range(0,number_of_solutions):
+    x=shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
+
+    x_pos_error=np.abs(shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:])
+    #y_pos_error=np.abs(abs_error_in_flux[z,:,:])
+    y=flux_ready_for_plotting[z,:,org_var_1_fitting_start_index:org_var_1_fitting_end_index]
+
+
+# for i in range(0,org_var_2_index):
+
+    for i in range(0,1):
+    #     #if z==0:
+
+        j=i
+        shear_viscosity=10** (params[z][0])
+        shear_viscosity_abs_error= shear_viscosity * total_error_relative_in_flux_fit[z]
+        
+        # need to add legend to this 
+        plt.scatter(x[:,i],y[i,:],label='$L='+str(np.around(box_side_length_scaled[0,z]))+",\ \\bar{\eta}="+str(sigfig.round(shear_viscosity,sigfigs=2))+"\pm"+str(sigfig.round(shear_viscosity_abs_error,sigfigs=2))+"$",marker=marker[z],color='r')
+        #plt.errorbar(x[:,i],y[i,:],xerr=x_pos_error[:,i],ls ='',capsize=3,color='r')
+        # # plt.plot(x[:,i],func4(x[:,i],params[z][0],params[z][1]))
+        plt.plot(x[:,i],func4(x[:,i],params[z][0]))
+        # #plt.fill_between(y[:,i], x_neg_error[i,:], x_pos_error[i,:])
+        #plt.xscale('log')
+        plt.xlabel('$log(\dot{\gamma}\\tau)$', labelpad=labelpadx,fontsize=fontsize)
+        #plt.yscale('log')
+        plt.ylabel('$log(J_{z}(p_{x})$$\ \\frac{\\tau^{3}}{\\varepsilon})$',rotation=0,labelpad=labelpady,fontsize=fontsize)
+        plt.legend()
+        #plt.show() 
+        # shear_viscosity_=10** (params[z][0])
+        # shear_viscosity.append(shear_viscosity_)
+        # shear_viscosity_abs_error.append(shear_viscosity_*total_error_relative_in_flux_fit[z,i])
+
+        # grad_fit=(params[z][0])
+        # grad_fit_abs_error= grad_fit*shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative[z]
+        # gradient_of_fit.append(grad_fit)
+
+    # print('Dimensionless_shear_viscosity:',shear_viscosity_,',abs error',shear_viscosity_abs_error)
+        #print('Grad of fit =',grad_fit,',abs error', grad_fit_abs_error)
+plt.show() 
 
 #%%
 # need to fix legend location 
@@ -992,13 +1150,13 @@ org_var_2_index=1
 plt.rcParams.update({'font.size': 15})
 
 # shear_viscosity=[]
-gradient_of_fit=[]
+
 
 flux_fitting_params=flux_vs_shear_regression_line_params
 
 #for i in range(0,org_var_2_index):
 
-        
+marker=['x','o','+','^',"1","X","d","*","P","v"]
 i=0
 for z in range(0,box_side_length_scaled.size):
     x=shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
@@ -1009,41 +1167,65 @@ for z in range(0,box_side_length_scaled.size):
 #   shear_viscosity_=10** (flux_fitting_params[z,i,1])
 #   shear_viscosity_abs_error = shear_viscosity_*total_error_relative_in_flux_fit[z,i]
     
-    grad_fit=(params[z][0])
+    #grad_fit=(params[z][0])
     # grad_fit_abs_error= grad_fit*shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative[z,i]
     # print('Dimensionless_shear_viscosity:',shear_viscosity_,',abs error',shear_viscosity_abs_error)
     
+    
     #print('Grad of fit =',grad_fit,',abs error', grad_fit_abs_error)
-    plt.scatter(x[:,i],y[:,i],label="$L/\ell=$"+str(box_side_length_scaled[0,z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2)))#+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=1)),marker='x')
-    plt.plot(x[:,i],func4(x[:,i],params[z][0],params[z][1]),'--')
+   # plt.scatter(x[:,i],y[:,i],label="$L/\ell="+str(box_side_length_scaled[0,z])+"$, $grad="+str(sigfig.round(gradient_of_fit[0,z],sigfigs=2))+"\pm"+str(sigfig.round(grad_fit_abs_error[0,z],sigfigs=2))+"$",marker=marker[z])
+    plt.scatter(x[:,i],y[:,i],label="$L/\ell="+str(box_side_length_scaled[0,z])+",\ \\bar{\eta}="+str(sigfig.round(shear_viscosity[z],sigfigs=2))+"\pm"+str(sigfig.round(shear_viscosity_abs_error[z],sigfigs=2))+"$",marker=marker[z])
+   # plt.plot(x[:,i],func4(x[:,i],params[z][0],params[z][1]),'--')
+    plt.plot(x[:,i],func4(x[:,i],params[z][0]),'--')
     plt.xlabel('$log(\dot{\gamma}\\tau)$', labelpad=labelpadx,fontsize=fontsize)
     plt.ylabel('$log(J_{z}(p_{x})$$\ \\frac{\\tau^{3}}{\\varepsilon})$',rotation=0,labelpad=labelpady,fontsize=fontsize)
     plt.legend(loc='upper right',bbox_to_anchor=(0.25,-0.1))
+plt.show() 
     #plt.legend(loc='best')
 #plt.tight_layout()
 #plt.savefig(fluid_name+"_flux_vs_shear_swap_rates_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
 
-plt.show() 
+
      
 #%%
+#calculating theoretical viscosity 
+def kinetic_visc_dimensionless(M):
+    kinetic_visc_dimensionless=((5*M)/((M-1+np.exp(-M))*(2-np.cos(np.pi/2)-np.cos(np.pi))))-1
+    
+    return kinetic_visc_dimensionless
+
+def collisional_visc_dimensionless(d,M):
+    collisional_visc_dimensionless= (1/(6*d*M)) * ((M-1+np.exp(-M))* (1-np.cos(np.pi/2)))
+    
+    return collisional_visc_dimensionless
+    
+
+d=3
+M=5
+predicted_dimensionless_shear_viscosity= np.repeat((collisional_visc_dimensionless(d,M) +kinetic_visc_dimensionless(M)),len(shear_viscosity))
+    
+    
 ##%% shear viscosity vs box size
 #NOTE: need to add error bars to this 
 labelpadx=5
-labelpady=15
+labelpady=25
+plt.rcParams.update({'font.size': 15})
+
 #shear_viscosity_abs_error_max=np.amax(shear_viscosity_abs_error,axis=0)
-for z in range(0,1):
-          x=box_side_length_scaled[0,:]
-          y=shear_viscosity[:]
-          y_error_bar=np.abs(shear_viscosity_abs_error[:])
-     
-          #plt.scatter(x[:,i],y[:,i],label="$L=$"+str(box_side_length_scaled[z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2))+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=1)),marker='x')
-          #plt.plot(x,y,"--",marker= 'x')#label="$N_{v,x}=$"+str(org_var_2[z])+", $\Delta\eta_{max}=$"+str(sigfig.round(shear_viscosity_abs_error_max[z],sigfigs=2)),marker='x')
-          plt.errorbar(x,y,yerr=y_error_bar,capsize=3,color='r')
-          plt.xlabel('$L/\ell$', labelpad=labelpadx,fontsize=fontsize)
-          #plt.yscale('log')
-          #plt.xscale('log')
-          plt.ylabel('$\eta \\frac{\ell^{3}}{\epsilon\\tau}$',rotation=0,labelpad=labelpady,fontsize=fontsize)
-          plt.legend()
+
+x=box_side_length_scaled[0,:]
+y=shear_viscosity[:]
+y_error_bar=np.abs(shear_viscosity_abs_error[:])
+
+#plt.scatter(x[:,i],y[:,i],label="$L=$"+str(box_side_length_scaled[z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2))+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=1)),marker='x')
+#plt.plot(x,y,"--",marker= 'x')#label="$N_{v,x}=$"+str(org_var_2[z])+", $\Delta\eta_{max}=$"+str(sigfig.round(shear_viscosity_abs_error_max[z],sigfigs=2)),marker='x')
+plt.errorbar(x,y,yerr=y_error_bar,capsize=3,color='r', label="Simulation data")
+plt.xlabel('$L/\ell$', labelpad=labelpadx,fontsize=fontsize)
+plt.plot(x, predicted_dimensionless_shear_viscosity[:], '--', label="Tuzel,Ihle and Kroll, 2006")
+plt.yscale('log')
+#plt.xscale('log')
+plt.ylabel('$\eta \\frac{\ell^{3}}{\epsilon\\tau}$',rotation=0,labelpad=labelpady,fontsize=fontsize)
+plt.legend()
 plt.tight_layout()     
 #plt.savefig(fluid_name+"_shear_eta_vs_phi_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
 plt.show() 
