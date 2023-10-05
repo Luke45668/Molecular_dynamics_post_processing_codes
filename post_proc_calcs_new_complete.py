@@ -46,6 +46,8 @@ swap_rate=np.array([15,30,60,120,240,480,600])
 swap_rate=np.array([15])
 vel_target=np.array([1,0.1,0.001,0.0001,0.00001,0.000001]) #test 1
 vel_target=np.array([1,0.8,0.6,0.4,0.2,0.1,0.08,0.06,0.04,0.02,0.01]) 
+vel_target=np.array(['INF',10,1,0.8,0.6,0.4,0.2,0.1,0.01,0.001]) 
+
 swap_number=np.array([1])
 fluid_name='genericSRD'
 equilibration_timesteps=1000
@@ -65,7 +67,7 @@ box_side_length=np.cbrt(Vol_box_at_specified_phi)
 fluid_name='genericSRD'
 run_number=''
 batchcode='966397'
-no_timesteps=1500000 # rememebr to change this depending on run 
+no_timesteps=2000000 # rememebr to change this depending on run 
 
 # grabbing file names 
 
@@ -92,7 +94,7 @@ dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 
 #filepath='VACF_temp_profile_tests/run_'+batchcode
 filepath='pure_fluid_new_method_validations/T_1/production_runs'
-filepath='pure_fluid_new_method_validations/T_1/vel_swap_test_all'
+filepath='pure_fluid_new_method_validations/T_1/prod_runs_with_vel_swap'
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
 realisation_name_VP=realisation_name_info[1]
@@ -440,6 +442,8 @@ def mom_file_data_size_reader(j_,number_of_solutions,count_mom,realisation_name_
          
     return size_array,mom_data,pass_count
 
+
+
 mom_data_pre_process= mom_file_data_size_reader(j_,number_of_solutions,count_mom,realisation_name_Mom,no_SRD_key,org_var_mom_1,org_var_mom_2,Path_2_mom_file)
 size_array=mom_data_pre_process[0]
 mom_data= mom_data_pre_process[1]
@@ -451,6 +455,51 @@ else:
     print("Data size assessment success!")
 
 # Reading in mom data files 
+def Mom_organiser_and_reader(mom_data,count_mom,realisation_name_Mom,no_SRD_key,org_var_mom_1,loc_org_var_mom_1,org_var_mom_2,loc_org_var_mom_2,Path_2_mom_file):
+    from mom2numpy import mom2numpy_f
+    error_count_mom=0
+    failed_list_realisations=[]
+    for i in range(0,count_mom):
+        filename=realisation_name_Mom[i].split('_')
+    
+        no_SRD=filename[8]
+        z=no_SRD_key.index(no_SRD)
+    
+        realisation_index=filename[7]
+        j=int(float(realisation_index))-1
+        if isinstance(filename[loc_org_var_mom_1],int):
+            org_var_mom_1_find_in_name=int(filename[loc_org_var_mom_1])
+            tuple_index=np.where(org_var_mom_1==org_var_mom_1_find_in_name)[0][0]
+        elif isinstance(filename[loc_org_var_mom_1],str):
+            org_var_mom_1_find_in_name=filename[loc_org_var_mom_1]
+            tuple_index=np.where(org_var_mom_1==org_var_mom_1_find_in_name)[0][0]
+
+        else:
+            org_var_mom_1_find_in_name=float(filename[loc_org_var_mom_1])
+            tuple_index=np.where(org_var_mom_1==org_var_mom_1_find_in_name)[0][0]
+    
+        if isinstance(filename[loc_org_var_mom_2],int):
+            org_var_mom_2_find_in_name=int(filename[loc_org_var_mom_2])
+            array_index_1= np.where(org_var_mom_2==org_var_mom_2_find_in_name)[0][0] 
+        else:
+            org_var_mom_2_find_in_name=float(filename[loc_org_var_mom_2])
+            array_index_1= np.where(org_var_mom_2==org_var_mom_2_find_in_name)[0][0] 
+        
+        realisation_name=realisation_name_Mom[i]
+        
+        #try:
+        mom_data[tuple_index][z,array_index_1,j,:]=mom2numpy_f(realisation_name,Path_2_mom_file)  
+        
+        
+
+        
+            
+        # except Exception as e:
+        #     print('Mom Data faulty')
+        #     error_count_mom=error_count_mom+1 
+        #     failed_list_realisations.append(realisation_name)
+        #     break
+    return mom_data,error_count_mom,failed_list_realisations
 mom_data_files=Mom_organiser_and_reader(mom_data,count_mom,realisation_name_Mom,no_SRD_key,org_var_mom_1,loc_org_var_mom_1,org_var_mom_2,loc_org_var_mom_2,Path_2_mom_file)
 
 mom_data=mom_data_files[0]
@@ -492,14 +541,14 @@ plt.rcParams.update({'font.size': 15})
 import sigfig
 lengthscale= sigfig.round(lengthscale,sigfigs=3)
 box_size_nd= box_side_length_scaled 
-# get rid of this on laptop or code will fail 
-# plt.rcParams.update({
-#     "text.usetex": True,
-#     "font.family": "Helvetica"
-# })
+
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "Helvetica"
+})
 
 org_var_1_index_start=0
-org_var_1_index_end=11
+org_var_1_index_end=10
 org_var_2_index_start=0
 org_var_2_index_end=1
 
@@ -617,7 +666,7 @@ height_plot=6
 legend_x_pos=1
 legend_y_pos=1
 org_var_1_index_start=0
-org_var_1_index_end=11
+org_var_1_index_end=10
 org_var_2_index_start=0
 org_var_2_index_end=1
 # need to add all these settings for every plot
@@ -827,8 +876,8 @@ def func4(x,c):
 
 
 
-org_var_1_fitting_start_index=0
-org_var_1_fitting_end_index=11
+org_var_1_fitting_start_index=2
+org_var_1_fitting_end_index=7
 size_of_new_data=org_var_1_fitting_end_index-org_var_1_fitting_start_index
 #shear_rate_error_of_both_cell_mean_over_all_points_relative = shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]/shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
 shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative= np.zeros((box_side_length_scaled.size))
@@ -993,7 +1042,10 @@ plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelpadx,
 
 
 #%% plotting with only one swap rate 
+# need to fit the curve to just the linear part of plot 
 marker=['x','o','+','^',"1","X","d","*","P","v"]
+shear_viscosity=[]
+shear_viscosity_abs_error=[]
 for z in range(0,number_of_solutions):
     x=shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
 
@@ -1008,11 +1060,16 @@ for z in range(0,number_of_solutions):
     #     #if z==0:
 
         j=i
-        shear_viscosity=10** (params[z][0])
-        shear_viscosity_abs_error= shear_viscosity * total_error_relative_in_flux_fit[z]
+        shear_viscosity_=10** (params[z][0])
+        shear_viscosity_abs_error_= shear_viscosity_ * total_error_relative_in_flux_fit[z]
         
+        shear_viscosity.append((10** (params[z][0])))
+        shear_viscosity_abs_error.append(shear_viscosity[z] * total_error_relative_in_flux_fit[z])
+        
+
+
         # need to add legend to this 
-        plt.scatter(x[:,i],y[i,:],label='$L='+str(np.around(box_side_length_scaled[0,z]))+",\ \\bar{\eta}="+str(sigfig.round(shear_viscosity,sigfigs=2))+"\pm"+str(sigfig.round(shear_viscosity_abs_error,sigfigs=2))+"$",marker=marker[z],color='r')
+        plt.scatter(x[:,i],y[i,:],label='$L='+str(np.around(box_side_length_scaled[0,z]))+",\ \\bar{\eta}="+str(sigfig.round(shear_viscosity_,sigfigs=2))+"\pm"+str(sigfig.round(shear_viscosity_abs_error_,sigfigs=2))+"$",marker=marker[z],color='r')
         #plt.errorbar(x[:,i],y[i,:],xerr=x_pos_error[:,i],ls ='',capsize=3,color='r')
         # # plt.plot(x[:,i],func4(x[:,i],params[z][0],params[z][1]))
         plt.plot(x[:,i],func4(x[:,i],params[z][0]))
@@ -1021,7 +1078,7 @@ for z in range(0,number_of_solutions):
         plt.xlabel('$log(\dot{\gamma}\\tau)$', labelpad=labelpadx,fontsize=fontsize)
         #plt.yscale('log')
         plt.ylabel('$log(J_{z}(p_{x})$$\ \\frac{\\tau^{3}}{\\varepsilon})$',rotation=0,labelpad=labelpady,fontsize=fontsize)
-        plt.legend()
+        plt.legend(loc='upper right',bbox_to_anchor=(0.25,-0.1))
         #plt.show() 
         # shear_viscosity_=10** (params[z][0])
         # shear_viscosity.append(shear_viscosity_)
@@ -1149,7 +1206,8 @@ org_var_1_index=org_var_1_fitting_start_index
 org_var_2_index=1
 plt.rcParams.update({'font.size': 15})
 
-# shear_viscosity=[]
+shear_viscosity=[]
+shear_viscosity_abs_error=[]
 
 
 flux_fitting_params=flux_vs_shear_regression_line_params
@@ -1161,8 +1219,8 @@ i=0
 for z in range(0,box_side_length_scaled.size):
     x=shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
     y=flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
-
-
+    
+    
 
 #   shear_viscosity_=10** (flux_fitting_params[z,i,1])
 #   shear_viscosity_abs_error = shear_viscosity_*total_error_relative_in_flux_fit[z,i]
@@ -1219,9 +1277,9 @@ y_error_bar=np.abs(shear_viscosity_abs_error[:])
 
 #plt.scatter(x[:,i],y[:,i],label="$L=$"+str(box_side_length_scaled[z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2))+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=1)),marker='x')
 #plt.plot(x,y,"--",marker= 'x')#label="$N_{v,x}=$"+str(org_var_2[z])+", $\Delta\eta_{max}=$"+str(sigfig.round(shear_viscosity_abs_error_max[z],sigfigs=2)),marker='x')
-plt.errorbar(x,y,yerr=y_error_bar,capsize=3,color='r', label="Simulation data")
+plt.errorbar(x,y,yerr=y_error_bar,capsize=3,color='r', label="Simulation data",linestyle='dashed')
 plt.xlabel('$L/\ell$', labelpad=labelpadx,fontsize=fontsize)
-plt.plot(x, predicted_dimensionless_shear_viscosity[:], '--', label="Tuzel,Ihle and Kroll, 2006")
+plt.plot(x, predicted_dimensionless_shear_viscosity[:], linestyle='solid', label="Tuzel,Ihle and Kroll, 2006")
 plt.yscale('log')
 #plt.xscale('log')
 plt.ylabel('$\eta \\frac{\ell^{3}}{\epsilon\\tau}$',rotation=0,labelpad=labelpady,fontsize=fontsize)

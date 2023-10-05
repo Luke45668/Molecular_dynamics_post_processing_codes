@@ -116,6 +116,9 @@ def VP_organiser_and_reader(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisati
         if isinstance(filename[loc_org_var_1], int):
             org_var_1_find_from_file_name=int(filename[loc_org_var_1])
             m=np.where(org_var_1==org_var_1_find_from_file_name)
+        elif isinstance(filename[loc_org_var_1], str):
+            org_var_1_find_from_file_name=filename[loc_org_var_1]
+            m=np.where(org_var_1==org_var_1_find_from_file_name)
         else: 
             org_var_1_find_from_file_name=float(filename[loc_org_var_1])
             m=np.where(org_var_1==org_var_1_find_from_file_name)
@@ -269,6 +272,10 @@ def Mom_organiser_and_reader(mom_data,count_mom,realisation_name_Mom,no_SRD_key,
         if isinstance(filename[loc_org_var_mom_1],int):
             org_var_mom_1_find_in_name=int(filename[loc_org_var_mom_1])
             tuple_index=np.where(org_var_mom_1==org_var_mom_1_find_in_name)[0][0]
+        elif isinstance(filename[loc_org_var_mom_1],str):
+            org_var_mom_1_find_in_name=filename[loc_org_var_mom_1]
+            tuple_index=np.where(org_var_mom_1==org_var_mom_1_find_in_name)[0][0]
+
         else:
             org_var_mom_1_find_in_name=float(filename[loc_org_var_mom_1])
             tuple_index=np.where(org_var_mom_1==org_var_mom_1_find_in_name)[0][0]
