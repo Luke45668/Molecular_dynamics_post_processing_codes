@@ -15,12 +15,13 @@ from random import sample
 import numpy as np
 #import sklearn as sk
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import regex as re
 import pandas as pd
 #import pyswarms as ps
 import sigfig
 plt.rcParams.update(plt.rcParamsDefault)
-#plt.rcParams['text.usetex'] = True
+plt.rcParams['text.usetex'] = True
 from mpl_toolkits import mplot3d
 from matplotlib.gridspec import GridSpec
 #import seaborn as sns
@@ -588,6 +589,9 @@ np.save("TP_data_lower_realisation_averaged_"+name_of_run_for_save,TP_data_lower
 np.save("TP_data_upper_realisation_averaged_"+name_of_run_for_save,TP_data_upper_realisation_averaged)
 np.save("VP_z_data_lower_"+name_of_run_for_save,VP_z_data_lower)
 np.save("VP_z_data_upper_"+name_of_run_for_save,VP_z_data_upper)
+np.save("TP_z_data_lower_"+name_of_run_for_save,TP_z_data_lower)
+np.save("TP_z_data_upper_"+name_of_run_for_save,TP_z_data_upper)
+
 np.save("shear_rate_upper_error_"+name_of_run_for_save,shear_rate_upper_error)
 np.save("shear_rate_lower_error_"+name_of_run_for_save,shear_rate_lower_error)
 
@@ -620,8 +624,8 @@ VP_z_data_upper=np.load("VP_z_data_upper_"+name_of_run_for_save+".npy")
 
 truncation_timestep=200000 # for H20 and Nitrogen 
 truncation_and_SS_averaging_data=  truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,shear_rate_lower_error,timestep_points,pearson_coeff_lower,pearson_coeff_upper,shear_rate_upper,shear_rate_lower,VP_ave_freq,truncation_timestep,VP_data_lower_realisation_averaged,VP_data_upper_realisation_averaged)
-shear_rate_standard_deviation_upper_error_relative=truncation_and_SS_averaging_data[0] # error from fluctuations
-shear_rate_standard_deviation_lower_error_relative=truncation_and_SS_averaging_data[1]# error from fluctuations 
+shear_rate_standard_deviation_upper_error_relative=truncation_and_SS_averaging_data[0]/np.sqrt((no_timesteps-truncation_timestep)/VP_ave_freq)# error from fluctuations
+shear_rate_standard_deviation_lower_error_relative=truncation_and_SS_averaging_data[1]/np.sqrt((no_timesteps-truncation_timestep)/VP_ave_freq)# error from fluctuations 
 shear_rate_standard_deviation_both_cell_error_relative= (np.abs(shear_rate_standard_deviation_upper_error_relative)+np.abs(shear_rate_standard_deviation_lower_error_relative)) * 0.5 
 pearson_coeff_upper_mean_SS=truncation_and_SS_averaging_data[2]
 pearson_coeff_lower_mean_SS=truncation_and_SS_averaging_data[3]
@@ -877,7 +881,7 @@ def func4(x,c):
 
 
 org_var_1_fitting_start_index=2
-org_var_1_fitting_end_index=7
+org_var_1_fitting_end_index=6
 size_of_new_data=org_var_1_fitting_end_index-org_var_1_fitting_start_index
 #shear_rate_error_of_both_cell_mean_over_all_points_relative = shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]/shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
 shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative= np.zeros((box_side_length_scaled.size))
@@ -887,7 +891,7 @@ relative_y_residual_mean=np.zeros((box_side_length_scaled.size))
 # mean_error_in_fit =np.zeros((org_var_2.size))
 y_residual_in_fit=np.zeros((number_of_solutions,size_of_new_data,org_var_2.size))
 for z in range(0,number_of_solutions):    
-    shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative[z]= np.mean(shear_rate_mean_error_of_both_cells_relative[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=0)
+    shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative[z]= np.mean(np.abs(shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]),axis=0)
 
     for i in range(0,org_var_2.size):
         
@@ -899,10 +903,11 @@ for z in range(0,number_of_solutions):
          # with only one swap rate 
         flux_vs_shear_regression_line_params= flux_vs_shear_regression_line_params+(scipy.optimize.curve_fit(func4,shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_ready_for_plotting[z,i,org_var_1_fitting_start_index:org_var_1_fitting_end_index],method='lm',maxfev=5000)[0],)
         #y_residual_in_fit[z,:,i]=func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0] ,flux_vs_shear_regression_line_params[i][1])-flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i]
-        y_residual_in_fit[z,:,i]=func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0])-flux_ready_for_plotting[z,i,org_var_1_fitting_start_index:org_var_1_fitting_end_index]
-        print(y_residual_in_fit.shape)
-        print(flux_ready_for_plotting[z,i,org_var_1_fitting_start_index:org_var_1_fitting_end_index].shape)
-        relative_y_residual_mean[z]= np.abs(np.mean(y_residual_in_fit[z,:,i]/flux_ready_for_plotting[z,i,org_var_1_fitting_start_index:org_var_1_fitting_end_index],axis=0))
+        # y_residual_in_fit[z,:,i]=func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0])-flux_ready_for_plotting[z,i,org_var_1_fitting_start_index:org_var_1_fitting_end_index]
+        
+        # print(y_residual_in_fit.shape)
+        # print(flux_ready_for_plotting[z,i,org_var_1_fitting_start_index:org_var_1_fitting_end_index].shape)
+        # relative_y_residual_mean[z]= np.mean(np.abs(y_residual_in_fit[z,:,i]/flux_ready_for_plotting[z,i,org_var_1_fitting_start_index:org_var_1_fitting_end_index]),axis=0)
 
 
         #mean_error_in_fit[i] = np.sqrt(np.mean((func4(shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i],flux_vs_shear_regression_line_params[i][0] ,flux_vs_shear_regression_line_params[i][1])-flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,i])**2))
@@ -913,8 +918,30 @@ params=flux_vs_shear_regression_line_params
 #relative_y_residual_mean= np.abs(np.mean(y_residual_in_fit/flux_ready_for_plotting[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:],axis=1))
 # only for vel swap tests 
 #relative_y_residual_mean= np.abs(np.mean(y_residual_in_fit/flux_ready_for_plotting[z,i,org_var_1_fitting_start_index:org_var_1_fitting_end_index],axis=1))
+# need to do this as a fit to each viscosity take a mean, then take the mean of the residuals 
 
-total_error_relative_in_flux_fit= relative_y_residual_mean+shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative
+#total_error_relative_in_flux_fit= relative_y_residual_mean+shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative
+
+viscosity_fit_individual=  np.zeros((number_of_solutions,org_var_1_fitting_end_index-org_var_1_fitting_start_index))
+viscosity_fit_mean_individual=[]
+for z in range(0,number_of_solutions):    
+    viscosity_fit_mean_individual.append(np.exp(params[z][0]))
+    for i in range(0,org_var_1_fitting_end_index-org_var_1_fitting_start_index):
+      viscosity_fit_individual[z,i]=np.exp(flux_ready_for_plotting[z,0,i]-shear_rate_mean_of_both_cells[z,i,0])
+
+#np.mean(viscosity_fit_individual,axis=1)
+viscosity_fit_mean_individual=np.array([viscosity_fit_mean_individual])
+viscosity_fit_mean_for_comparison = np.repeat(viscosity_fit_mean_individual,org_var_1_fitting_end_index-org_var_1_fitting_start_index,axis=0).T
+viscosity_fit_residual=  viscosity_fit_individual- viscosity_fit_mean_for_comparison
+tolerance=0.04
+if np.any(np.abs(viscosity_fit_residual)/viscosity_fit_mean_for_comparison>tolerance):
+    print('fitting not acceptable')
+else:
+    print('viscosity fit accepted')
+
+viscosity_fit_absolute_error= np.mean(np.abs(viscosity_fit_residual), axis=1)
+viscosity_fit_relative_error= viscosity_fit_absolute_error/viscosity_fit_mean_individual[0,:]
+total_error_relative_in_flux_fit= viscosity_fit_relative_error+shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative
 
 #%% px vs time
 #calculating error of flux
@@ -1011,7 +1038,7 @@ def plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelp
                 plt.ylabel('$log(J_{z}(p_{x})$$\ \\frac{\\tau^{3}}{\\varepsilon})$',rotation=0,labelpad=labelpady,fontsize=fontsize)
                 plt.legend()
                 #plt.show() 
-                shear_viscosity_=10** (params[z][0])
+                shear_viscosity_=np.exp( (params[z][0]))
                 shear_viscosity.append(shear_viscosity_)
                 shear_viscosity_abs_error.append(shear_viscosity_*total_error_relative_in_flux_fit[z,i])
                 
@@ -1043,15 +1070,41 @@ plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelpadx,
 
 #%% plotting with only one swap rate 
 # need to fit the curve to just the linear part of plot 
+labelpadx=15
+labelpady=55
+fontsize=20
+colour = [
+ 'black',
+ 'blueviolet',
+ 'cadetblue',
+ 'chartreuse',
+ 'coral',
+ 'cornflowerblue',
+ 'crimson',
+ 'cyan',
+ 'darkblue',
+ 'darkcyan',
+ 'darkgoldenrod',
+ 'darkgray']
 marker=['x','o','+','^',"1","X","d","*","P","v"]
+plt.rcParams.update({'font.size': 15})
 shear_viscosity=[]
 shear_viscosity_abs_error=[]
 for z in range(0,number_of_solutions):
-    x=shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
+    # only fitting section 
+    x_=shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
 
-    x_pos_error=np.abs(shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:])
+    # x_pos_error=np.abs(shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:])
+    # #y_pos_error=np.abs(abs_error_in_flux[z,:,:])
+    #y=flux_ready_for_plotting[z,:,org_var_1_fitting_start_index:org_var_1_fitting_end_index]
+    
+    # only fitting section 
+    x=shear_rate_mean_of_both_cells[z,:,:]
+
+    x_pos_error=np.abs(shear_rate_mean_error_of_both_cells[z,:,:])
     #y_pos_error=np.abs(abs_error_in_flux[z,:,:])
-    y=flux_ready_for_plotting[z,:,org_var_1_fitting_start_index:org_var_1_fitting_end_index]
+    y=flux_ready_for_plotting[z,:,:]
+
 
 
 # for i in range(0,org_var_2_index):
@@ -1060,25 +1113,25 @@ for z in range(0,number_of_solutions):
     #     #if z==0:
 
         j=i
-        shear_viscosity_=10** (params[z][0])
+        shear_viscosity_=np.exp( (params[z][0]))
         shear_viscosity_abs_error_= shear_viscosity_ * total_error_relative_in_flux_fit[z]
         
-        shear_viscosity.append((10** (params[z][0])))
+        shear_viscosity.append((np.exp( (params[z][0]))))
         shear_viscosity_abs_error.append(shear_viscosity[z] * total_error_relative_in_flux_fit[z])
         
 
 
         # need to add legend to this 
-        plt.scatter(x[:,i],y[i,:],label='$L='+str(np.around(box_side_length_scaled[0,z]))+",\ \\bar{\eta}="+str(sigfig.round(shear_viscosity_,sigfigs=2))+"\pm"+str(sigfig.round(shear_viscosity_abs_error_,sigfigs=2))+"$",marker=marker[z],color='r')
+        plt.scatter(x[:,i],y[i,:],label='$L='+str(np.around(box_side_length_scaled[0,z]))+",\ \\bar{\eta}="+str(sigfig.round(shear_viscosity_,sigfigs=2))+"\pm"+str(sigfig.round(shear_viscosity_abs_error_,sigfigs=2))+"$",marker=marker[z], color= colour[z])
         #plt.errorbar(x[:,i],y[i,:],xerr=x_pos_error[:,i],ls ='',capsize=3,color='r')
         # # plt.plot(x[:,i],func4(x[:,i],params[z][0],params[z][1]))
-        plt.plot(x[:,i],func4(x[:,i],params[z][0]))
+        plt.plot(x_[:,i],func4(x_[:,i],params[z][0]), color= colour[z])
         # #plt.fill_between(y[:,i], x_neg_error[i,:], x_pos_error[i,:])
         #plt.xscale('log')
         plt.xlabel('$log(\dot{\gamma}\\tau)$', labelpad=labelpadx,fontsize=fontsize)
         #plt.yscale('log')
         plt.ylabel('$log(J_{z}(p_{x})$$\ \\frac{\\tau^{3}}{\\varepsilon})$',rotation=0,labelpad=labelpady,fontsize=fontsize)
-        plt.legend(loc='upper right',bbox_to_anchor=(0.25,-0.1))
+        plt.legend(loc='best',bbox_to_anchor=(1,1))
         #plt.show() 
         # shear_viscosity_=10** (params[z][0])
         # shear_viscosity.append(shear_viscosity_)
@@ -1215,6 +1268,7 @@ flux_fitting_params=flux_vs_shear_regression_line_params
 #for i in range(0,org_var_2_index):
 
 marker=['x','o','+','^',"1","X","d","*","P","v"]
+
 i=0
 for z in range(0,box_side_length_scaled.size):
     x=shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
@@ -1232,9 +1286,9 @@ for z in range(0,box_side_length_scaled.size):
     
     #print('Grad of fit =',grad_fit,',abs error', grad_fit_abs_error)
    # plt.scatter(x[:,i],y[:,i],label="$L/\ell="+str(box_side_length_scaled[0,z])+"$, $grad="+str(sigfig.round(gradient_of_fit[0,z],sigfigs=2))+"\pm"+str(sigfig.round(grad_fit_abs_error[0,z],sigfigs=2))+"$",marker=marker[z])
-    plt.scatter(x[:,i],y[:,i],label="$L/\ell="+str(box_side_length_scaled[0,z])+",\ \\bar{\eta}="+str(sigfig.round(shear_viscosity[z],sigfigs=2))+"\pm"+str(sigfig.round(shear_viscosity_abs_error[z],sigfigs=2))+"$",marker=marker[z])
+    plt.scatter(x[:,i],y[:,i],label="$L/\ell="+str(box_side_length_scaled[0,z])+",\ \\bar{\eta}="+str(sigfig.round(shear_viscosity[z],sigfigs=2))+"\pm"+str(sigfig.round(shear_viscosity_abs_error[z],sigfigs=2))+"$",color= colour[z],marker=marker[z])
    # plt.plot(x[:,i],func4(x[:,i],params[z][0],params[z][1]),'--')
-    plt.plot(x[:,i],func4(x[:,i],params[z][0]),'--')
+    plt.plot(x[:,i],func4(x[:,i],params[z][0]),'--', color= colour[z])
     plt.xlabel('$log(\dot{\gamma}\\tau)$', labelpad=labelpadx,fontsize=fontsize)
     plt.ylabel('$log(J_{z}(p_{x})$$\ \\frac{\\tau^{3}}{\\varepsilon})$',rotation=0,labelpad=labelpady,fontsize=fontsize)
     plt.legend(loc='upper right',bbox_to_anchor=(0.25,-0.1))
@@ -1280,12 +1334,44 @@ y_error_bar=np.abs(shear_viscosity_abs_error[:])
 plt.errorbar(x,y,yerr=y_error_bar,capsize=3,color='r', label="Simulation data",linestyle='dashed')
 plt.xlabel('$L/\ell$', labelpad=labelpadx,fontsize=fontsize)
 plt.plot(x, predicted_dimensionless_shear_viscosity[:], linestyle='solid', label="Tuzel,Ihle and Kroll, 2006")
-plt.yscale('log')
+#plt.yscale('log')
 #plt.xscale('log')
 plt.ylabel('$\eta \\frac{\ell^{3}}{\epsilon\\tau}$',rotation=0,labelpad=labelpady,fontsize=fontsize)
 plt.legend()
 plt.tight_layout()     
 #plt.savefig(fluid_name+"_shear_eta_vs_phi_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
+plt.show() 
+#%%
+
+
+#%% Reynolds number vs box size 
+def Reynolds_number(shear_rate,shear_viscosity,box_size,rho_density):
+    Re = (shear_rate)*(box_size**2)*(rho_density/np.array([shear_viscosity])).T
+    return Re
+rho_density=5
+Re= Reynolds_number(np.exp(shear_rate_mean_of_both_cells[:,:,0]),shear_viscosity,box_side_length_scaled[0,:],rho_density)
+x=box_side_length_scaled[0,:]
+y=Re 
+
+plt.rcParams.update({'font.size': 15})
+linestyle=['-', '--', '-.', ':', 'solid', 'dashed', 'dashdot', 'dotted']
+
+#%y_error_bar=np.abs(np.exp(shear_rate_mean_error_of_both_cells[:,:,0]))
+for z in range(org_var_1_fitting_start_index,org_var_1_fitting_end_index):
+    #plt.scatter(x[:,i],y[:,i],label="$L=$"+str(box_side_length_scaled[z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2))+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=1)),marker='x')
+    #plt.plot(x,y,"--",marker= 'x')#label="$N_{v,x}=$"+str(org_var_2[z])+", $\Delta\eta_{max}=$"+str(sigfig.round(shear_viscosity_abs_error_max[z],sigfigs=2)),marker='x')
+    #plt.errorbar(x,y[:,z],yerr=y_error_bar[:,z],capsize=3,color='r', label="Simulation data",linestyle='dashed')
+    plt.plot(x,y[z,:],color=colour[z], label="$v_{target}="+str(vel_target[z])+"$",marker=marker[z],markersize=8,linestyle=linestyle[z])
+
+    plt.xlabel('$L/\ell$', labelpad=labelpadx,fontsize=fontsize)
+    #plt.plot(x, predicted_dimensionless_shear_viscosity[:], linestyle='solid', label="Tuzel,Ihle and Kroll, 2006")
+    plt.yscale('log')
+    plt.ylabel('$Re$',labelpad=labelpadx, rotation=0,fontsize=fontsize)
+    #plt.xscale('log')
+    #plt.ylabel('$\eta \\frac{\ell^{3}}{\epsilon\\tau}$',rotation=0,labelpad=labelpady,fontsize=fontsize)
+    plt.legend(loc='best',bbox_to_anchor=(1,1))
+    #plt.tight_layout()     
+    #plt.savefig(fluid_name+"_shear_eta_vs_phi_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
 plt.show() 
 # %% saving all the arrays which are needed for plots
 # need to save orginal untruncated VP / shear rate data 
