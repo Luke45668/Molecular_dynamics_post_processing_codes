@@ -151,6 +151,58 @@ def VP_organiser_and_reader(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisati
         
     return VP_data_upper,VP_data_lower,error_count,filename,VP_z_data_upper,VP_z_data_lower
 
+def VP_organiser_and_reader_swap_rate_no_strings_input(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,org_var_1,org_var_2,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP):
+    from velP2numpy import velP2numpy_f
+    marker=-1
+    error_count=0 
+    VP_data_upper=np.zeros((number_of_solutions,org_var_1.size,org_var_2.size,9,int(no_timesteps/VP_ave_freq),j_))
+    VP_data_lower=np.zeros((number_of_solutions,org_var_1.size,org_var_2.size,9,int(no_timesteps/VP_ave_freq),j_))
+    VP_z_data_upper=np.zeros((number_of_solutions,1,9))
+    VP_z_data_lower=np.zeros((number_of_solutions,1,9))
+    
+    for i in range(0,count_VP):
+        filename=realisation_name_VP[i].split('_')
+        marker=marker+1
+        no_SRD=filename[loc_no_SRD]
+        z=no_SRD_key.index(no_SRD)
+        realisation_index=filename[loc_Realisation_index]
+        j=int(float(realisation_index))-1
+        if isinstance(filename[loc_org_var_1], int):
+            org_var_1_find_from_file_name=int(filename[loc_org_var_1])
+            m=np.where(org_var_1==org_var_1_find_from_file_name)
+        else: 
+            org_var_1_find_from_file_name=float(filename[loc_org_var_1])
+            m=np.where(org_var_1==org_var_1_find_from_file_name)
+        if  isinstance(filename[loc_org_var_2], int):
+            org_var_2_find_from_file_name=int(filename[loc_org_var_2])
+            k=np.where(org_var_2==org_var_2_find_from_file_name)
+        else:    
+            org_var_2_find_from_file_name=float(filename[loc_org_var_2])
+            k=np.where(org_var_2==org_var_2_find_from_file_name)
+        
+        
+        try: 
+            realisation_name=realisation_name_VP[i]
+            
+            VP_data = velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave_freq,no_SRD,no_timesteps,VP_output_col_count)[0]
+            #print(VP_data)
+            VP_data_upper[z,m,k,:,:,j] = VP_data[1:10,:]
+            VP_data_lower[z,m,k,:,:,j] = VP_data[11:,:]
+            
+        except Exception as e:
+            print('Velocity Profile reading failed')
+            print(realisation_name)
+            error_count=error_count+1 
+            break
+            
+        VP_z_data = velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave_freq,no_SRD,no_timesteps,VP_output_col_count)[1]     
+        
+        VP_z_data_upper[:,0,:] = VP_z_data[1:10].astype('float64')* box_side_length_scaled.T    
+        VP_z_data_lower[:,0,:] = VP_z_data[11:].astype('float64')* box_side_length_scaled.T
+        
+    return VP_data_upper,VP_data_lower,error_count,filename,VP_z_data_upper,VP_z_data_lower
+
+
 def single_VP_reader(loc_no_SRD,loc_EF,loc_SN,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,swap_number,swap_rate,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP):
     from velP2numpy import velP2numpy_f
     marker=-1

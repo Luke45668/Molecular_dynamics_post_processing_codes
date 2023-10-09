@@ -9,7 +9,7 @@ after an MPCD simulation.
 #from imp import reload
 import os
 from random import sample
-
+from numba import jit 
 #from sys import exception
 #from tkinter import HORIZONTAL
 import numpy as np
@@ -43,14 +43,10 @@ from post_MPCD_MP_processing_module import *
 # define key inputs 
 j_=3
 
-swap_rate=np.array([15,30,60,120,240,480,600])
-swap_rate=np.array([15])
-vel_target=np.array([1,0.1,0.001,0.0001,0.00001,0.000001]) #test 1
-vel_target=np.array([1,0.8,0.6,0.4,0.2,0.1,0.08,0.06,0.04,0.02,0.01]) 
-vel_target=np.array(['INF',10,1,0.8,0.6,0.4,0.2,0.1,0.01,0.001]) 
-
+swap_rate=np.array([15,30,60,90,120,150,180,360])
+vel_target=np.array([0.8]) 
 swap_number=np.array([1])
-fluid_name='genericSRD'
+fluid_name='productionSRD'
 equilibration_timesteps=1000
 VP_ave_freq =10000
 chunk = 20
@@ -61,11 +57,7 @@ scaled_timestep=0.01
 realisation=np.array([1,2,3])
 VP_output_col_count = 4 
 r_particle =25e-6 # for some solutions, rememebrr to check if its 25 or 10
-phi=0.0577777778
-N=2
-Vol_box_at_specified_phi=(N* (4/3)*np.pi*r_particle**3 )/phi
-box_side_length=np.cbrt(Vol_box_at_specified_phi)
-fluid_name='genericSRD'
+
 run_number=''
 batchcode='966397'
 no_timesteps=2000000 # rememebr to change this depending on run 
@@ -96,6 +88,7 @@ dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 #filepath='VACF_temp_profile_tests/run_'+batchcode
 filepath='pure_fluid_new_method_validations/T_1/production_runs'
 filepath='pure_fluid_new_method_validations/T_1/prod_runs_with_vel_swap'
+filepath='pure_fluid_new_method_validations/T_1/prod_runs_swap_rate_var'
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
 realisation_name_VP=realisation_name_info[1]
@@ -109,7 +102,7 @@ realisation_name_TP=realisation_name_info[8]
 count_TP=realisation_name_info[9]
 box_size_loc=9
 filename_for_lengthscale=realisation_name_VP[0].split('_')
-lengthscale=box_side_length/float(filename_for_lengthscale[box_size_loc])
+#lengthscale=box_side_length/float(filename_for_lengthscale[box_size_loc])
 
 
 #checking the number of different solutions used in the run
@@ -153,15 +146,15 @@ Path_2_VP="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac
 #reading in velocity profiles, avoid if possible
 org_var_1=swap_rate
 loc_org_var_1=20
-org_var_1=vel_target
-loc_org_var_1=24
+# org_var_1=vel_target
+# loc_org_var_1=24
 
 org_var_2=swap_number #spring_constant
 loc_org_var_2=22#25
 #VP_raw_data= VP_organiser_and_reader(loc_no_SRD,loc_EF,loc_SN,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,swap_number,swap_rate,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
 #%% Velocity profiles 
 
-VP_raw_data=VP_organiser_and_reader(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,org_var_1,org_var_2,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
+VP_raw_data= VP_organiser_and_reader_swap_rate_no_strings_input(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,org_var_1,org_var_2,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
 
 VP_data_upper=VP_raw_data[0]
 VP_data_lower=VP_raw_data[1]
@@ -180,7 +173,7 @@ else:
 # lengthscale=box_side_length/float(filename[box_size_loc])
 # Temperature profiles
 # as long as the VP data have the same structure as the TP data this will work 
-TP_raw_data=VP_organiser_and_reader(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,org_var_1,org_var_2,no_SRD_key,realisation_name_TP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
+TP_raw_data= VP_organiser_and_reader_swap_rate_no_strings_input(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,org_var_1,org_var_2,no_SRD_key,realisation_name_TP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
 
 TP_data_upper=TP_raw_data[0]
 TP_data_lower=TP_raw_data[1]
@@ -401,14 +394,17 @@ print(diffusivity)
 #%% reading in mom files (much faster)
 #  obtaining the mom data size
 #Path_2_mom_file="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/"+simulation_file
+from post_MPCD_MP_processing_module import *
 Path_2_mom_file=Path_2_VP
-#org_var_mom_1=swap_rate
-#loc_org_var_mom_1=20
-loc_org_var_mom_1=24
-org_var_mom_1=vel_target
+org_var_mom_1=swap_rate
+loc_org_var_mom_1=20
+# loc_org_var_mom_1=24
+# org_var_mom_1=vel_target
 org_var_mom_2=swap_number #spring_constant 
 loc_org_var_mom_2=22#25
 #only need this version for using a single swap rate 
+# to make numba work
+#@jit(nopython=True)
 def mom_file_data_size_reader(j_,number_of_solutions,count_mom,realisation_name_Mom,no_SRD_key,org_var_mom_1,org_var_mom_2,Path_2_mom_file):
     from mom2numpy import mom2numpy_f
     pass_count=0
@@ -432,12 +428,12 @@ def mom_file_data_size_reader(j_,number_of_solutions,count_mom,realisation_name_
     size_array=np.array(size_list)
     
     mom_data=()
-    #for i in range(0,size_array.size):
-    for i in range(0,org_var_mom_1.size):
+    for i in range(0,size_array.size):
+    #for i in range(0,org_var_mom_1.size):
         
-            #mom_data= mom_data+(np.zeros((number_of_solutions,org_var_mom_2.size,j_,(size_array[i,0]))),)
+            mom_data= mom_data+(np.zeros((number_of_solutions,org_var_mom_2.size,j_,(size_array[i,0]))),)
             
-            mom_data= mom_data+(np.zeros((number_of_solutions,org_var_mom_2.size,j_,(size_array[0,0]))),)
+            #mom_data= mom_data+(np.zeros((number_of_solutions,org_var_mom_2.size,j_,(size_array[0,0]))),)
             
          
          
@@ -456,6 +452,9 @@ else:
     print("Data size assessment success!")
 
 # Reading in mom data files 
+
+# from mom2numpy import mom2numpy_f
+# @jit(nopython=True)
 def Mom_organiser_and_reader(mom_data,count_mom,realisation_name_Mom,no_SRD_key,org_var_mom_1,loc_org_var_mom_1,org_var_mom_2,loc_org_var_mom_2,Path_2_mom_file):
     from mom2numpy import mom2numpy_f
     error_count_mom=0
@@ -471,9 +470,9 @@ def Mom_organiser_and_reader(mom_data,count_mom,realisation_name_Mom,no_SRD_key,
         if isinstance(filename[loc_org_var_mom_1],int):
             org_var_mom_1_find_in_name=int(filename[loc_org_var_mom_1])
             tuple_index=np.where(org_var_mom_1==org_var_mom_1_find_in_name)[0][0]
-        elif isinstance(filename[loc_org_var_mom_1],str):
-            org_var_mom_1_find_in_name=filename[loc_org_var_mom_1]
-            tuple_index=np.where(org_var_mom_1==org_var_mom_1_find_in_name)[0][0]
+        # elif isinstance(filename[loc_org_var_mom_1],str):
+        #     org_var_mom_1_find_in_name=filename[loc_org_var_mom_1]
+        #     tuple_index=np.where(org_var_mom_1==org_var_mom_1_find_in_name)[0][0]
 
         else:
             org_var_mom_1_find_in_name=float(filename[loc_org_var_mom_1])
@@ -540,7 +539,7 @@ TP_data_upper_realisation_averaged=TP_shear_rate_and_stat_data[6]
 
 plt.rcParams.update({'font.size': 15})   
 import sigfig
-lengthscale= sigfig.round(lengthscale,sigfigs=3)
+#lengthscale= sigfig.round(lengthscale,sigfigs=3)
 box_size_nd= box_side_length_scaled 
 
 plt.rcParams.update({
@@ -549,11 +548,11 @@ plt.rcParams.update({
 })
 
 org_var_1_index_start=0
-org_var_1_index_end=10
+org_var_1_index_end=8
 org_var_2_index_start=0
 org_var_2_index_end=1
 
-def plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_var_1_index_start,org_var_1_index_end,no_timesteps,phi,lengthscale,timestep_points,scaled_temp,number_of_solutions,org_var_1,org_var_2,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd):
+def plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_var_1_index_start,org_var_1_index_end,no_timesteps,timestep_points,scaled_temp,number_of_solutions,org_var_1,org_var_2,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd):
     for z in range(0,number_of_solutions): 
         #for k in range(org_var_2_index_start,org_var_2_index_end):
         for m in range(org_var_1_index_start,org_var_1_index_end):
@@ -572,7 +571,7 @@ def plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_va
         # else:
         #     print('Thanks for checking steady state')
 
-plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_var_1_index_start,org_var_1_index_end,no_timesteps,phi,lengthscale,timestep_points,scaled_temp,number_of_solutions,org_var_1,org_var_2,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd)
+plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_var_1_index_start,org_var_1_index_end,no_timesteps,timestep_points,scaled_temp,number_of_solutions,org_var_1,org_var_2,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd)
 # need to save this plot 
 # saving this data 
 #%%
@@ -1208,7 +1207,7 @@ height_plot=7
 legend_x_pos=1
 legend_y_pos=0.8
 org_var_1_index_start=0
-org_var_1_index_end=7
+org_var_1_index_end=10
 org_var_2_index_start=0
 org_var_2_index_end=1
 def plotting_SS_Temp_profiles(org_var_2_index_start,org_var_1_index_end,legend_x_pos, legend_y_pos,labelpadx,labelpady,fontsize,number_of_solutions,org_var_1_choice_index,width_plot,height_plot,org_var_1,org_var_2,VP_ave_freq,no_timesteps,TP_steady_state_data_lower_truncated_time_averaged,TP_steady_state_data_upper_truncated_time_averaged,TP_z_data_lower,TP_z_data_upper):
