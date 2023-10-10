@@ -80,11 +80,15 @@ Vol_box_at_specified_phi=(N* (4/3)*np.pi*r_particle**3 )/phi
 box_side_length=np.cbrt(Vol_box_at_specified_phi)
 
 fluid_name='genericSRD'
+fluid_name='actualVACF'
 
 run_number=''
 batchcode='966397'
 no_timesteps=2000000 # rememebr to change this depending on run 
 
+thermo_freq=10
+equilibration_timesteps=1
+no_timesteps=5000
 # grabbing file names 
 
 # VP_general_name_string='vel.'+fluid_name+'*_VACF_output_*_no_rescale_*'
@@ -111,6 +115,8 @@ dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 #filepath='VACF_temp_profile_tests/run_'+batchcode
 filepath='pure_fluid_new_method_validations/T_1/production_runs'
 filepath='pure_fluid_new_method_validations/T_1/prod_runs_with_vel_swap'
+
+filepath='pure_fluid_new_method_validations/T_1/VACF_tests/vel_swap'
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
 realisation_name_VP=realisation_name_info[1]
@@ -123,7 +129,8 @@ count_dump=realisation_name_info[7]
 realisation_name_TP=realisation_name_info[8]
 count_TP=realisation_name_info[9]
 box_size_loc=9
-filename_for_lengthscale=realisation_name_VP[0].split('_')
+#filename_for_lengthscale=realisation_name_VP[0].split('_')
+filename_for_lengthscale=realisation_name_log[0].split('_')
 lengthscale=box_side_length/float(filename_for_lengthscale[box_size_loc])
 
 
@@ -136,13 +143,24 @@ loc_SN=22
 loc_Realisation_index= 7
 loc_box_size=9
 
-# 
+# using VP
 no_SRD=[]
 box_size=[]
 for i in range(0,count_VP):
     no_srd=realisation_name_VP[i].split('_')
+    no_srd=realisation_name_log[i].split('_')
     no_SRD.append(no_srd[loc_no_SRD])
     box_size.append(no_srd[loc_box_size])
+# using log
+
+loc_box_size=10
+loc_no_SRD=9
+for i in range(0,count_log):
+    no_srd=realisation_name_log[i].split('_')
+    no_SRD.append(no_srd[loc_no_SRD])
+    box_size.append(no_srd[loc_box_size])
+
+
     
 no_SRD.sort(key=int)
 no_SRD.sort()
@@ -216,38 +234,49 @@ log_SN=23
 log_K=27
 log_realisation_index=8
 #def log_file_reader_and_organiser(count_log,):
-log_file_col_count=4
+log_file_col_count=5
 log_file_row_count=((no_timesteps)/thermo_freq) +2 # to fit full log file  not sure on it 
 log_file_tuple=()
 Path_2_log='/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/'+filepath
-#thermo_vars='         KinEng          Temp          TotEng       c_vacf[4]   '
-thermo_vars='         KinEng          Temp          TotEng    '
+thermo_vars='         KinEng          Temp          TotEng       c_vacf[4]   '
+#thermo_vars='         KinEng          Temp          TotEng    '
 from log2numpy import * 
-total_cols_log=4
+total_cols_log=5
 org_var_log_1=swap_rate
 loc_org_var_log_1=log_EF
+org_var_log_1=vel_target
+loc_org_var_log_1=25
 org_var_log_2=swap_number#spring_constant
 loc_org_var_log_2=log_SN
 
-def log_file_organiser_and_reader(org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,log_file_row_count,log_file_col_count,count_log,realisation_name_log,log_realisation_index,Path_2_log,thermo_vars):
-    
+# function below is broken
+def log_file_organiser_and_reader(number_of_solutions,org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,log_file_row_count,log_file_col_count,count_log,realisation_name_log,log_realisation_index,Path_2_log,thermo_vars):
+    count=0
     log_file_tuple=()
     from log2numpy import log2numpy_reader
-    for i in range(0,org_var_log_1.size):
-        log_4d_array_with_all_realisations=np.zeros((org_var_log_2.size,j_,int(log_file_row_count),log_file_col_count))
-        log_file_tuple=log_file_tuple+(log_4d_array_with_all_realisations,)
+    # for i in range(0,number_of_solutions):
+    #     log_5d_array_with_all_realisations=np.zeros((org_var_log_1.size,org_var_log_2.size,j_,int(log_file_row_count),log_file_col_count))
+    #     log_file_tuple=log_file_tuple+(log_5d_array_with_all_realisations,)
+    # print(log_file_tuple[0].shape)
+    log_file_1=np.zeros((number_of_solutions,org_var_log_1.size,org_var_log_2.size,j_,int(log_file_row_count),log_file_col_count))
         
-    averaged_log_file=np.zeros((org_var_log_1.size,org_var_log_2.size,int(log_file_row_count),total_cols_log))
+    averaged_log_file=np.zeros((number_of_solutions,org_var_log_1.size,org_var_log_2.size,int(log_file_row_count),total_cols_log))
 
     for i in range(0,count_log):
         filename=realisation_name_log[i].split('_')
-        realisation_index=int(float(realisation_name_log[i].split('_')[log_realisation_index]))
-        print(realisation_index)
+        realisation_index=int(float(realisation_name_log[i].split('_')[log_realisation_index]))-1
+        solution_index=int(np.where(float(filename[loc_box_size])==box_side_length_scaled[0,:])[0][0])
+        # print(realisation_index)
+        # print(solution_index)
         if isinstance(filename[loc_org_var_log_1],int):
             org_var_log_1_find_in_name=int(filename[loc_org_var_log_1])
             tuple_index=np.where(org_var_log_1==org_var_log_1_find_in_name)[0][0]
+        elif isinstance(filename[loc_org_var_log_1],float):
+            org_var_log_1_find_in_name==float(filename[loc_org_var_log_1])
+            tuple_index=np.where(org_var_log_1==org_var_log_1_find_in_name)[0][0]
+
         else:
-            org_var_log_1_find_in_name=float(filename[loc_org_var_log_1])
+            org_var_log_1_find_in_name=(filename[loc_org_var_log_1])
             tuple_index=np.where(org_var_log_1==org_var_log_1_find_in_name)[0][0]
         
         if isinstance(filename[loc_org_var_log_2],int):
@@ -257,21 +286,86 @@ def log_file_organiser_and_reader(org_var_log_1,loc_org_var_log_1,org_var_log_2,
             org_var_log_2_find_in_name=float(filename[loc_org_var_log_2])
             array_index_1= np.where(org_var_log_2==org_var_log_2_find_in_name)[0][0] 
             
+            
         # multiple swap numbers and swap rates
         #log_file_tuple[np.where(swap_rate==swap_rate_org)[0][0]][np.where(swap_number==swap_number_org)[0][0],realisation_index,:,:]=log2numpy_reader(realisation_name_log[i],Path_2_log,thermo_vars)
-        log_file_tuple[tuple_index][array_index_1,realisation_index,:,:]=log2numpy_reader(realisation_name_log[i],Path_2_log,thermo_vars)
+        #count=count+1
+        #print(log2numpy_reader(realisation_name_log[i],Path_2_log,thermo_vars))
+        #print(count)
+        print(solution_index)
+        print(array_index_1)
+        print(tuple_index)
+        print(realisation_index)
+        print(log2numpy_reader(realisation_name_log[i],Path_2_log,thermo_vars))
+        log_file_1[solution_index,tuple_index,array_index_1,realisation_index,:,:]=log2numpy_reader(realisation_name_log[i],Path_2_log,thermo_vars)
+        log_file=log2numpy_reader(realisation_name_log[i],Path_2_log,thermo_vars)
+       #print(log_file_tuple[solution_index].shape)
 
-
-    for k in range(0,org_var_log_1.size):
-        for i in range(0,org_var_log_2.size):
-            print(np.mean(log_file_tuple[k][i],axis=0).shape)
-            averaged_log_file[k,i,:,:]=np.mean(log_file_tuple[k][i],axis=0)
+    # for z in range(0, number_of_solutions):
+    #      for k in range(0,org_var_log_1.size):
+    #          for i in range(0,org_var_log_2.size):
+    #              print(log_file_tuple[z][k,i,:,:,:].shape)
+    #             # print(np.mean(log_file_tuple[z][k,i,:,:,:],axis=2))
+    #              averaged_log_file_temp=np.mean(log_file_tuple[z][k,i,:,:,:],axis=0)
+    #              print(averaged_log_file_temp)
+    #              averaged_log_file[z,k,i,:,:]=averaged_log_file_temp
     
-    return  averaged_log_file
+    #return  averaged_log_file, log_file_tuple
+        #log_file_realisation_averaged=np.mean(log_file,axis=3)
+    return  log_file,log_file_1 #log_file_realisation_averaged
     
+    
+#log_file_organiser_and_reader(number_of_solutions,org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,log_file_row_count,log_file_col_count,count_log,realisation_name_log,log_realisation_index,Path_2_log,thermo_vars)
+#averaged_log_file=log_file_organiser_and_reader(number_of_solutions,org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,log_file_row_count,log_file_col_count,count_log,realisation_name_log,log_realisation_index,Path_2_log,thermo_vars)[0]
+log_file=log_file_organiser_and_reader(number_of_solutions,org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,log_file_row_count,log_file_col_count,count_log,realisation_name_log,log_realisation_index,Path_2_log,thermo_vars)[0]
+log_file_1=log_file_organiser_and_reader(number_of_solutions,org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,log_file_row_count,log_file_col_count,count_log,realisation_name_log,log_realisation_index,Path_2_log,thermo_vars)[1]
+#%% collecting without organising 
+#time_vector_from_timestep= (averaged_log_file[0,0,:,0] -equilibration_timesteps )* scaled_timestep
+log_file =np.zeros((count_log,int(log_file_row_count),int(log_file_col_count)))
+for i in range(0,count_log):
+    log_file[i,:,:]=log2numpy_reader(realisation_name_log[i],Path_2_log,thermo_vars)
+#%% plotting all VACF data
+plt.rcParams.update({'font.size': 20})   
+plt.rcParams['text.usetex'] = True
 
-averaged_log_file=log_file_organiser_and_reader(org_var_log_1,loc_org_var_log_1,org_var_log_2,loc_org_var_log_2,j_,log_file_row_count,log_file_col_count,count_log,realisation_name_log,log_realisation_index,Path_2_log,thermo_vars)
-time_vector_from_timestep= (averaged_log_file[0,0,:,0] -equilibration_timesteps )* scaled_timestep
+VACF_cut_off=15
+sample_rate=1
+number_of_data_points= VACF_cut_off/sample_rate
+degrees_of_freedom = 3
+fontsize=20
+labelpadx=15
+labelpady=50
+labelpad=50
+def func4(x, a, b):
+   return a * np.exp(b*x)
+
+fitting=np.zeros((count_log,3))
+diffusivity=np.zeros((count_log))
+
+for i in range(0,count_log):
+    fitting_tuple = scipy.optimize.curve_fit(func4,log_file[i,:VACF_cut_off,0],log_file[i,:VACF_cut_off,4],p0=[0, 0], bounds=(-np.inf, np.inf))
+    fitting[i,0]=  fitting_tuple[0][0]
+    fitting[i,1]=  fitting_tuple[0][1]
+    fitting[i,2]=np.mean((func4(log_file[i,:VACF_cut_off,0],fitting[i,0], fitting[i,1])- log_file[i,:VACF_cut_off:sample_rate,4])**2)
+    diffusivity[i]=np.trapz(log_file[i,:VACF_cut_off:sample_rate,4],log_file[i,:VACF_cut_off,0], dx=0.001,axis=0)/degrees_of_freedom
+fitting=np.mean(fitting,axis=0)
+diffusivity=np.mean(diffusivity)
+for i in range(0,count_log):
+    plt.scatter(log_file[i,:VACF_cut_off:sample_rate,0],log_file[i,:VACF_cut_off:sample_rate,4])
+   
+    plt.xlabel('$N_{t}[-]$',fontsize=fontsize)
+    plt.ylabel('$C_{\\nu}(N_{c}\Delta t)$', rotation=0,fontsize=fontsize,labelpad=labelpad)
+
+plt.plot(log_file[0,:VACF_cut_off:sample_rate,0],func4(log_file[0,:VACF_cut_off:sample_rate,0],fitting[0],fitting[1]),'--',label= "$y=ae^{bx}$, $a="+str(sigfig.round(fitting[0],sigfigs=4))+", b="+str(sigfig.round(fitting[1],sigfigs=4))+", \sigma_{m}="+str(sigfig.round(fitting[2],sigfigs=4))+",\ \\bar{D}="+str(sigfig.round(diffusivity,sigfigs=4))+"\\tau/\ell^{2}$")
+plt.legend(bbox_to_anchor=(1.4, -0.2))
+plt.savefig("plots/"+fluid_name+"_all_data_with_curve_fitting_and_diffusivity.pdf", dpi=500, bbox_inches='tight')
+plt.show()
+
+
+
+
+
+
 
 #%% plotting E vs Nt and T vs Nt
 # legend colours still dont match 
@@ -308,107 +402,108 @@ for k in range(0,org_var_1.size):
         
         plt.legend(loc=7,bbox_to_anchor=(legendx, 0.5))
 plt.show()
+
 #%%VACF plot
-#averaged_log_file_VACF=averaged_log_file[:,:,:300,4]
-# plt.rcParams.update({
-#     "text.usetex": True,
-#     "font.family": "Helvetica"
-# })
-plt.rcParams.update({'font.size': 25})
-VACF_cut_off=200
-fontsize=20
-labelpadx=15
-labelpady=50
-labelpad=50
-width_plot=15
-height_plot=10
-legendx=1
-legend_y_pos=1
-def func4(x, a, b):
-   return a * np.exp(b*x)
+# #averaged_log_file_VACF=averaged_log_file[:,:,:300,4]
+# # plt.rcParams.update({
+# #     "text.usetex": True,
+# #     "font.family": "Helvetica"
+# # })
+# plt.rcParams.update({'font.size': 25})
+# VACF_cut_off=200
+# fontsize=20
+# labelpadx=15
+# labelpady=50
+# labelpad=50
+# width_plot=15
+# height_plot=10
+# legendx=1
+# legend_y_pos=1
+# def func4(x, a, b):
+#    return a * np.exp(b*x)
 
-VACF_fitting_params=()
-VACF_covariance_time=()
-VACF_std_error=()
-VACF_fitting_params_time=()
-VACF_infodict_out =()
-for k in range(0,org_var_1.size):    
-    for i in range(0,org_var_2.size):
+# VACF_fitting_params=()
+# VACF_covariance_time=()
+# VACF_std_error=()
+# VACF_fitting_params_time=()
+# VACF_infodict_out =()
+# for k in range(0,org_var_1.size):    
+#     for i in range(0,org_var_2.size):
       
-        #VACF_fitting_params= VACF_fitting_params+(scipy.optimize.curve_fit(func4,averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],method='lm',maxfev=5000)[0],)
-        VACF_fitting_params= VACF_fitting_params+(scipy.optimize.curve_fit(func4,averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],p0=[0, 0], bounds=(-np.inf, np.inf))[0],)
+#         #VACF_fitting_params= VACF_fitting_params+(scipy.optimize.curve_fit(func4,averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],method='lm',maxfev=5000)[0],)
+#         VACF_fitting_params= VACF_fitting_params+(scipy.optimize.curve_fit(func4,averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],p0=[0, 0], bounds=(-np.inf, np.inf))[0],)
        
        
-sample_rate=25
+# sample_rate=10
 
-for k in range(0,org_var_1.size):
-    for i in range(org_var_2.size):
+# for k in range(0,org_var_1.size):
+#     for i in range(org_var_2.size):
         
-        plt.scatter(averaged_log_file[k,i,:VACF_cut_off:sample_rate,0],averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],label='$f_p=${}'.format(org_var_1[k]))
-        plt.plot(averaged_log_file[k,i,:VACF_cut_off:sample_rate,0],func4(averaged_log_file[k,i,:VACF_cut_off:sample_rate,0],VACF_fitting_params[k][0],VACF_fitting_params[k][1]))
-        plt.xlabel('$N_{t}[-]$',fontsize=fontsize)
-        plt.ylabel('$C_{\\nu}(N_{c}\Delta t)$', rotation=0,fontsize=fontsize,labelpad=labelpad)
+#         plt.scatter(averaged_log_file[k,i,:VACF_cut_off:sample_rate,0],averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],label='$f_p=${}'.format(org_var_1[k]))
+#         plt.plot(averaged_log_file[k,i,:VACF_cut_off:sample_rate,0],func4(averaged_log_file[k,i,:VACF_cut_off:sample_rate,0],VACF_fitting_params[k][0],VACF_fitting_params[k][1]))
+#         plt.xlabel('$N_{t}[-]$',fontsize=fontsize)
+#         plt.ylabel('$C_{\\nu}(N_{c}\Delta t)$', rotation=0,fontsize=fontsize,labelpad=labelpad)
        
-        plt.legend(loc=7,bbox_to_anchor=(1.55, 0.5))
-        print(VACF_fitting_params)
-plt.savefig(fluid_name+"_All_swaps_VACF_sample_rate_"+str(sample_rate)+"_cut_off_"+str(VACF_cut_off)+"_batch_"+str(batchcode)+".pdf",dpi=500, bbox_inches='tight')
-plt.show()
+#         plt.legend(loc=7,bbox_to_anchor=(1.55, 0.5))
+#         print(VACF_fitting_params)
+# #plt.savefig(fluid_name+"_All_swaps_VACF_sample_rate_"+str(sample_rate)+"_cut_off_"+str(VACF_cut_off)+"_batch_"+str(batchcode)+".pdf",dpi=500, bbox_inches='tight')
+# plt.show()
 
 
-for k in range(0,org_var_1.size):    
-    for i in range(0,org_var_2.size):
-        VACF_fit_calc=scipy.optimize.curve_fit(func4,time_vector_from_timestep[:VACF_cut_off:sample_rate],averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],p0=[0, 0], bounds=(-np.inf, np.inf),full_output=True)
-        #VACF_fitting_params= VACF_fitting_params+(scipy.optimize.curve_fit(func4,averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],method='lm',maxfev=5000)[0],)
-        VACF_fitting_params_time= VACF_fitting_params_time+ (VACF_fit_calc[0],)
-        VACF_covariance_time = VACF_covariance_time +(VACF_fit_calc[1],)
+# for k in range(0,org_var_1.size):    
+#     for i in range(0,org_var_2.size):
+#         VACF_fit_calc=scipy.optimize.curve_fit(func4,time_vector_from_timestep[:VACF_cut_off:sample_rate],averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],p0=[0, 0], bounds=(-np.inf, np.inf),full_output=True)
+#         #VACF_fitting_params= VACF_fitting_params+(scipy.optimize.curve_fit(func4,averaged_log_file[k,i,:VACF_cut_off,0],averaged_log_file[k,i,:VACF_cut_off,4],method='lm',maxfev=5000)[0],)
+#         VACF_fitting_params_time= VACF_fitting_params_time+ (VACF_fit_calc[0],)
+#         VACF_covariance_time = VACF_covariance_time +(VACF_fit_calc[1],)
     
        
 
-number_of_data_points= VACF_cut_off/sample_rate
-standard_error_fit= ()
+# number_of_data_points= VACF_cut_off/sample_rate
+# standard_error_fit= ()
 
-for k in range(0,1):
-    for i in range(org_var_2.size):
+# for k in range(0,1):
+#     for i in range(org_var_2.size):
         
-        standard_error_fit=standard_error_fit + (np.sqrt(np.mean(((func4(time_vector_from_timestep[:VACF_cut_off:sample_rate],VACF_fitting_params_time[k][0],VACF_fitting_params_time[k][1])- averaged_log_file[k,i,:VACF_cut_off:sample_rate,4])**2)/number_of_data_points)),) 
-        plt.scatter(time_vector_from_timestep[:VACF_cut_off:sample_rate],averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],marker='x')#,label='$f_p=${}'.format(org_var_1[k]))
-        plt.plot(time_vector_from_timestep[:VACF_cut_off:sample_rate],func4(time_vector_from_timestep[:VACF_cut_off:sample_rate],VACF_fitting_params_time[k][0],VACF_fitting_params_time[k][1]),'--',label= "$y=ae^{bx}$, $a=$"+str(sigfig.round(VACF_fitting_params_time[k][0],sigfigs=4))+" and $b=$"+str(sigfig.round(VACF_fitting_params_time[k][1],sigfigs=4))+", $\sigma_{m}=$"+str(sigfig.round(standard_error_fit[k],sigfigs=4)))
-        plt.xlabel('$t/\\tau$')
-        plt.ylabel('$C_{\\nu}(N_{c}\Delta t)$', rotation=0,labelpad=labelpad)
+#         standard_error_fit=standard_error_fit + (np.sqrt(np.mean(((func4(time_vector_from_timestep[:VACF_cut_off:sample_rate],VACF_fitting_params_time[k][0],VACF_fitting_params_time[k][1])- averaged_log_file[k,i,:VACF_cut_off:sample_rate,4])**2)/number_of_data_points)),) 
+#         plt.scatter(time_vector_from_timestep[:VACF_cut_off:sample_rate],averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],marker='x')#,label='$f_p=${}'.format(org_var_1[k]))
+#         plt.plot(time_vector_from_timestep[:VACF_cut_off:sample_rate],func4(time_vector_from_timestep[:VACF_cut_off:sample_rate],VACF_fitting_params_time[k][0],VACF_fitting_params_time[k][1]),'--',label= "$y=ae^{bx}$, $a=$"+str(sigfig.round(VACF_fitting_params_time[k][0],sigfigs=4))+" and $b=$"+str(sigfig.round(VACF_fitting_params_time[k][1],sigfigs=4))+", $\sigma_{m}=$"+str(sigfig.round(standard_error_fit[k],sigfigs=4)))
+#         plt.xlabel('$t/\\tau$')
+#         plt.ylabel('$C_{\\nu}(N_{c}\Delta t)$', rotation=0,labelpad=labelpad)
       
-        plt.legend(loc=7,bbox_to_anchor=(1.3, -0.35))
-        print(VACF_fitting_params)
-plt.savefig(fluid_name+"_VACF_sample_rate_"+str(sample_rate)+"_cut_off_"+str(VACF_cut_off)+"_batch_"+str(batchcode)+".pdf",dpi=500, bbox_inches='tight')
-plt.show()
-#%% VACF integral for diffusivity for unormalised VACF
-degrees_of_freedom = 3
-#play with cut off till the integral value remains approximately constant
-VACF_cut_off=300
-fontsize=20
-labelpadx=15
-labelpady=50
-labelpad=50
-width_plot=15
-height_plot=10
-legendx=1
-legend_y_pos=1
-sample_rate=1
+#         plt.legend(loc=7,bbox_to_anchor=(1.3, -0.35))
+#         print(VACF_fitting_params)
+# #plt.savefig(fluid_name+"_VACF_sample_rate_"+str(sample_rate)+"_cut_off_"+str(VACF_cut_off)+"_batch_"+str(batchcode)+".pdf",dpi=500, bbox_inches='tight')
+# plt.show()
+# VACF integral for diffusivity for unormalised VACF
+# degrees_of_freedom = 3
+# #play with cut off till the integral value remains approximately constant
+# VACF_cut_off=300
+# fontsize=20
+# labelpadx=15
+# labelpady=50
+# labelpad=50
+# width_plot=15
+# height_plot=10
+# legendx=1
+# legend_y_pos=1
+# sample_rate=1
 
 
-for k in range(0,1):
-    for i in range(org_var_2.size):
+# for k in range(0,1):
+#     for i in range(org_var_2.size):
        
-        plt.plot(time_vector_from_timestep[:VACF_cut_off:sample_rate],averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],marker='x')#,label='$f_p=${}'.format(org_var_1[k]))
-        plt.xlabel('$t/\\tau$')
-        plt.ylabel('$C_{\\nu}(N_{c}\Delta t)$', rotation=0,labelpad=labelpad)
+#         plt.plot(time_vector_from_timestep[:VACF_cut_off:sample_rate],averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],marker='x')#,label='$f_p=${}'.format(org_var_1[k]))
+#         plt.xlabel('$t/\\tau$')
+#         plt.ylabel('$C_{\\nu}(N_{c}\Delta t)$', rotation=0,labelpad=labelpad)
       
-        plt.legend(loc=7,bbox_to_anchor=(1.3, -0.35))
+#         plt.legend(loc=7,bbox_to_anchor=(1.3, -0.35))
         
-#plt.savefig(fluid_name+"_All_swaps_VACF_sample_rate_"+str(sample_rate)+"_cut_off_"+str(VACF_cut_off)+"_batch_"+str(batchcode)+".pdf",dpi=500, bbox_inches='tight')
-plt.show()
+# #plt.savefig(fluid_name+"_All_swaps_VACF_sample_rate_"+str(sample_rate)+"_cut_off_"+str(VACF_cut_off)+"_batch_"+str(batchcode)+".pdf",dpi=500, bbox_inches='tight')
+# plt.show()
 
-diffusivity= np.trapz(averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],time_vector_from_timestep[:VACF_cut_off:sample_rate], dx=0.0001,axis=0)/degrees_of_freedom
-print(diffusivity)
+# diffusivity= np.trapz(averaged_log_file[k,i,:VACF_cut_off:sample_rate,4],time_vector_from_timestep[:VACF_cut_off:sample_rate], dx=0.0001,axis=0)/degrees_of_freedom
+# print(diffusivity)
 
 
 
