@@ -40,6 +40,7 @@ dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 
 
 filepath='pure_fluid_new_method_validations/T_1/prod_runs_with_vel_swap'
+filepath='pure_fluid_new_method_validations/T_1/prod_runs_swap_rate_var'
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
 realisation_name_VP=realisation_name_info[1]
@@ -128,6 +129,8 @@ from log2numpy import *
 total_cols_log=4
 org_var_log_1=vel_target
 loc_org_var_log_1=25
+org_var_log_1=swap_rate
+loc_org_var_log_1=20
 org_var_log_2=swap_number#spring_constant
 loc_org_var_log_2=log_SN
 

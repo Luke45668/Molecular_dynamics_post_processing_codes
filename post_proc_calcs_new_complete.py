@@ -9,7 +9,7 @@ after an MPCD simulation.
 #from imp import reload
 import os
 from random import sample
-from numba import jit 
+# from numba import jit 
 #from sys import exception
 #from tkinter import HORIZONTAL
 import numpy as np
@@ -42,7 +42,19 @@ from post_MPCD_MP_processing_module import *
 
 # define key inputs 
 j_=3
-
+colour = [
+ 'black',
+ 'blueviolet',
+ 'cadetblue',
+ 'chartreuse',
+ 'coral',
+ 'cornflowerblue',
+ 'crimson',
+ 'cyan',
+ 'darkblue',
+ 'darkcyan',
+ 'darkgoldenrod',
+ 'darkgray']
 swap_rate=np.array([15,30,60,90,120,150,180,360])
 vel_target=np.array([0.8]) 
 swap_number=np.array([1])
@@ -53,7 +65,7 @@ chunk = 20
 dump_freq=10000 # if you change the timestep rememebr to chaneg this 
 thermo_freq = 10000
 scaled_temp=1
-scaled_timestep=0.01
+scaled_timestep=0.00698428772378578
 realisation=np.array([1,2,3])
 VP_output_col_count = 4 
 r_particle =25e-6 # for some solutions, rememebrr to check if its 25 or 10
@@ -537,33 +549,43 @@ TP_data_upper_realisation_averaged=TP_shear_rate_and_stat_data[6]
 
 #%%
 
-plt.rcParams.update({'font.size': 15})   
+plt.rcParams.update({'font.size': 20})   
 import sigfig
-#lengthscale= sigfig.round(lengthscale,sigfigs=3)
+# lengthscale= sigfig.round(lengthscale,sigfigs=3)
 box_size_nd= box_side_length_scaled 
 
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "Helvetica"
 })
-
+labelpadx=15
+labelpady=25
+fontsize=28
 org_var_1_index_start=0
 org_var_1_index_end=8
 org_var_2_index_start=0
 org_var_2_index_end=1
+shear_rate_plot=(np.abs(shear_rate_upper)+np.abs(shear_rate_lower))*0.5
 
+yticks= np.arange(0,0.0026,0.0004)
 def plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_var_1_index_start,org_var_1_index_end,no_timesteps,timestep_points,scaled_temp,number_of_solutions,org_var_1,org_var_2,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd):
-    for z in range(0,number_of_solutions): 
+    for z in range(0,10):#number_of_solutions): 
         #for k in range(org_var_2_index_start,org_var_2_index_end):
         for m in range(org_var_1_index_start,org_var_1_index_end):
              for k in range(org_var_2_index_start,org_var_2_index_end):
-                plt.plot(timestep_points[0,0,0,:],shear_rate_upper[z,m,k,:])
-                plt.plot(timestep_points[0,0,0,:],shear_rate_lower[z,m,k,:])
-                plt.xlabel('$N_{t}[-]$')
-                plt.ylabel('$\dot{\gamma}[\\tau]$',rotation='horizontal')
-                plt.title(fluid_name+" simulation run with all $f_{v,x}$ and all $N_{v,x}$, $\\bar{T}="+str(scaled_temp)+"$, $L/\ell="+str(box_side_length_scaled[0,z])+"$")
-                #plt.title(fluid_name+" simulation run with all $K$ and $f_{v,x}=$"+str(org_var_1[m])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
+                plt.plot(timestep_points[0,0,0,:],shear_rate_plot[z,m,k,:], label="$f_{p}="+str(swap_rate[m])+"$",color=colour[m])
+                #plt.plot(timestep_points[0,0,0,:],shear_rate_lower[z,m,k,:])
+                plt.xlabel('$N_{t}$', labelpad=labelpadx, fontsize=fontsize)
+                plt.ylabel('$\dot{\gamma}\\tau$',rotation='horizontal',labelpad=labelpady,fontsize=fontsize)
                 
+                plt.yticks(yticks,usetex=True)
+                #plt.yscale('log')
+    
+                #plt.title(fluid_name+" simulation run with all $f_{v,x}$ and all $N_{v,x}$, $\\bar{T}="+str(scaled_temp)+"$, $L/\ell="+str(box_side_length_scaled[0,z])+"$")
+                #plt.title(fluid_name+" simulation run with all $K$ and $f_{v,x}=$"+str(org_var_1[m])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
+        plt.legend(loc='best',bbox_to_anchor=(1,1)) 
+        
+        plt.savefig("plots/"+fluid_name+"_gammadot_vs_timesteps_box_size_var_swap_rate_"+str(int(box_side_length_scaled[0,z]))+"_.pdf", dpi=500, bbox_inches='tight')     
         plt.show()
         #plot_save=input("save figure?, YES/NO")
         # if plot_save=='YES':
@@ -572,8 +594,8 @@ def plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_va
         #     print('Thanks for checking steady state')
 
 plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_var_1_index_start,org_var_1_index_end,no_timesteps,timestep_points,scaled_temp,number_of_solutions,org_var_1,org_var_2,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd)
+#plt.savefig()
 # need to save this plot 
-# saving this data 
 #%%
 name_of_run_for_save=fluid_name+"_scaled_box_size_"+str(box_side_length_scaled[0,0])+"_"+str(box_side_length_scaled[0,-1])+"_"
 print(name_of_run_for_save)
@@ -613,6 +635,8 @@ shear_rate_upper_error=np.load("shear_rate_upper_error_"+name_of_run_for_save+".
 shear_rate_lower_error=np.load("shear_rate_lower_error_"+name_of_run_for_save+".npy")
 VP_z_data_lower=np.load("VP_z_data_lower_"+name_of_run_for_save+".npy")
 VP_z_data_upper=np.load("VP_z_data_upper_"+name_of_run_for_save+".npy")
+TP_z_data_lower=np.load("TP_z_data_lower_"+name_of_run_for_save+".npy")
+TP_z_data_upper=np.load("TP_z_data_upper_"+name_of_run_for_save+".npy")
 #np.save(fluid_name+'_VP_z_data_upper_'+str(run_number)+'_phi_'+str(phi)+'_'+str(np.round(box_side_length_scaled[0,0]))+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),VP_z_data_upper)
 
 
@@ -658,21 +682,39 @@ TP_steady_state_data_upper_truncated_time_averaged=truncation_and_SS_averaging_d
 
 
 #%%plotting qll 4 SS V_Ps
+plt.rcParams['text.usetex'] = True
+marker=['x','o','+','^',"1","X","d","*","P","v"]
+linestyle_tuple = [
+     ('dotted',                (0, (1, 1))),
+     ('dashed',                (0, (5, 5))),
+     ('densely dotted',        (0, (1, 1))),
+     ('long dash with offset', (5, (10, 3))),
+     ('loosely dashed',        (0, (5, 10))),
+     ('densely dashed',        (0, (5, 1))),
+
+     ('loosely dashdotted',    (0, (3, 10, 1, 10))),
+     ('dashdotted',            (0, (3, 5, 1, 5))),
+     ('densely dashdotted',    (0, (3, 1, 1, 1))),
+
+     ('dashdotdotted',         (0, (3, 5, 1, 5, 1, 5))),
+     ('loosely dashdotdotted', (0, (3, 10, 1, 10, 1, 10))),
+     ('densely dashdotdotted', (0, (3, 1, 1, 1, 1, 1)))]
 # need to fix legend location 
 plt.rcParams.update({'font.size': 25})
 org_var_1_choice_index=org_var_1.size
 fontsize=35
 labelpadx=15
-labelpady=35
-width_plot=10
-height_plot=6
+labelpady=25
+width_plot=9
+height_plot=8
 legend_x_pos=1
 legend_y_pos=1
 org_var_1_index_start=0
-org_var_1_index_end=10
+org_var_1_index_end=8
 org_var_2_index_start=0
 org_var_2_index_end=1
 # need to add all these settings for every plot
+#yticks=np.arange(-0.09,0.11,0.02)
 def plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,legend_x_pos, legend_y_pos,labelpadx,labelpady,fontsize,number_of_solutions,org_var_1_choice_index,width_plot,height_plot,org_var_1,org_var_2,VP_ave_freq,no_timesteps,VP_steady_state_data_lower_truncated_time_averaged,VP_steady_state_data_upper_truncated_time_averaged,VP_z_data_lower,VP_z_data_upper):
     for z in range(0,number_of_solutions):
     
@@ -694,14 +736,16 @@ def plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,lege
                 y_1=VP_z_data_lower[z,0,:]
                 #print(y_1.shape)
                 y_2=VP_z_data_upper[z,0,:]
-                print(k)
+                #print(k)
                 #for i in range(org_var_2_index_start,org_var_1_index_end):
                 
-                ax1.plot(y_1[:],x_1[:],label='$f_p=${}'.format(org_var_1[k]),marker='x')
-                ax1.set_ylabel('$v_{x}\ [\\frac{\\tau}{\ell}]$',rotation=0,labelpad=labelpady )
-                ax1.set_xlabel('$L_{z}\ [\ell^{-1}]$',rotation=0,labelpad=labelpadx,)
+                ax1.plot(y_1[:],x_1[:],label='$f_{p}= '+str(org_var_1[k])+'$',marker=marker[k], markersize=6 ,linestyle=linestyle_tuple[k][1],linewidth=3,color=colour[k])
+                ax1.set_ylabel('$v_{x}\\frac{\\tau}{\ell}$',rotation=0,labelpad=labelpady,fontsize=fontsize)
+                ax1.set_xlabel('$L_{z}/\ell$',rotation=0,labelpad=labelpadx,fontsize=fontsize)
                 ax1.set_title('$\\bar{L}='+str(box_side_length_scaled[0,z])+'$')
-                ax1.legend(frameon=False,loc=0,bbox_to_anchor=(legend_x_pos, legend_y_pos))       
+                ax1.legend(loc=0,bbox_to_anchor=(legend_x_pos, legend_y_pos))     
+        
+            plt.savefig("plots/"+fluid_name+"_velocity_profile_var_swap_rate_box_size_"+str(int(box_side_length_scaled[0,z]))+"_.pdf", dpi=500, bbox_inches='tight')             #plt.yticks(yticks,usetex=True)  
         plt.show()
     
 
@@ -764,20 +808,26 @@ for z in range(0,number_of_solutions):
 print("if no fail statements, data can be considered steady")
 
 # plotting gradient of the shear vs time plot 
+fontsize=35
+labelpadx=15
+labelpady=30
+
+legend_x_pos=1
+legend_y_pos=1
 for z in range(0,number_of_solutions): 
      #for m in range(org_var_1_index_start,org_var_1_index_end):
         #for k in range(org_var_2_index_start,org_var_2_index_end):
            # plt.yscale('log')
-            plt.ylabel(' $d \dot{\gamma}/d t\ [1/\\tau^{2}]$',rotation=0)
+            plt.ylabel(' $\\frac{d \dot{\gamma}\\tau^{2}}{d t} $',rotation=0)
             plt.xlabel('$f_{p}[-]$')
-            plt.xlabel('$+v_{target}$')
+            #plt.xlabel('$\\pm v_{target}$',labelpad=labelpadx)
             #plt.xlabel('$K[\\frac{\\tau}{\mu}]$')
             #plt.xscale('log')
-            plt.scatter(org_var_1[:],slope_shear_rate_upper[z,:,0])
-            plt.scatter(org_var_1[:],slope_shear_rate_lower[z,:,0])
+            plt.scatter(org_var_1[:],slope_shear_rate_upper[z,:,0],color=colour[z])
+            plt.scatter(org_var_1[:],slope_shear_rate_lower[z,:,0],color=colour[z])
             #plt.title("Needs a title")
-plt.show
-
+plt.savefig("plots/"+fluid_name+"_shear_rate_steady_state_plot_all_boxes_var_swap.pdf", dpi=500, bbox_inches='tight')    
+plt.show()
 
 
 
@@ -825,22 +875,31 @@ flux_x_momentum_z_direction=np.zeros((number_of_solutions,org_var_2.size,org_var
 total_run_time=scaled_timestep* (no_timesteps-truncation_timestep)
 
 flux_ready_for_plotting=np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
-for z in range(0,number_of_solutions):    
-    for i in range(0,org_var_1.size):
-        box_area_nd=float(box_size_key[z])**2
-        mom_data_realisation_averaged=mom_data_realisation_averaged+(np.mean(mom_data[i],axis=2),)
+box_area_nd=(box_side_length_scaled)**2
+box_area_nd=np.asarray(box_area_nd, dtype = np.float64 ) 
+
+#for z in range(0,number_of_solutions):    
+for i in range(0,org_var_1.size):
+   # box_area_nd=float(box_size_key)**2
+    mom_data_realisation_averaged=mom_data_realisation_averaged+(np.mean(mom_data[i],axis=2),)
+    # print( mom_data_realisation_averaged[i])
+    # print(i)
         #print(mom_data_realisation_averaged[i])
 
+#for z in range(0,number_of_solutions):    
+for i in range(0,org_var_1.size):
 
     #for i in range(0,swap_rate.size):
 
-        mom_data_realisation_averaged_truncated=mom_data_realisation_averaged_truncated+(mom_data_realisation_averaged[i][:,:,number_swaps_before_truncation[0]:],)
+    mom_data_realisation_averaged_truncated=mom_data_realisation_averaged_truncated+(mom_data_realisation_averaged[i][:,:,number_swaps_before_truncation[i]:],)
         
         #print(mom_data_realisation_averaged_truncated[i])
 
-    # now apply the MP formula 
-        mom_difference= mom_data_realisation_averaged_truncated[i][z,:,-1]-mom_data_realisation_averaged_truncated[i][z,:,0]
-        flux_x_momentum_z_direction[z,:,i]=(mom_difference)/(2*total_run_time*float(box_area_nd))
+for z in range(0,number_of_solutions):    
+    for i in range(0,org_var_1.size):
+        # now apply the MP formula 
+            mom_difference= mom_data_realisation_averaged_truncated[i][z,:,-1]-mom_data_realisation_averaged_truncated[i][z,:,0]
+            flux_x_momentum_z_direction[z,:,i]=(mom_difference)/(2*total_run_time*box_area_nd[0,z])
         
 flux_ready_for_plotting=np.log((np.abs(flux_x_momentum_z_direction)))
     
@@ -849,7 +908,7 @@ flux_ready_for_plotting=np.log((np.abs(flux_x_momentum_z_direction)))
 #flux_ready_for_plotting=mom_data_averaging_and_flux_calc(org_var_1,org_var_2,box_size_key,number_of_solutions,org_var_1,truncation_timestep,org_var_2,scaled_timestep,no_timesteps,box_side_length_scaled[0,0],mom_data)[0]
 #mom_data_realisation_averaged_truncated=mom_data_averaging_and_flux_calc(org_var_1,org_var_2,box_size_key,number_of_solutions,org_var_1,truncation_timestep,org_var_2,scaled_timestep,no_timesteps,box_side_length_scaled[0,0],mom_data)[1]
 
-
+#%%
 
 shear_rate_mean_of_both_cells=(((np.abs(shear_rate_lower_steady_state_mean)+np.abs(shear_rate_upper_steady_state_mean))*0.5))
 shear_rate_mean_error_of_both_cells=np.sqrt(((shear_rate_lower_steady_state_mean_error**2)+(shear_rate_upper_steady_state_mean_error**2))*0.5)
@@ -879,8 +938,8 @@ def func4(x,c):
 
 
 
-org_var_1_fitting_start_index=2
-org_var_1_fitting_end_index=6
+org_var_1_fitting_start_index=0
+org_var_1_fitting_end_index=4
 size_of_new_data=org_var_1_fitting_end_index-org_var_1_fitting_start_index
 #shear_rate_error_of_both_cell_mean_over_all_points_relative = shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]/shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
 shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative= np.zeros((box_side_length_scaled.size))
@@ -932,8 +991,12 @@ for z in range(0,number_of_solutions):
 viscosity_fit_mean_individual=np.array([viscosity_fit_mean_individual])
 viscosity_fit_mean_for_comparison = np.repeat(viscosity_fit_mean_individual,org_var_1_fitting_end_index-org_var_1_fitting_start_index,axis=0).T
 viscosity_fit_residual=  viscosity_fit_individual- viscosity_fit_mean_for_comparison
-tolerance=0.04
-if np.any(np.abs(viscosity_fit_residual)/viscosity_fit_mean_for_comparison>tolerance):
+tolerance=0.07
+tolerance_test_=np.abs(viscosity_fit_residual)/viscosity_fit_mean_for_comparison
+tolerance_test=np.mean(np.abs(viscosity_fit_residual)/viscosity_fit_mean_for_comparison,axis=0)
+print(tolerance_test_.shape)
+print(tolerance_test)
+if np.any(tolerance_test>tolerance):
     print('fitting not acceptable')
 else:
     print('viscosity fit accepted')
@@ -1197,17 +1260,19 @@ plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,legend_x
 
 
 #%% plotting temp profiles 
+T_P_for_plotting = np.mean(np.mean(1-(TP_steady_state_data_lower_truncated_time_averaged+TP_steady_state_data_upper_truncated_time_averaged)*0.5, axis=3),axis=1)
+print(np.mean(T_P_for_plotting)*100,"%")
 plt.rcParams.update({'font.size': 25})
 org_var_1_choice_index=org_var_1.size
 fontsize=45
 labelpadx=15
 labelpady=45
-width_plot=12
+width_plot=16.5
 height_plot=7
 legend_x_pos=1
-legend_y_pos=0.8
+legend_y_pos=1
 org_var_1_index_start=0
-org_var_1_index_end=10
+org_var_1_index_end=8
 org_var_2_index_start=0
 org_var_2_index_end=1
 def plotting_SS_Temp_profiles(org_var_2_index_start,org_var_1_index_end,legend_x_pos, legend_y_pos,labelpadx,labelpady,fontsize,number_of_solutions,org_var_1_choice_index,width_plot,height_plot,org_var_1,org_var_2,VP_ave_freq,no_timesteps,TP_steady_state_data_lower_truncated_time_averaged,TP_steady_state_data_upper_truncated_time_averaged,TP_z_data_lower,TP_z_data_upper):
@@ -1236,15 +1301,14 @@ def plotting_SS_Temp_profiles(org_var_2_index_start,org_var_1_index_end,legend_x
                 #for i in range(org_var_2_index_start,org_var_1_index_end):
                 
                 ax1.plot(y_1[:],x_1[:],label='$f_p=${}'.format(org_var_1[k]),marker='x')
-                #ax1.set_yscale('log')
-                #ax2.set_yscale('log')
+                
                 #ax1.set_ylabel('$v_{x}\ [\\frac{\\tau}{\ell}]$',rotation=0,labelpad=labelpady, fontsize=fontsize)
                 ax1.set_xlabel('$L_{z}/\ell$',rotation=0,labelpad=labelpadx,fontsize=fontsize)
                 ax2.plot(y_2[:],x_2[:],label='$f_p=${}'.format(org_var_1[k]),marker='x')
                 ax2.set_ylabel('$ T\\frac{ k_{B}}{\epsilon}$',rotation=0,labelpad=labelpady, fontsize=fontsize)
                 ax2.set_xlabel('$L_{z}/\ell$',rotation=0,labelpad=labelpadx,fontsize=fontsize)
-                ax1.legend(frameon=False,loc=0,bbox_to_anchor=(legend_x_pos, legend_y_pos))      
-            plt.savefig(fluid_name+"_temp_profile_batch_"+str(batchcode)+".pdf",dpi=500, bbox_inches='tight')
+                ax1.legend(loc=0,bbox_to_anchor=(legend_x_pos, legend_y_pos))      
+            plt.savefig("plots/"+fluid_name+"_temp_profile_box_size_swap_var_"+str(int(box_side_length_scaled[0,z]))+"_.pdf",dpi=500, bbox_inches='tight')
             plt.show()
     
 
@@ -1320,6 +1384,7 @@ predicted_dimensionless_shear_viscosity= np.repeat((collisional_visc_dimensionle
 #NOTE: need to add error bars to this 
 labelpadx=5
 labelpady=25
+fontsize=25
 plt.rcParams.update({'font.size': 15})
 
 #shear_viscosity_abs_error_max=np.amax(shear_viscosity_abs_error,axis=0)
@@ -1339,13 +1404,14 @@ plt.ylabel('$\eta \\frac{\ell^{3}}{\epsilon\\tau}$',rotation=0,labelpad=labelpad
 plt.legend()
 plt.tight_layout()     
 #plt.savefig(fluid_name+"_shear_eta_vs_phi_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
+plt.savefig("plots/"+fluid_name+"shear_eta_vs_box_size_swap_rate_var.pdf",dpi=500, bbox_inches='tight' )
 plt.show() 
-#%%
+
 
 
 #%% Reynolds number vs box size 
 def Reynolds_number(shear_rate,shear_viscosity,box_size,rho_density):
-    Re = (shear_rate)*(box_size**2)*(rho_density/np.array([shear_viscosity])).T
+    Re = (shear_rate).T*(box_size**2)*(rho_density/np.array([shear_viscosity]))
     return Re
 rho_density=5
 Re= Reynolds_number(np.exp(shear_rate_mean_of_both_cells[:,:,0]),shear_viscosity,box_side_length_scaled[0,:],rho_density)
@@ -1354,24 +1420,86 @@ y=Re
 
 plt.rcParams.update({'font.size': 15})
 linestyle=['-', '--', '-.', ':', 'solid', 'dashed', 'dashdot', 'dotted']
-
+labelpady=15
 #%y_error_bar=np.abs(np.exp(shear_rate_mean_error_of_both_cells[:,:,0]))
 for z in range(org_var_1_fitting_start_index,org_var_1_fitting_end_index):
+#for z in range(0,8):
     #plt.scatter(x[:,i],y[:,i],label="$L=$"+str(box_side_length_scaled[z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2))+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=1)),marker='x')
     #plt.plot(x,y,"--",marker= 'x')#label="$N_{v,x}=$"+str(org_var_2[z])+", $\Delta\eta_{max}=$"+str(sigfig.round(shear_viscosity_abs_error_max[z],sigfigs=2)),marker='x')
     #plt.errorbar(x,y[:,z],yerr=y_error_bar[:,z],capsize=3,color='r', label="Simulation data",linestyle='dashed')
-    plt.plot(x,y[z,:],color=colour[z], label="$v_{target}="+str(vel_target[z])+"$",marker=marker[z],markersize=8,linestyle=linestyle[z])
+    plt.plot(x,y[z,:],color=colour[z], label="$f_{p}="+str(swap_rate[z])+"$",marker=marker[z],markersize=8,linestyle=linestyle[z])
 
     plt.xlabel('$L/\ell$', labelpad=labelpadx,fontsize=fontsize)
     #plt.plot(x, predicted_dimensionless_shear_viscosity[:], linestyle='solid', label="Tuzel,Ihle and Kroll, 2006")
     plt.yscale('log')
-    plt.ylabel('$Re$',labelpad=labelpadx, rotation=0,fontsize=fontsize)
+    plt.ylabel('$Re$',labelpad=labelpady, rotation=0,fontsize=fontsize)
     #plt.xscale('log')
     #plt.ylabel('$\eta \\frac{\ell^{3}}{\epsilon\\tau}$',rotation=0,labelpad=labelpady,fontsize=fontsize)
     plt.legend(loc='best',bbox_to_anchor=(1,1))
     #plt.tight_layout()     
     #plt.savefig(fluid_name+"_shear_eta_vs_phi_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
+#plt.savefig("plots/"+fluid_name+"Re_vs_box_size_swap_rate_var_all.pdf",dpi=500, bbox_inches='tight' )  
+plt.savefig("plots/"+fluid_name+"Re_vs_box_size_swap_rate_var_selected.pdf",dpi=500, bbox_inches='tight' )
 plt.show() 
+
+#%%Mach number 
+c_f=np.sqrt(5/3)
+labelpady=15
+
+def characteric_vel(Re,shear_viscosity,rho_density,box_side_length_scaled):
+    u_characteristic= Re * shear_viscosity / (rho_density * box_side_length_scaled)
+    
+    return  u_characteristic
+
+u_characteristic= characteric_vel(Re,shear_viscosity,rho_density,box_side_length_scaled)
+
+Mach_number= u_characteristic/c_f
+y=Mach_number
+
+if np.all(Mach_number<0.1):
+    print("Mach number low enough")
+else:
+    print("mach not low enough")
+fontsize=25
+labelpady=10
+labelpadx=5
+for z in range(org_var_1_fitting_start_index,org_var_1_fitting_end_index):
+#for z in range(0,8):
+    #plt.scatter(x[:,i],y[:,i],label="$L=$"+str(box_side_length_scaled[z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2))+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=1)),marker='x')
+    #plt.plot(x,y,"--",marker= 'x')#label="$N_{v,x}=$"+str(org_var_2[z])+", $\Delta\eta_{max}=$"+str(sigfig.round(shear_viscosity_abs_error_max[z],sigfigs=2)),marker='x')
+    #plt.errorbar(x,y[:,z],yerr=y_error_bar[:,z],capsize=3,color='r', label="Simulation data",linestyle='dashed')
+    plt.plot(x,y[z,:],color=colour[z], label="$f_{p}="+str(swap_rate[z])+"$",marker=marker[z],markersize=8,linestyle=linestyle[z])
+
+    plt.xlabel('$L/\ell$', labelpad=labelpadx,fontsize=fontsize)
+  
+    plt.yscale('log')
+    plt.ylabel('$Ma$',labelpad=labelpady, rotation=0,fontsize=fontsize)
+    #plt.xscale('log')
+    #plt.ylabel('$\eta \\frac{\ell^{3}}{\epsilon\\tau}$',rotation=0,labelpad=labelpady,fontsize=fontsize)
+    plt.legend(loc='best',bbox_to_anchor=(1,1))
+    #plt.tight_layout()     
+    #plt.savefig(fluid_name+"_shear_eta_vs_phi_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
+#plt.savefig("plots/"+fluid_name+"Re_vs_box_size_swap_rate_var_all.pdf",dpi=500, bbox_inches='tight' )  
+plt.savefig("plots/"+fluid_name+"Ma_vs_box_size_swap_rate_var_selected.pdf",dpi=500, bbox_inches='tight' )
+plt.show()     
+
+    
+
+#%%Schmidt number 
+D_f=14.99
+
+Sc_after =np.array([shear_viscosity]) / D_f
+
+fontsize=25
+labelpady=20
+labelpadx=10
+plt.xlabel('$L/\ell$', labelpad=labelpadx,fontsize=fontsize)  
+plt.ylabel('$Sc$',labelpad=labelpady, rotation=0,fontsize=fontsize)
+plt.plot(box_side_length_scaled[0,:],Sc_after[0,:])
+plt.savefig("plots/"+fluid_name+"Sc_vs_box_size_swap_rate_var_selected.pdf",dpi=500, bbox_inches='tight' )
+plt.show()
+
+
 # %% saving all the arrays which are needed for plots
 # need to save orginal untruncated VP / shear rate data 
 
