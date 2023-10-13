@@ -24,7 +24,13 @@ from post_MPCD_MP_processing_module import *
 swap_rate = np.array([15]) # values chosen from original mp paper
 swap_number = np.array([1])
 vel_target=np.array(['INF',10,1,0.8,0.6,0.4,0.2,0.1,0.01,0.001]) 
+
+                    
+
 fluid_name='genericSRD'
+fluid_name='productionSRD'
+vel_target=np.array([0.8])
+swap_rate=np.array([15,30,60,90,120,150,180,360])
 ##%% # need to use the same set up as reading and organising log files before, then only read the run time 
 
 
@@ -114,7 +120,7 @@ no_SRD_and_fluid_names = np.concatenate((fluid_name_array,no_SRD),axis=1)
 fluid_name_array=np.unique(no_SRD_and_fluid_names,axis=0)
 
 
-
+#%%
     
 # no_SRD.sort(key=int)
 # no_SRD.sort()
@@ -130,7 +136,7 @@ total_cols_log=4
 org_var_log_1=vel_target
 loc_org_var_log_1=25
 org_var_log_1=swap_rate
-loc_org_var_log_1=20
+loc_org_var_log_1=21
 org_var_log_2=swap_number#spring_constant
 loc_org_var_log_2=log_SN
 
@@ -246,9 +252,9 @@ for i in range(0,count_log):
         org_var_log_1_find_in_name=int(filename[loc_org_var_log_1])
         org_var_1_index=np.where(org_var_log_1==org_var_log_1_find_in_name)[0][0]
     # if there is a string variable input
-    elif isinstance(filename[loc_org_var_log_1],str):
-        org_var_log_1_find_in_name=(filename[loc_org_var_log_1])
-        org_var_1_index=np.where(org_var_log_1==org_var_log_1_find_in_name)[0][0]
+    # elif isinstance(filename[loc_org_var_log_1],str):
+    #     org_var_log_1_find_in_name=(filename[loc_org_var_log_1])
+    #     org_var_1_index=np.where(org_var_log_1==org_var_log_1_find_in_name)[0][0]
 
     else:
         org_var_log_1_find_in_name=float(filename[loc_org_var_log_1])
@@ -333,9 +339,29 @@ def func4(x, a, b):
    #return (a*(x**b))
    #return 10**(a*np.log(x) + b)
    return (a*x) +b 
+#%%
+# vel swap 
 fitting_params=np.zeros((fluid_name_array.shape[0],3))
 
-for z in range(fluid_name_array.shape[0]):
+#for z in range(fluid_name_array.shape[0]):
+for z in range(swap_rate.size):
+    # vel swap data 
+    #fitting=scipy.stats.linregress(no_srd_values[:],run_time_array_with_all_realisations_real_av[:,z,0])
+    # swap rate 
+    fitting=scipy.stats.linregress(no_srd_values[:],run_time_array_with_all_realisations_real_av[:,z,0])
+    fitting_params[z,0]=fitting.slope
+    fitting_params[z,1]=fitting.intercept
+    fitting_params[z,2]=fitting.stderr
+
+fitting_params=np.mean(fitting_params, axis=0)
+#%% swap rater
+fitting_params=np.zeros((swap_rate.size,3))
+
+#for z in range(fluid_name_array.shape[0]):
+for z in range(swap_rate.size):
+    # vel swap data 
+    #fitting=scipy.stats.linregress(no_srd_values[:],run_time_array_with_all_realisations_real_av[:,z,0])
+    # swap rate 
     fitting=scipy.stats.linregress(no_srd_values[:],run_time_array_with_all_realisations_real_av[:,z,0])
     fitting_params[z,0]=fitting.slope
     fitting_params[z,1]=fitting.intercept
@@ -368,6 +394,7 @@ labelpady=35
 marker=['x','o','+','^',"1","X","d","*","P","v"]
 for z in range(0,fluid_name_array.shape[0]):
     plt.scatter(no_srd_values[:],run_time_array_with_all_realisations_real_av[:,z,0],label="$v_{target}="+str(vel_target[z])+"$", marker=marker[z],color=colour[z])
+   # plt.scatter(no_srd_values[:],run_time_array_with_all_realisations_real_av[:,z,0],label="$f_{p}="+str(swap_rate[z])+"$", marker=marker[z],color=colour[z])
    
     plt.xlabel("$N_{SRD}[-]$", labelpad=labelpadx)
     plt.ylabel("$t_{\infty}[s]$", rotation=0,labelpad=labelpady)
@@ -381,6 +408,41 @@ plt.show()
 
 
 
-## %%
+#%% swap rate  version 
+colour = [
+ 'black',
+ 'blueviolet',
+ 'cadetblue',
+ 'chartreuse',
+ 'coral',
+ 'cornflowerblue',
+ 'crimson',
+ 'cyan',
+ 'darkblue',
+ 'darkcyan',
+ 'darkgoldenrod',
+ 'darkgray']
+
+plt.rcParams.update({'font.size': 25})
+fontsize=35
+labelpadx=15
+labelpady=35
+#print(run_time_array_with_all_realisations_swap_av_for_plot[:])
+#print(no_srd_values[:])
+marker=['x','o','+','^',"1","X","d","*","P","v"]
+for z in range(0,swap_rate.size):
+   # plt.scatter(no_srd_values[:],run_time_array_with_all_realisations_real_av[:,z,0],label="$v_{target}="+str(vel_target[z])+"$", marker=marker[z],color=colour[z])
+    plt.scatter(no_srd_values[:],run_time_array_with_all_realisations_real_av[:,z,0],label="$f_{p}="+str(swap_rate[z])+"$", marker=marker[z],color=colour[z])
+   
+    plt.xlabel("$N_{SRD}[-]$", labelpad=labelpadx)
+    plt.ylabel("$t_{\infty}[s]$", rotation=0,labelpad=labelpady)
+    #plt.legend(loc="best",  bbox_to_anchor=(1.05, 1.3) )
+    #plt.savefig("All_fluids_run_time_vs_particle_count_swap_number_"+str(swap_number[swap_number_index])+".pdf",dpi=500,bbox_inches='tight' )
+plt.plot(no_srd_values[:],func4(no_srd_values[:],fitting_params[0],fitting_params[1]))
+plt.legend(loc="best",  bbox_to_anchor=(1.05, 1.3) )
+plt.text(0,-40000,"$y="+str(sigfig.round(fitting_params[0],sigfigs=3))+"x"+str(sigfig.round(fitting_params[1],sigfigs=3))+"$, $\sigma_{M}=\pm"+str(sigfig.round(fitting_params[2],sigfigs=3))+"s$")
+plt.savefig("plots/"+fluid_name+"_run_time_data_vs_nsrd_var_swap_rate.pdf",dpi=500,bbox_inches='tight' )
+plt.show()
+
 
 # %%

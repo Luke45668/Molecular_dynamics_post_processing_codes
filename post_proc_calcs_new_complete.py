@@ -101,6 +101,17 @@ dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 filepath='pure_fluid_new_method_validations/T_1/production_runs'
 filepath='pure_fluid_new_method_validations/T_1/prod_runs_with_vel_swap'
 filepath='pure_fluid_new_method_validations/T_1/prod_runs_swap_rate_var'
+#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_21'
+#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_25'
+#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_37'
+#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_40'
+#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_47'
+#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_55'
+#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_63'
+#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_70'
+#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_73'
+#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_75'
+#filepath='pure_fluid_new_method_validations/T_1/prod_runs_swap_var_test_21_25_'
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
 realisation_name_VP=realisation_name_info[1]
@@ -141,6 +152,7 @@ no_SRD_key=[]
 box_size_key=[]
 #using list comprehension to remove duplicates
 [no_SRD_key.append(x) for x in no_SRD if x not in no_SRD_key]
+no_SRD_key.sort(key=int)
 [box_size_key.append(x) for x in box_size if x not in box_size_key]
 box_side_length_scaled=[]
 for item in box_size_key:
@@ -164,7 +176,9 @@ loc_org_var_1=20
 org_var_2=swap_number #spring_constant
 loc_org_var_2=22#25
 #VP_raw_data= VP_organiser_and_reader(loc_no_SRD,loc_EF,loc_SN,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,swap_number,swap_rate,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
-#%% Velocity profiles 
+
+
+#%%
 
 VP_raw_data= VP_organiser_and_reader_swap_rate_no_strings_input(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,org_var_1,org_var_2,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
 
@@ -174,6 +188,7 @@ error_count=VP_raw_data[2]
 filename=VP_raw_data[3]
 VP_z_data_upper=VP_raw_data[4]
 VP_z_data_lower=VP_raw_data[5]
+
 
 if error_count != 0: 
     print('Error reading velocity profiles, check data !')
@@ -199,6 +214,44 @@ if error_count != 0:
 else:
     print('Temp profile data success')
     
+#%% saving the VPS for debugging 
+
+# 21 only 
+# path="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison"
+
+# np.save(path+"/VP_data_lower_"+str(box_side_length_scaled[0,0])+"_only",VP_data_lower)
+# np.save(path+"/VP_data_upper_"+str(box_side_length_scaled[0,0])+"_only",VP_data_upper)
+
+# #%%
+# ##%%  sizes
+
+# path="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison"
+# np.save(path+"/VP_data_lower_"+str(int(box_side_length_scaled[0,0]))+"_"+str(int(box_side_length_scaled[0,0])),VP_data_lower)
+# np.save(path+"/VP_data_upper_"+str(int(box_side_length_scaled[0,0]))+"_"+str(int(box_side_length_scaled[0,0])),VP_data_upper)
+
+# #%% test to check calc is sucessful 
+# #os.chdir("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison")
+# # VP_raw_data_21_only_upper= np.load("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison/VP_data_upper_"+str(box_side_length_scaled[0,0])+"_only.npy")
+# # VP_raw_data_21_25_upper= np.load("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison/VP_data_upper_"+str(int(box_side_length_scaled[0,0]))+"_"+str(int(box_side_length_scaled[0,1]))+".npy")
+# # VP_raw_data_21_only_lower= np.load("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison/VP_data_lower_"+str(box_side_length_scaled[0,0])+"_only.npy")
+# # VP_raw_data_21_25_lower= np.load("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison/VP_data_lower_"+str(int(box_side_length_scaled[0,0]))+"_"+str(int(box_side_length_scaled[0,1]))+".npy")
+
+
+# # comparison_upper=VP_raw_data_21_only_upper==VP_raw_data_21_25_upper[0]
+# # comparison_lower=VP_raw_data_21_only_lower==VP_raw_data_21_25_lower[0]
+
+
+# for z in range(0,1):
+#     VP_raw_data_only_upper= np.load("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison/VP_data_upper_"+str(box_side_length_scaled[0,z])+"_only.npy")
+#     VP_raw_data_only_lower= np.load("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison/VP_data_lower_"+str((box_side_length_scaled[0,z]))+"_only.npy")
+    
+#     comparison_upper=VP_raw_data_only_upper==VP_data_upper[z]
+#     comparison_lower=VP_raw_data_only_lower==VP_data_lower[z]
+    
+
+#     print(np.all(comparison_lower==True))
+
+#     print(np.all(comparison_upper==True))
 
 #%%log file reader and organiser
 log_EF=21
@@ -523,11 +576,8 @@ if error_count_mom !=0:
 else:
     print("Mom data import success")
 
-#%%
-# Now assess the steady state of the VP data 
-# org_var_1=swap_rate
-# org_var_2=swap_number#spring_constant 
  
+#%%
 VP_shear_rate_and_stat_data=VP_data_averaging_and_stat_test_data(VP_z_data_upper,VP_z_data_lower,no_timesteps,VP_data_lower,VP_data_upper,number_of_solutions,org_var_1,org_var_2,VP_ave_freq)
 pearson_coeff_upper=VP_shear_rate_and_stat_data[0]
 shear_rate_upper=VP_shear_rate_and_stat_data[1]
@@ -545,6 +595,21 @@ TP_shear_rate_and_stat_data=VP_data_averaging_and_stat_test_data(TP_z_data_upper
 
 TP_data_lower_realisation_averaged=TP_shear_rate_and_stat_data[5]
 TP_data_upper_realisation_averaged=TP_shear_rate_and_stat_data[6]
+
+# #%% saving the VPS for debugging 
+
+# # one size only 
+# os.chdir("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison")
+# np.save("shear_rate_lower_"+str(box_side_length_scaled[0,0])+"_only",shear_rate_lower)
+# np.save("shear_rate_upper_"+str(box_side_length_scaled[0,0])+"_only",shear_rate_upper)
+
+
+# #%% 2 sizes
+# path="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison"
+
+# np.save(path+"shear_rate_lower_"+str(int(box_side_length_scaled[0,0]))+"_"+str(int(box_side_length_scaled[0,1])),shear_rate_lower)
+# np.save("shear_rate_upper_"+str(int(box_side_length_scaled[0,0]))+"_"+str(int(box_side_length_scaled[0,1])),shear_rate_upper)
+
 
 
 #%%
@@ -567,9 +632,10 @@ org_var_2_index_start=0
 org_var_2_index_end=1
 shear_rate_plot=(np.abs(shear_rate_upper)+np.abs(shear_rate_lower))*0.5
 
-yticks= np.arange(0,0.0026,0.0004)
+yticks= np.arange(0,0.005,0.0004)
 def plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_var_1_index_start,org_var_1_index_end,no_timesteps,timestep_points,scaled_temp,number_of_solutions,org_var_1,org_var_2,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd):
-    for z in range(0,10):#number_of_solutions): 
+    for z in range(0,number_of_solutions): 
+    #for z in range(0,6):
         #for k in range(org_var_2_index_start,org_var_2_index_end):
         for m in range(org_var_1_index_start,org_var_1_index_end):
              for k in range(org_var_2_index_start,org_var_2_index_end):
@@ -580,7 +646,8 @@ def plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_va
                 
                 plt.yticks(yticks,usetex=True)
                 #plt.yscale('log')
-    
+                #plt.xscale('log')
+                plt.title("$\\bar{L}="+str(int(box_side_length_scaled[0,z]))+"$")
                 #plt.title(fluid_name+" simulation run with all $f_{v,x}$ and all $N_{v,x}$, $\\bar{T}="+str(scaled_temp)+"$, $L/\ell="+str(box_side_length_scaled[0,z])+"$")
                 #plt.title(fluid_name+" simulation run with all $K$ and $f_{v,x}=$"+str(org_var_1[m])+", $\\bar{T}="+str(scaled_temp)+"$, $\ell="+str(lengthscale)+"$")
         plt.legend(loc='best',bbox_to_anchor=(1,1)) 
@@ -639,13 +706,28 @@ TP_z_data_lower=np.load("TP_z_data_lower_"+name_of_run_for_save+".npy")
 TP_z_data_upper=np.load("TP_z_data_upper_"+name_of_run_for_save+".npy")
 #np.save(fluid_name+'_VP_z_data_upper_'+str(run_number)+'_phi_'+str(phi)+'_'+str(np.round(box_side_length_scaled[0,0]))+'_T_'+str(scaled_temp)+'_no_timesteps_'+str(no_timesteps),VP_z_data_upper)
 
+#%%  test to check shear rate data is the same
+#os.chdir("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison")
+# shear_rate_21_only_upper= np.load("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison/shear_rate_upper_"+str(box_side_length_scaled[0,0])+"_only.npy")
+# shear_rate_21_25_upper= np.load("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison/shear_rate_upper_"+str(int(box_side_length_scaled[0,0]))+"_"+str(int(box_side_length_scaled[0,1]))+".npy")
+# shear_rate_21_only_lower= np.load("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison/shear_rate_lower_"+str(box_side_length_scaled[0,0])+"_only.npy")
+# shear_rate_21_25_lower= np.load("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_fluid_new_method_validations/T_1/Raw_vP_comparison/shear_rate_lower_"+str(int(box_side_length_scaled[0,0]))+"_"+str(int(box_side_length_scaled[0,1]))+".npy")
 
+# comparison_upper=shear_rate_21_only_upper==shear_rate_21_25_upper[0]
+# comparison_lower=shear_rate_21_only_lower==shear_rate_21_25_lower[0]
 
+# comparison_upper=shear_rate_21_only_upper==shear_rate_upper[0]
+# comparison_lower=shear_rate_21_only_lower==shear_rate_lower[0]
 
+# # comparison_upper=shear_rate_21_25_upper[1]==shear_rate_upper[1]
+# # comparison_lower=shear_rate_21_25_lower[1]==shear_rate_lower[1]
 
-# %%
+# print(np.all(comparison_lower==True))
 
-truncation_timestep=200000 # for H20 and Nitrogen 
+# print(np.all(comparison_upper==True))
+
+#%%
+truncation_timestep=200000
 truncation_and_SS_averaging_data=  truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,shear_rate_lower_error,timestep_points,pearson_coeff_lower,pearson_coeff_upper,shear_rate_upper,shear_rate_lower,VP_ave_freq,truncation_timestep,VP_data_lower_realisation_averaged,VP_data_upper_realisation_averaged)
 shear_rate_standard_deviation_upper_error_relative=truncation_and_SS_averaging_data[0]/np.sqrt((no_timesteps-truncation_timestep)/VP_ave_freq)# error from fluctuations
 shear_rate_standard_deviation_lower_error_relative=truncation_and_SS_averaging_data[1]/np.sqrt((no_timesteps-truncation_timestep)/VP_ave_freq)# error from fluctuations 
@@ -679,6 +761,24 @@ TP_steady_state_data_lower_truncated_time_averaged=truncation_and_SS_averaging_d
 TP_steady_state_data_upper_truncated_time_averaged=truncation_and_SS_averaging_data_TP[7]
 
 # need to write code that checks the errors 
+
+#%% plotting mean shear rate for each box size 
+plt.rcParams['text.usetex'] = True
+marker=['x','o','+','^',"1","X","d","*","P","v"]
+yticks= np.arange(0,0.00275,0.00025)
+box_side_length_scaled_for_plot=np.repeat(box_side_length_scaled,org_var_1.size,axis=0)
+shear_rate_mean= (shear_rate_upper_steady_state_mean+ np.abs(shear_rate_lower_steady_state_mean)) *0.5
+for z in range(0,number_of_solutions):
+#for z in range(0, org_var_1.size):
+    #for i in range(0,org_var_1.size):
+        
+        plt.scatter(box_side_length_scaled_for_plot[:,z],shear_rate_mean[z,:,0], label="$\\bar{L}="+str(box_side_length_scaled[0,z])+"$",marker=marker[z])  
+        plt.xlabel("$\\bar{L}$")
+        plt.ylabel("$\dot{\gamma}_{SS}\\tau$", rotation=0)
+        plt.yticks(yticks,usetex=True)
+plt.legend(loc='best', bbox_to_anchor=(1,1))   
+plt.savefig("plots/test_with_"+str(number_of_solutions)+"_solutions_steady_shear_rate.pdf",dpi=500, bbox_inches='tight')
+plt.show()
 
 
 #%%plotting qll 4 SS V_Ps
@@ -1205,6 +1305,7 @@ for z in range(0,number_of_solutions):
 
     # print('Dimensionless_shear_viscosity:',shear_viscosity_,',abs error',shear_viscosity_abs_error)
         #print('Grad of fit =',grad_fit,',abs error', grad_fit_abs_error)
+plt.savefig("plots/"+fluid_name+"_flux_vs_shear_all_sizes_swap_rate.pdf",dpi=500, bbox_inches='tight' )
 plt.show() 
 
 #%%
@@ -1422,8 +1523,8 @@ plt.rcParams.update({'font.size': 15})
 linestyle=['-', '--', '-.', ':', 'solid', 'dashed', 'dashdot', 'dotted']
 labelpady=15
 #%y_error_bar=np.abs(np.exp(shear_rate_mean_error_of_both_cells[:,:,0]))
-for z in range(org_var_1_fitting_start_index,org_var_1_fitting_end_index):
-#for z in range(0,8):
+#for z in range(org_var_1_fitting_start_index,org_var_1_fitting_end_index):
+for z in range(0,8):
     #plt.scatter(x[:,i],y[:,i],label="$L=$"+str(box_side_length_scaled[z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2))+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=1)),marker='x')
     #plt.plot(x,y,"--",marker= 'x')#label="$N_{v,x}=$"+str(org_var_2[z])+", $\Delta\eta_{max}=$"+str(sigfig.round(shear_viscosity_abs_error_max[z],sigfigs=2)),marker='x')
     #plt.errorbar(x,y[:,z],yerr=y_error_bar[:,z],capsize=3,color='r', label="Simulation data",linestyle='dashed')
@@ -1431,15 +1532,15 @@ for z in range(org_var_1_fitting_start_index,org_var_1_fitting_end_index):
 
     plt.xlabel('$L/\ell$', labelpad=labelpadx,fontsize=fontsize)
     #plt.plot(x, predicted_dimensionless_shear_viscosity[:], linestyle='solid', label="Tuzel,Ihle and Kroll, 2006")
-    plt.yscale('log')
+    #plt.yscale('log')
     plt.ylabel('$Re$',labelpad=labelpady, rotation=0,fontsize=fontsize)
     #plt.xscale('log')
     #plt.ylabel('$\eta \\frac{\ell^{3}}{\epsilon\\tau}$',rotation=0,labelpad=labelpady,fontsize=fontsize)
     plt.legend(loc='best',bbox_to_anchor=(1,1))
     #plt.tight_layout()     
     #plt.savefig(fluid_name+"_shear_eta_vs_phi_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
-#plt.savefig("plots/"+fluid_name+"Re_vs_box_size_swap_rate_var_all.pdf",dpi=500, bbox_inches='tight' )  
-plt.savefig("plots/"+fluid_name+"Re_vs_box_size_swap_rate_var_selected.pdf",dpi=500, bbox_inches='tight' )
+plt.savefig("plots/"+fluid_name+"Re_vs_box_size_swap_rate_var_all.pdf",dpi=500, bbox_inches='tight' )  
+#plt.savefig("plots/"+fluid_name+"Re_vs_box_size_swap_rate_var_selected.pdf",dpi=500, bbox_inches='tight' )
 plt.show() 
 
 #%%Mach number 
@@ -1463,8 +1564,8 @@ else:
 fontsize=25
 labelpady=10
 labelpadx=5
-for z in range(org_var_1_fitting_start_index,org_var_1_fitting_end_index):
-#for z in range(0,8):
+#for z in range(org_var_1_fitting_start_index,org_var_1_fitting_end_index):
+for z in range(0,8):
     #plt.scatter(x[:,i],y[:,i],label="$L=$"+str(box_side_length_scaled[z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2))+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=1)),marker='x')
     #plt.plot(x,y,"--",marker= 'x')#label="$N_{v,x}=$"+str(org_var_2[z])+", $\Delta\eta_{max}=$"+str(sigfig.round(shear_viscosity_abs_error_max[z],sigfigs=2)),marker='x')
     #plt.errorbar(x,y[:,z],yerr=y_error_bar[:,z],capsize=3,color='r', label="Simulation data",linestyle='dashed')
@@ -1479,8 +1580,8 @@ for z in range(org_var_1_fitting_start_index,org_var_1_fitting_end_index):
     plt.legend(loc='best',bbox_to_anchor=(1,1))
     #plt.tight_layout()     
     #plt.savefig(fluid_name+"_shear_eta_vs_phi_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
-#plt.savefig("plots/"+fluid_name+"Re_vs_box_size_swap_rate_var_all.pdf",dpi=500, bbox_inches='tight' )  
-plt.savefig("plots/"+fluid_name+"Ma_vs_box_size_swap_rate_var_selected.pdf",dpi=500, bbox_inches='tight' )
+plt.savefig("plots/"+fluid_name+"Ma_vs_box_size_swap_rate_var_all.pdf",dpi=500, bbox_inches='tight' )  
+#plt.savefig("plots/"+fluid_name+"Ma_vs_box_size_swap_rate_var_selected.pdf",dpi=500, bbox_inches='tight' )
 plt.show()     
 
     
@@ -1495,7 +1596,7 @@ labelpady=20
 labelpadx=10
 plt.xlabel('$L/\ell$', labelpad=labelpadx,fontsize=fontsize)  
 plt.ylabel('$Sc$',labelpad=labelpady, rotation=0,fontsize=fontsize)
-plt.plot(box_side_length_scaled[0,:],Sc_after[0,:])
+plt.scatter(box_side_length_scaled[0,:],Sc_after[0,:])
 plt.savefig("plots/"+fluid_name+"Sc_vs_box_size_swap_rate_var_selected.pdf",dpi=500, bbox_inches='tight' )
 plt.show()
 
