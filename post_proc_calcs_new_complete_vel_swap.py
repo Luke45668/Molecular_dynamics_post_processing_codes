@@ -785,7 +785,36 @@ TP_steady_state_data_upper_truncated_time_averaged=truncation_and_SS_averaging_d
 
 # need to write code that checks the errors 
 
+#%% plotting mean shear rate for each box size 
+plt.rcParams['text.usetex'] = True
+marker=['x','o','+','^',"1","X","d","*","P","v"]
+#yticks= np.arange(0,0.00275,0.00025)
+box_side_length_scaled_for_plot=np.repeat(box_side_length_scaled,org_var_1.size,axis=0)
+shear_rate_mean= (shear_rate_upper_steady_state_mean+ np.abs(shear_rate_lower_steady_state_mean)) *0.5
+# get fitting scaling for box size with shear rate 
+# def func_exp(a,b,x):
+    
+#     return a*np.exp(b*x)
 
+# fitting_for_shear_box_size_curve = np.zeros((org_var_1.size,3))
+
+# for z in range(0,org_var_1.size):
+
+#         fit = scipy.optimize.curve_fit(func_exp,box_side_length_scaled_for_plot[z,:],shear_rate_mean[:,z,0],method='lm',maxfev=5000)[0]
+#        # fitting_for_shear_box_size_curve[z,0]
+
+for z in range(0,org_var_1.size):
+#for z in range(0, org_var_1.size):
+    #for i in range(0,org_var_1.size):
+        
+        
+        plt.scatter(box_side_length_scaled_for_plot[z,:],shear_rate_mean[:,z,0], label="$f_{p}="+str(swap_rate[z])+"$",marker=marker[z])  
+        plt.xlabel("$L_{z}/\ell$")
+        plt.ylabel("$\dot{\gamma}_{SS}\\tau$", rotation=0, labelpad=labelpady)
+        #plt.yticks(yticks,usetex=True)
+plt.legend(loc='best', bbox_to_anchor=(1,1))   
+plt.savefig("plots/test_with_"+str(number_of_solutions)+"_solutions_steady_shear_rate.pdf",dpi=500, bbox_inches='tight')
+plt.show()
 #%%plotting qll 4 SS V_Ps
 plt.rcParams['text.usetex'] = True
 marker=['x','o','+','^',"1","X","d","*","P","v"]

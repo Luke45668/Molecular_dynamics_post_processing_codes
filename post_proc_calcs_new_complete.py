@@ -50,7 +50,6 @@ colour = [
  'coral',
  'cornflowerblue',
  'crimson',
- 'cyan',
  'darkblue',
  'darkcyan',
  'darkgoldenrod',
@@ -632,7 +631,7 @@ org_var_2_index_start=0
 org_var_2_index_end=1
 shear_rate_plot=(np.abs(shear_rate_upper)+np.abs(shear_rate_lower))*0.5
 
-yticks= np.arange(0,0.005,0.0004)
+#yticks= np.arange(0,0.005,0.0004)
 def plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_var_1_index_start,org_var_1_index_end,no_timesteps,timestep_points,scaled_temp,number_of_solutions,org_var_1,org_var_2,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd):
     for z in range(0,number_of_solutions): 
     #for z in range(0,6):
@@ -644,7 +643,7 @@ def plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_va
                 plt.xlabel('$N_{t}$', labelpad=labelpadx, fontsize=fontsize)
                 plt.ylabel('$\dot{\gamma}\\tau$',rotation='horizontal',labelpad=labelpady,fontsize=fontsize)
                 
-                plt.yticks(yticks,usetex=True)
+                #plt.yticks(yticks,usetex=True)
                 #plt.yscale('log')
                 #plt.xscale('log')
                 plt.title("$\\bar{L}="+str(int(box_side_length_scaled[0,z]))+"$")
@@ -727,7 +726,7 @@ TP_z_data_upper=np.load("TP_z_data_upper_"+name_of_run_for_save+".npy")
 # print(np.all(comparison_upper==True))
 
 #%%
-truncation_timestep=200000
+truncation_timestep=400000
 truncation_and_SS_averaging_data=  truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,shear_rate_lower_error,timestep_points,pearson_coeff_lower,pearson_coeff_upper,shear_rate_upper,shear_rate_lower,VP_ave_freq,truncation_timestep,VP_data_lower_realisation_averaged,VP_data_upper_realisation_averaged)
 shear_rate_standard_deviation_upper_error_relative=truncation_and_SS_averaging_data[0]/np.sqrt((no_timesteps-truncation_timestep)/VP_ave_freq)# error from fluctuations
 shear_rate_standard_deviation_lower_error_relative=truncation_and_SS_averaging_data[1]/np.sqrt((no_timesteps-truncation_timestep)/VP_ave_freq)# error from fluctuations 
@@ -765,17 +764,30 @@ TP_steady_state_data_upper_truncated_time_averaged=truncation_and_SS_averaging_d
 #%% plotting mean shear rate for each box size 
 plt.rcParams['text.usetex'] = True
 marker=['x','o','+','^',"1","X","d","*","P","v"]
-yticks= np.arange(0,0.00275,0.00025)
+#yticks= np.arange(0,0.00275,0.00025)
 box_side_length_scaled_for_plot=np.repeat(box_side_length_scaled,org_var_1.size,axis=0)
 shear_rate_mean= (shear_rate_upper_steady_state_mean+ np.abs(shear_rate_lower_steady_state_mean)) *0.5
-for z in range(0,number_of_solutions):
+# get fitting scaling for box size with shear rate 
+# def func_exp(a,b,x):
+    
+#     return a*np.exp(b*x)
+
+# fitting_for_shear_box_size_curve = np.zeros((org_var_1.size,3))
+
+# for z in range(0,org_var_1.size):
+
+#         fit = scipy.optimize.curve_fit(func_exp,box_side_length_scaled_for_plot[z,:],shear_rate_mean[:,z,0],method='lm',maxfev=5000)[0]
+#        # fitting_for_shear_box_size_curve[z,0]
+
+for z in range(0,org_var_1.size):
 #for z in range(0, org_var_1.size):
     #for i in range(0,org_var_1.size):
         
-        plt.scatter(box_side_length_scaled_for_plot[:,z],shear_rate_mean[z,:,0], label="$\\bar{L}="+str(box_side_length_scaled[0,z])+"$",marker=marker[z])  
-        plt.xlabel("$\\bar{L}$")
-        plt.ylabel("$\dot{\gamma}_{SS}\\tau$", rotation=0)
-        plt.yticks(yticks,usetex=True)
+        
+        plt.scatter(box_side_length_scaled_for_plot[z,:],shear_rate_mean[:,z,0], label="$f_{p}="+str(swap_rate[z])+"$",marker=marker[z])  
+        plt.xlabel("$L_{z}/\ell$")
+        plt.ylabel("$\dot{\gamma}_{SS}\\tau$", rotation=0, labelpad=labelpady)
+        #plt.yticks(yticks,usetex=True)
 plt.legend(loc='best', bbox_to_anchor=(1,1))   
 plt.savefig("plots/test_with_"+str(number_of_solutions)+"_solutions_steady_shear_rate.pdf",dpi=500, bbox_inches='tight')
 plt.show()
@@ -815,6 +827,9 @@ org_var_2_index_start=0
 org_var_2_index_end=1
 # need to add all these settings for every plot
 #yticks=np.arange(-0.09,0.11,0.02)
+def func_linear(x,a,b):
+    return (a*x) + b 
+
 def plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,legend_x_pos, legend_y_pos,labelpadx,labelpady,fontsize,number_of_solutions,org_var_1_choice_index,width_plot,height_plot,org_var_1,org_var_2,VP_ave_freq,no_timesteps,VP_steady_state_data_lower_truncated_time_averaged,VP_steady_state_data_upper_truncated_time_averaged,VP_z_data_lower,VP_z_data_upper):
     for z in range(0,number_of_solutions):
     
@@ -830,20 +845,25 @@ def plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,lege
 
 
             for k in range(0,org_var_1.size):  
+                
                 x_1=VP_steady_state_data_lower_truncated_time_averaged[z,k,m,:]
                 #print(x_1.shape)
                 x_2=VP_steady_state_data_upper_truncated_time_averaged[z,k,m,:]
                 y_1=VP_z_data_lower[z,0,:]
                 #print(y_1.shape)
                 y_2=VP_z_data_upper[z,0,:]
+                a=scipy.stats.linregress(x_1[:],y_1[:]).slope
+                b=scipy.stats.linregress(x_1[:],y_1[:]).intercept
+                
                 #print(k)
                 #for i in range(org_var_2_index_start,org_var_1_index_end):
                 
-                ax1.plot(y_1[:],x_1[:],label='$f_{p}= '+str(org_var_1[k])+'$',marker=marker[k], markersize=6 ,linestyle=linestyle_tuple[k][1],linewidth=3,color=colour[k])
+                ax1.plot(func_linear(x_1[:],a,b),x_1[:],linestyle='dotted',linewidth=3,color=colour[k])
+                ax1.scatter(y_1[:],x_1[:],label='$f_{p}= '+str(org_var_1[k])+'$',marker=marker[k],color=colour[k])
                 ax1.set_ylabel('$v_{x}\\frac{\\tau}{\ell}$',rotation=0,labelpad=labelpady,fontsize=fontsize)
                 ax1.set_xlabel('$L_{z}/\ell$',rotation=0,labelpad=labelpadx,fontsize=fontsize)
                 ax1.set_title('$\\bar{L}='+str(box_side_length_scaled[0,z])+'$')
-                ax1.legend(loc=0,bbox_to_anchor=(legend_x_pos, legend_y_pos))     
+                plt.legend(loc=0,bbox_to_anchor=(legend_x_pos, legend_y_pos))     
         
             plt.savefig("plots/"+fluid_name+"_velocity_profile_var_swap_rate_box_size_"+str(int(box_side_length_scaled[0,z]))+"_.pdf", dpi=500, bbox_inches='tight')             #plt.yticks(yticks,usetex=True)  
         plt.show()
