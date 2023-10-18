@@ -1648,7 +1648,7 @@ plt.show()
 #%%Schmidt number 
 D_f=14.99
 
-Sc_after =np.array([shear_viscosity]) / D_f
+Sc_after =np.array([shear_viscosity]) /( D_f * rho_density)
 Sc_mean=np.repeat(np.mean(Sc_after),number_of_solutions)
 fontsize=25
 labelpady=20
