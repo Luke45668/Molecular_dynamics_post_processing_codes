@@ -80,16 +80,16 @@ box_side_length=np.cbrt(Vol_box_at_specified_phi)
 
 
 #fluid_name='actualVACF'
-fluid_name='genericSRD'
-run_number=''
-batchcode='966397'
-no_timesteps=2000000 # rememebr to change this depending on run 
+# fluid_name='genericSRD'
+# run_number=''
+# batchcode='966397'
+# no_timesteps=2000000 # rememebr to change this depending on run 
 
-# fluid_name='actualVACF'
-# thermo_freq=10
-# equilibration_timesteps=1
-# no_timesteps=5000
-# # grabbing file names 
+fluid_name='actualVACF'
+thermo_freq=10
+equilibration_timesteps=1
+no_timesteps=5000
+# grabbing file names 
 
 # VP_general_name_string='vel.'+fluid_name+'*_VACF_output_*_no_rescale_*'
 
@@ -116,7 +116,7 @@ dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 filepath='pure_fluid_new_method_validations/T_1/production_runs'
 filepath='pure_fluid_new_method_validations/T_1/prod_runs_with_vel_swap'
 
-#filepath='pure_fluid_new_method_validations/T_1/VACF_tests/vel_swap'
+filepath='pure_fluid_new_method_validations/T_1/VACF_tests/vel_swap'
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
 realisation_name_VP=realisation_name_info[1]
@@ -328,7 +328,7 @@ for i in range(0,count_log):
 plt.rcParams.update({'font.size': 20})   
 plt.rcParams['text.usetex'] = True
 
-VACF_cut_off=15
+VACF_cut_off=200
 sample_rate=1
 number_of_data_points= VACF_cut_off/sample_rate
 degrees_of_freedom = 3
@@ -342,25 +342,36 @@ def func4(x, a, b):
 fitting=np.zeros((count_log,3))
 diffusivity=np.zeros((count_log))
 
+# VACF_mean= np.mean(np.sqrt(log_file[:,:,4]**2))
+# VACF_mean= np.mean(np.abs(log_file[:,:,4]))
 for i in range(0,count_log):
-    fitting_tuple = scipy.optimize.curve_fit(func4,log_file[i,:VACF_cut_off,0],log_file[i,:VACF_cut_off,4],p0=[0, 0], bounds=(-np.inf, np.inf))
+    fitting_tuple = scipy.optimize.curve_fit(func4,log_file[i,:VACF_cut_off,0]*scaled_timestep,log_file[i,:VACF_cut_off,4],p0=[0, 0], bounds=(-np.inf, np.inf))
     fitting[i,0]=  fitting_tuple[0][0]
     fitting[i,1]=  fitting_tuple[0][1]
-    fitting[i,2]=np.mean((func4(log_file[i,:VACF_cut_off,0],fitting[i,0], fitting[i,1])- log_file[i,:VACF_cut_off:sample_rate,4])**2)
-    diffusivity[i]=np.trapz(log_file[i,:VACF_cut_off:sample_rate,4],log_file[i,:VACF_cut_off,0], dx=0.001,axis=0)/degrees_of_freedom
+    fitting[i,2]=np.mean((func4(log_file[i,:VACF_cut_off,0]*scaled_timestep,fitting[i,0], fitting[i,1])- log_file[i,:VACF_cut_off:sample_rate,4])**2)
+    diffusivity[i]=np.trapz(log_file[i,:VACF_cut_off:sample_rate,4],log_file[i,:VACF_cut_off,0]*scaled_timestep, dx=0.001,axis=0)/degrees_of_freedom
+
 fitting=np.mean(fitting,axis=0)
-diffusivity=np.mean(diffusivity)
+diffusivity=np.mean(diffusivity) #*VACF_mean
+
+
+
 for i in range(0,count_log):
-    plt.scatter(log_file[i,:VACF_cut_off:sample_rate,0],log_file[i,:VACF_cut_off:sample_rate,4])
+    plt.scatter(log_file[i,:VACF_cut_off:sample_rate,0]*scaled_timestep,log_file[i,:VACF_cut_off:sample_rate,4])
    
-    plt.xlabel('$N_{t}[-]$',fontsize=fontsize)
-    plt.ylabel('$C_{\\nu}(N_{c}\Delta t)$', rotation=0,fontsize=fontsize,labelpad=labelpad)
+    plt.xlabel('$t$',fontsize=fontsize)
+    plt.ylabel('$C_{vac}(t)$', rotation=0,fontsize=fontsize,labelpad=labelpad)
 
-plt.plot(log_file[0,:VACF_cut_off:sample_rate,0],func4(log_file[0,:VACF_cut_off:sample_rate,0],fitting[0],fitting[1]),'--',label= "$y=ae^{bx}$, $a="+str(sigfig.round(fitting[0],sigfigs=4))+", b="+str(sigfig.round(fitting[1],sigfigs=4))+", \sigma_{m}="+str(sigfig.round(fitting[2],sigfigs=4))+",\ \\bar{D}="+str(sigfig.round(diffusivity,sigfigs=4))+"\\tau/\ell^{2}$")
+plt.plot(log_file[0,:VACF_cut_off:sample_rate,0]*scaled_timestep,func4(log_file[0,:VACF_cut_off:sample_rate,0]*scaled_timestep,fitting[0],fitting[1]),'--',label= "$y=ae^{bx}$, $a="+str(sigfig.round(fitting[0],sigfigs=4))+", b="+str(sigfig.round(fitting[1],sigfigs=4))+", \sigma_{m}="+str(sigfig.round(fitting[2],sigfigs=1))+",\ \\bar{D}="+str(sigfig.round(diffusivity,sigfigs=4))+"\\tau/\ell^{2}$", color='black')
 plt.legend(bbox_to_anchor=(1.4, -0.2))
-plt.savefig("plots/"+fluid_name+"_all_data_with_curve_fitting_and_diffusivity.pdf", dpi=500, bbox_inches='tight')
+#plt.savefig("plots/"+fluid_name+"_all_data_with_curve_fitting_and_diffusivity.pdf", dpi=500, bbox_inches='tight')
 plt.show()
-
+#%%
+# plotting whole VACF
+for i in range(0,count_log):
+    plt.scatter(log_file[i,:,0],log_file[i,:,4])
+    
+plt.show()
 
 
 
