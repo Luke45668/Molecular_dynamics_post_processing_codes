@@ -57,14 +57,14 @@ colour = [
 swap_rate=np.array([15,30,60,90,120,150,180,360])
 vel_target=np.array([0.8]) 
 swap_number=np.array([1])
-fluid_name='productionSRD'
+fluid_name='swaprate'
 equilibration_timesteps=1000
 VP_ave_freq =10000
 chunk = 20
 dump_freq=10000 # if you change the timestep rememebr to chaneg this 
 thermo_freq = 10000
 scaled_temp=1
-scaled_timestep=0.00698428772378578
+scaled_timestep=0.009270002009500069
 realisation=np.array([1,2,3])
 VP_output_col_count = 4 
 r_particle =25e-6 # for some solutions, rememebrr to check if its 25 or 10
@@ -96,21 +96,7 @@ TP_general_name_string='temp.'+fluid_name+'**'
 dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 
 
-#filepath='VACF_temp_profile_tests/run_'+batchcode
-filepath='pure_fluid_new_method_validations/T_1/production_runs'
-filepath='pure_fluid_new_method_validations/T_1/prod_runs_with_vel_swap'
-filepath='pure_fluid_new_method_validations/T_1/prod_runs_swap_rate_var'
-#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_21'
-#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_25'
-#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_37'
-#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_40'
-#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_47'
-#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_55'
-#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_63'
-#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_70'
-#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_73'
-#filepath='pure_fluid_new_method_validations/T_1/prod_run_swap_rate_75'
-#filepath='pure_fluid_new_method_validations/T_1/prod_runs_swap_var_test_21_25_'
+filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_0.52_data/swaprate_test'
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
 realisation_name_VP=realisation_name_info[1]
@@ -750,7 +736,7 @@ shear_rate_lower_steady_state_mean_error=truncation_and_SS_averaging_data[9]# er
 
 mean_fitting_error= (np.abs(shear_rate_upper_steady_state_mean_error)+np.abs(shear_rate_lower_steady_state_mean_error))*0.5
 #print(mean_fitting_error)
-if np.all(mean_fitting_error<0.0007):
+if np.all(mean_fitting_error<0.003):
     print("All data accepts linear fit")
 
 else:
@@ -924,7 +910,8 @@ plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,legend_x
 
 #%% checking grad of datta
 #assess gradient of truncated shear rate data to determine steady state
-# can then truncate again 
+# can then truncate again   
+os.getcwd()
 slope_shear_rate_upper=  np.zeros((number_of_solutions,org_var_1.size,org_var_2.size))
 slope_shear_rate_lower=  np.zeros((number_of_solutions,org_var_1.size,org_var_2.size))
 
@@ -1078,7 +1065,7 @@ def func4(x,c):
 
 
 org_var_1_fitting_start_index=0
-org_var_1_fitting_end_index=4
+org_var_1_fitting_end_index=5
 size_of_new_data=org_var_1_fitting_end_index-org_var_1_fitting_start_index
 #shear_rate_error_of_both_cell_mean_over_all_points_relative = shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]/shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
 shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative= np.zeros((box_side_length_scaled.size))
@@ -1130,7 +1117,7 @@ for z in range(0,number_of_solutions):
 viscosity_fit_mean_individual=np.array([viscosity_fit_mean_individual])
 viscosity_fit_mean_for_comparison = np.repeat(viscosity_fit_mean_individual,org_var_1_fitting_end_index-org_var_1_fitting_start_index,axis=0).T
 viscosity_fit_residual=  viscosity_fit_individual- viscosity_fit_mean_for_comparison
-tolerance=0.06
+tolerance=0.09
 tolerance_test_=np.abs(viscosity_fit_residual)/viscosity_fit_mean_for_comparison
 tolerance_test=np.mean(np.abs(viscosity_fit_residual)/viscosity_fit_mean_for_comparison,axis=0)
 print(tolerance_test_.shape)
@@ -1271,6 +1258,7 @@ plotting_flux_vs_shear_rate(shear_rate_mean_error_of_both_cells,func4,labelpadx,
 
 #%% plotting with only one swap rate 
 # need to fit the curve to just the linear part of plot 
+os.getcwd()
 plt.rcParams.update({'font.size': 15})
 labelpadx=15
 labelpady=55
@@ -1289,7 +1277,7 @@ colour = [
  'darkcyan',
  'darkgoldenrod',
  'darkgray']
-marker=['x','o','+','^',"1","X","d","*","P","v"]
+marker=['x','o','+','^',"1","X","d","*","P","v","."]
 shear_viscosity=[]
 shear_viscosity_abs_error=[]
 plt.figure(figsize=(width_plot,height_plot))
@@ -1509,6 +1497,7 @@ plt.show()
      
 #%%
 #calculating theoretical viscosity 
+
 def kinetic_visc_dimensionless(M):
     kinetic_visc_dimensionless=((5*M)/((M-1+np.exp(-M))*(2-np.cos(np.pi/2)-np.cos(np.pi))))-1
     
@@ -1535,7 +1524,7 @@ plt.rcParams.update({'font.size': 15})
 width_plot=8
 height_plot=6
 #shear_viscosity_abs_error_max=np.amax(shear_viscosity_abs_error,axis=0)
-
+os.getcwd()
 x=box_side_length_scaled[0,:]
 y=shear_viscosity[:]
 y_error_bar=np.abs(shear_viscosity_abs_error[:])/np.sqrt(org_var_1.size)
@@ -1552,6 +1541,7 @@ plt.legend(loc='center right',bbox_to_anchor=(0.8,0.3))
 plt.tight_layout()     
 
 #plt.savefig(fluid_name+"_shear_eta_vs_phi_"+str(org_var_1[org_var_1_fitting_start_index])+"_"+str(org_var_1[org_var_1_fitting_end_index-1])+"_run_number_"+str(run_number[0])+"_"+str(run_number[1])+"_"+str(run_number[2])+".pdf",dpi=500, bbox_inches='tight')
+
 plt.savefig("plots/"+fluid_name+"shear_eta_vs_box_size_swap_rate_var.pdf",dpi=500, bbox_inches='tight' )
 plt.show() 
 
@@ -1575,7 +1565,7 @@ height_plot=6
 #%y_error_bar=np.abs(np.exp(shear_rate_mean_error_of_both_cells[:,:,0]))
 #for z in range(org_var_1_fitting_start_index,org_var_1_fitting_end_index):
 
-
+os.getcwd()
 plt.figure(figsize=(width_plot,height_plot))  
 
 for z in range(0,8):
@@ -1622,6 +1612,7 @@ labelpady=18
 width_plot=8
 height_plot=6
 #for z in range(org_var_1_fitting_start_index,org_var_1_fitting_end_index):
+os.getcwd()
 plt.figure(figsize=(width_plot,height_plot)) 
 for z in range(0,8):
     #plt.scatter(x[:,i],y[:,i],label="$L=$"+str(box_side_length_scaled[z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2))+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=1)),marker='x')
@@ -1646,7 +1637,7 @@ plt.show()
     
 
 #%%Schmidt number 
-D_f=14.99
+D_f=0.15
 
 Sc_after =np.array([shear_viscosity]) /( D_f * rho_density)
 Sc_mean=np.repeat(np.mean(Sc_after),number_of_solutions)

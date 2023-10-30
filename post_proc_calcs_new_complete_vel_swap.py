@@ -57,9 +57,7 @@ colour = [
 
 swap_rate=np.array([15,30,60,120,240,480,600])
 swap_rate=np.array([15])
-vel_target=np.array([1,0.1,0.001,0.0001,0.00001,0.000001]) #test 1
-vel_target=np.array([1,0.8,0.6,0.4,0.2,0.1,0.08,0.06,0.04,0.02,0.01]) 
-vel_target=np.array(['INF',10,1,0.8,0.6,0.4,0.2,0.1,0.01,0.001]) 
+vel_target=np.array(['INF',10,5,1,0.8,0.6,0.4,0.2,0.1,0.01,0.001]) 
 
 swap_number=np.array([1])
 fluid_name='genericSRD'
@@ -69,7 +67,7 @@ chunk = 20
 dump_freq=10000 # if you change the timestep rememebr to chaneg this 
 thermo_freq = 10000
 scaled_temp=1
-scaled_timestep=0.00698428772378578
+scaled_timestep=0.009270002009500069 #nubar=0.52
 realisation=np.array([1,2,3])
 VP_output_col_count = 4 
 r_particle =25e-6 # for some solutions, rememebrr to check if its 25 or 10
@@ -79,17 +77,16 @@ Vol_box_at_specified_phi=(N* (4/3)*np.pi*r_particle**3 )/phi
 box_side_length=np.cbrt(Vol_box_at_specified_phi)
 
 
-#fluid_name='actualVACF'
-# fluid_name='genericSRD'
-# run_number=''
-# batchcode='966397'
-# no_timesteps=2000000 # rememebr to change this depending on run 
+fluid_name='vtargetnubar'
+run_number=''
+#batchcode='966397'
+no_timesteps=2000000 # rememebr to change this depending on run 
 
-fluid_name='actualVACF'
-thermo_freq=10
-equilibration_timesteps=1
-no_timesteps=5000
-# grabbing file names 
+# fluid_name='VACF'
+# thermo_freq=10
+# equilibration_timesteps=10000
+# no_timesteps=5000
+# # grabbing file names 
 
 # VP_general_name_string='vel.'+fluid_name+'*_VACF_output_*_no_rescale_*'
 
@@ -115,8 +112,9 @@ dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 #filepath='VACF_temp_profile_tests/run_'+batchcode
 filepath='pure_fluid_new_method_validations/T_1/production_runs'
 filepath='pure_fluid_new_method_validations/T_1/prod_runs_with_vel_swap'
-
-filepath='pure_fluid_new_method_validations/T_1/VACF_tests/vel_swap'
+# VACF 
+filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_0.52_data/VACF_data'
+filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_0.52_data/vtarget_test'
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
 realisation_name_VP=realisation_name_info[1]
@@ -146,18 +144,20 @@ loc_box_size=9
 # using VP
 no_SRD=[]
 box_size=[]
-# for i in range(0,count_VP):
-#     no_srd=realisation_name_VP[i].split('_')
-#     no_SRD.append(no_srd[loc_no_SRD])
-#     box_size.append(no_srd[loc_box_size])
-# # using log
-
-loc_box_size=10
-loc_no_SRD=9
-for i in range(0,count_log):
-    no_srd=realisation_name_log[i].split('_')
+for i in range(0,count_VP):
+    no_srd=realisation_name_VP[i].split('_')
     no_SRD.append(no_srd[loc_no_SRD])
     box_size.append(no_srd[loc_box_size])
+    
+    
+# using log
+
+# loc_box_size=10
+# loc_no_SRD=9
+# for i in range(0,count_log):
+#     no_srd=realisation_name_log[i].split('_')
+#     no_SRD.append(no_srd[loc_no_SRD])
+#     box_size.append(no_srd[loc_box_size])
 
 
     
@@ -234,14 +234,14 @@ log_SN=23
 log_K=27
 log_realisation_index=8
 #def log_file_reader_and_organiser(count_log,):
-log_file_col_count=5
-log_file_row_count=((no_timesteps)/thermo_freq) +2 # to fit full log file  not sure on it 
+log_file_col_count=6
+log_file_row_count=((no_timesteps)/thermo_freq) +1 # to fit full log file  not sure on it 
 log_file_tuple=()
 Path_2_log='/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/'+filepath
-thermo_vars='         KinEng          Temp          TotEng       c_vacf[4]   '
+thermo_vars='         KinEng          Temp          TotEng       c_vacf[4]       c_msd[4]   '
 #thermo_vars='         KinEng          Temp          TotEng    '
 from log2numpy import * 
-total_cols_log=5
+total_cols_log=6
 org_var_log_1=swap_rate
 loc_org_var_log_1=log_EF
 org_var_log_1=vel_target
@@ -327,8 +327,8 @@ for i in range(0,count_log):
 #%% plotting all VACF data
 plt.rcParams.update({'font.size': 20})   
 plt.rcParams['text.usetex'] = True
-
-VACF_cut_off=200
+equilibration_timesteps=10000
+VACF_cut_off=500
 sample_rate=1
 number_of_data_points= VACF_cut_off/sample_rate
 degrees_of_freedom = 3
@@ -345,11 +345,11 @@ diffusivity=np.zeros((count_log))
 # VACF_mean= np.mean(np.sqrt(log_file[:,:,4]**2))
 # VACF_mean= np.mean(np.abs(log_file[:,:,4]))
 for i in range(0,count_log):
-    fitting_tuple = scipy.optimize.curve_fit(func4,log_file[i,:VACF_cut_off,0]*scaled_timestep,log_file[i,:VACF_cut_off,4],p0=[0, 0], bounds=(-np.inf, np.inf))
+    fitting_tuple = scipy.optimize.curve_fit(func4,(log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,log_file[i,:VACF_cut_off,4],p0=[0, 0], bounds=(-np.inf, np.inf),maxfev = 6000)
     fitting[i,0]=  fitting_tuple[0][0]
     fitting[i,1]=  fitting_tuple[0][1]
-    fitting[i,2]=np.mean((func4(log_file[i,:VACF_cut_off,0]*scaled_timestep,fitting[i,0], fitting[i,1])- log_file[i,:VACF_cut_off:sample_rate,4])**2)
-    diffusivity[i]=np.trapz(log_file[i,:VACF_cut_off:sample_rate,4],log_file[i,:VACF_cut_off,0]*scaled_timestep, dx=0.001,axis=0)/degrees_of_freedom
+    fitting[i,2]=np.mean((func4((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,fitting[i,0], fitting[i,1])- log_file[i,:VACF_cut_off:sample_rate,4])**2)
+    diffusivity[i]=np.trapz(log_file[i,:VACF_cut_off:sample_rate,4],(log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep, dx=0.001,axis=0)/degrees_of_freedom
 
 fitting=np.mean(fitting,axis=0)
 diffusivity=np.mean(diffusivity) #*VACF_mean
@@ -357,26 +357,44 @@ diffusivity=np.mean(diffusivity) #*VACF_mean
 
 
 for i in range(0,count_log):
-    plt.scatter(log_file[i,:VACF_cut_off:sample_rate,0]*scaled_timestep,log_file[i,:VACF_cut_off:sample_rate,4])
+    plt.scatter((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,log_file[i,:VACF_cut_off:sample_rate,4])
    
     plt.xlabel('$t$',fontsize=fontsize)
     plt.ylabel('$C_{vac}(t)$', rotation=0,fontsize=fontsize,labelpad=labelpad)
 
-plt.plot(log_file[0,:VACF_cut_off:sample_rate,0]*scaled_timestep,func4(log_file[0,:VACF_cut_off:sample_rate,0]*scaled_timestep,fitting[0],fitting[1]),'--',label= "$y=ae^{bx}$, $a="+str(sigfig.round(fitting[0],sigfigs=4))+", b="+str(sigfig.round(fitting[1],sigfigs=4))+", \sigma_{m}="+str(sigfig.round(fitting[2],sigfigs=1))+",\ \\bar{D}="+str(sigfig.round(diffusivity,sigfigs=4))+"\\tau/\ell^{2}$", color='black')
+plt.plot((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,func4((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,fitting[0],fitting[1]),'--',label= "$y=ae^{bx}$, $a="+str(sigfig.round(fitting[0],sigfigs=4))+", b="+str(sigfig.round(fitting[1],sigfigs=4))+", \sigma_{m}="+str(sigfig.round(fitting[2],sigfigs=1))+",\ \\bar{D}="+str(sigfig.round(diffusivity,sigfigs=4))+"\\tau/\ell^{2}$", color='black')
 plt.legend(bbox_to_anchor=(1.4, -0.2))
-#plt.savefig("plots/"+fluid_name+"_all_data_with_curve_fitting_and_diffusivity.pdf", dpi=500, bbox_inches='tight')
+plt.savefig("plots/"+fluid_name+"_diffusivity_from_VACF.pdf", dpi=500, bbox_inches='tight')
 plt.show()
-#%%
-# plotting whole VACF
+
+#%% mean square displacement plot 
+# calculating diffusivity from MSD
+def func4(x, a, b):
+   return (a*x)+b
+fitting=np.zeros((count_log,3))
+diffusivity=np.zeros((count_log))
+
+# VACF_mean= np.mean(np.sqrt(log_file[:,:,4]**2))
+# VACF_mean= np.mean(np.abs(log_file[:,:,4]))
 for i in range(0,count_log):
-    plt.scatter(log_file[i,:,0],log_file[i,:,4])
+    fitting_tuple = scipy.optimize.curve_fit(func4,(log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,log_file[i,:VACF_cut_off,5],p0=[0, 0], bounds=(-np.inf, np.inf),maxfev = 6000)
+    fitting[i,0]=  fitting_tuple[0][0]
+    fitting[i,1]=  fitting_tuple[0][1]
+    fitting[i,2]=np.mean((func4((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,fitting[i,0], fitting[i,1])- log_file[i,:VACF_cut_off:sample_rate,5])**2)
+    diffusivity[i]=fitting[i,0]/6 # 6Dt
     
+fitting=np.mean(fitting,axis=0)
+diffusivity=np.mean(diffusivity) #*VACF_mean
+labelpad=25
+
+for i in range(0,count_log):
+    plt.scatter((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,log_file[i,:VACF_cut_off:sample_rate,5])
+    plt.xlabel('$t$',fontsize=fontsize)
+    plt.ylabel('$\langle \mathbf{r}\\rangle ^{2}$', rotation=0,fontsize=fontsize,labelpad=labelpad)
+plt.plot((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,func4((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,fitting[0],fitting[1]),'--',label= "$y=ax + b$, $a="+str(sigfig.round(fitting[0],sigfigs=4))+", b="+str(sigfig.round(fitting[1],sigfigs=4))+", \sigma_{m}="+str(sigfig.round(fitting[2],sigfigs=1))+",\ \\bar{D}="+str(sigfig.round(diffusivity,sigfigs=4))+"\\tau/\ell^{2}$", color='black')
+plt.legend(bbox_to_anchor=(1.4, -0.2))
+plt.savefig("plots/"+fluid_name+"_diffusivity_from_MSD.pdf", dpi=500, bbox_inches='tight')
 plt.show()
-
-
-
-
-
 
 #%% plotting E vs Nt and T vs Nt
 # legend colours still dont match 
@@ -714,11 +732,11 @@ fontsize=28
 width_plot=8
 height_plot=6
 org_var_1_index_start=0
-org_var_1_index_end=10
+org_var_1_index_end=11
 org_var_2_index_start=0
 org_var_2_index_end=1
 shear_rate_plot=(np.abs(shear_rate_upper)+np.abs(shear_rate_lower))*0.5
-#yticks = np.arange(0,0.026, 0.002)
+yticks = np.arange(0,0.09, 0.01)
 plt.figure(figsize=(width_plot,height_plot))
 def plot_shear_rate_to_asses_SS(org_var_2_index_end,org_var_2_index_start,org_var_1_index_start,org_var_1_index_end,no_timesteps,phi,lengthscale,timestep_points,scaled_temp,number_of_solutions,org_var_1,org_var_2,shear_rate_upper,shear_rate_lower,fluid_name,box_size_nd):
     for z in range(0,number_of_solutions): 
@@ -823,7 +841,7 @@ shear_rate_lower_steady_state_mean_error=truncation_and_SS_averaging_data[9]# er
 
 mean_fitting_error= (np.abs(shear_rate_upper_steady_state_mean_error)+np.abs(shear_rate_lower_steady_state_mean_error))*0.5
 #print(mean_fitting_error)
-if np.all(mean_fitting_error<0.0007):
+if np.all(mean_fitting_error<0.0024):
     print("All data accepts linear fit")
 
 else:
@@ -843,7 +861,7 @@ TP_steady_state_data_upper_truncated_time_averaged=truncation_and_SS_averaging_d
 
 #%% plotting mean shear rate for each box size 
 plt.rcParams['text.usetex'] = True
-marker=['x','o','+','^',"1","X","d","*","P","v"]
+marker=['x','o','+','^',"1","X","d","*","P","v","."]
 #yticks= np.arange(0,0.00275,0.00025)
 box_side_length_scaled_for_plot=np.repeat(box_side_length_scaled,org_var_1.size,axis=0)
 shear_rate_mean= (shear_rate_upper_steady_state_mean+ np.abs(shear_rate_lower_steady_state_mean)) *0.5
@@ -885,13 +903,13 @@ for z in range(0,org_var_1.size):
         plt.ylabel("$\dot{\gamma}_{SS}$", rotation=0, labelpad=labelpady)
         #plt.yscale('log')
         #plt.yticks(yticks,usetex=True)
-plt.legend(loc='best', bbox_to_anchor=(1,1))   
+plt.legend(loc='best', bbox_to_anchor=(1,1.05))   
 
 plt.savefig("plots/test_with_"+str(number_of_solutions)+"_solutions_steady_shear_rate.pdf",dpi=500, bbox_inches='tight')
 plt.show()
 #%%plotting qll 4 SS V_Ps
 plt.rcParams['text.usetex'] = True
-marker=['x','o','+','^',"1","X","d","*","P","v"]
+marker=['x','o','+','^',"1","X","d","*","P","v",'.']
 linestyle_tuple = [
      ('dotted',                (0, (1, 1))),
      ('dashed',                (0, (5, 5))),
@@ -918,7 +936,7 @@ height_plot=8
 legend_x_pos=1
 legend_y_pos=1
 org_var_1_index_start=0
-org_var_1_index_end=10
+org_var_1_index_end=11
 org_var_2_index_start=0
 org_var_2_index_end=1
 # need to add all these settings for every plot
@@ -994,6 +1012,7 @@ plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,legend_x
 #%% checking grad of datta
 #assess gradient of truncated shear rate data to determine steady state
 # can then truncate again 
+os.getcwd()
 slope_shear_rate_upper=  np.zeros((number_of_solutions,org_var_1.size,org_var_2.size))
 slope_shear_rate_lower=  np.zeros((number_of_solutions,org_var_1.size,org_var_2.size))
 
@@ -1040,7 +1059,7 @@ plt.show()
 
 
 
-
+#%%
 # importing momentum after steady state
 def mom_data_averaging_and_flux_calc(box_size_key,number_of_solutions,org_var_1,truncation_timestep,org_var_2,scaled_timestep,no_timesteps,box_side_length_scaled,mom_data):
     mom_data_realisation_averaged=()
@@ -1140,8 +1159,8 @@ def func4(x,c):
 
 
 
-org_var_1_fitting_start_index=2
-org_var_1_fitting_end_index=7
+org_var_1_fitting_start_index=4
+org_var_1_fitting_end_index=8
 size_of_new_data=org_var_1_fitting_end_index-org_var_1_fitting_start_index
 #shear_rate_error_of_both_cell_mean_over_all_points_relative = shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]/shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
 shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative= np.zeros((box_side_length_scaled.size))
@@ -1351,7 +1370,7 @@ colour = [
  'darkcyan',
  'darkgoldenrod',
  'darkgray']
-marker=['x','o','+','^',"1","X","d","*","P","v"]
+marker=['x','o','+','^',"1","X","d","*","P","v","."]
 
 #plt.rcParams.update({'font.size': 15})
 shear_viscosity=[]
@@ -1605,6 +1624,7 @@ plt.rcParams.update({'font.size': 15})
 x=box_side_length_scaled[0,:]
 y=shear_viscosity[:]
 y_error_bar=np.abs(shear_viscosity_abs_error[:])/np.sqrt(org_var_1.size)
+os.getcwd()
 plt.figure(figsize=(width_plot,height_plot))  
 #plt.scatter(x[:,i],y[:,i],label="$L=$"+str(box_side_length_scaled[z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2))+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=1)),marker='x')
 #plt.plot(x,y,"--",marker= 'x')#label="$N_{v,x}=$"+str(org_var_2[z])+", $\Delta\eta_{max}=$"+str(sigfig.round(shear_viscosity_abs_error_max[z],sigfigs=2)),marker='x')
@@ -1639,6 +1659,7 @@ labelpady=15
 width_plot=8
 height_plot=6
 #%y_error_bar=np.abs(np.exp(shear_rate_mean_error_of_both_cells[:,:,0]))
+os.getcwd()
 plt.figure(figsize=(width_plot,height_plot))  
 for z in range(org_var_1_fitting_start_index,org_var_1_fitting_end_index):
     #plt.scatter(x[:,i],y[:,i],label="$L=$"+str(box_side_length_scaled[z])+", grad$=$"+str(sigfig.round(grad_fit,sigfigs=2))+"$\pm$"+str(sigfig.round(grad_fit_abs_error,sigfigs=1)),marker='x')
@@ -1679,7 +1700,7 @@ else:
     print("mach not low enough")
 fontsize=25
 labelpadx=5
-labelpady=18
+labelpady=25
 width_plot=8
 height_plot=6
 plt.figure(figsize=(width_plot,height_plot))
@@ -1708,7 +1729,7 @@ plt.show()
     
 
 #%%Schmidt number 
-D_f=14.99
+D_f=0.15
 
 Sc_after =np.array([shear_viscosity]) / (D_f*rho_density)
 Sc_mean=np.repeat(np.mean(Sc_after),number_of_solutions)
