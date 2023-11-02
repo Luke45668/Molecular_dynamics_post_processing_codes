@@ -278,7 +278,7 @@ def log_file_organiser_and_reader(org_var_log_1,loc_org_var_log_1,org_var_log_2,
     return  averaged_log_file
     
 
-def mom_file_data_size_reader(j_,number_of_solutions,count_mom,realisation_name_Mom,no_SRD_key,org_var_mom_1,org_var_mom_2,Path_2_mom_file):
+def mom_file_data_size_reader_vtarget(j_,number_of_solutions,count_mom,realisation_name_Mom,no_SRD_key,org_var_mom_1,org_var_mom_2,Path_2_mom_file):
     from mom2numpy import mom2numpy_f
     pass_count=0
     size_list=[]
@@ -302,10 +302,43 @@ def mom_file_data_size_reader(j_,number_of_solutions,count_mom,realisation_name_
     
     mom_data=()
     for i in range(0,org_var_mom_1.size):
+        #when swaprate is varied use function below
+        #mom_data= mom_data+(np.zeros((number_of_solutions,org_var_mom_2.size,j_,(size_array[i,0]))),)
+        #when vtarget is varied use function below    
+        mom_data= mom_data+(np.zeros((number_of_solutions,org_var_mom_2.size,j_,(size_array[0,0]))),)
+            
+         
+    return size_array,mom_data,pass_count
+
+def mom_file_data_size_reader_swap_rate(j_,number_of_solutions,count_mom,realisation_name_Mom,no_SRD_key,org_var_mom_1,org_var_mom_2,Path_2_mom_file):
+    from mom2numpy import mom2numpy_f
+    pass_count=0
+    size_list=[]
     
-         mom_data= mom_data+(np.zeros((number_of_solutions,org_var_mom_2.size,j_,(size_array[i,0]))),)
-         
-         
+    for i in range(0,count_mom):
+       
+        
+        realisation_name=realisation_name_Mom[i]
+        
+        
+        
+        mom_data_test=mom2numpy_f(realisation_name,Path_2_mom_file)  
+        size_list.append(mom_data_test.shape)
+        
+        pass_count=pass_count+1 
+    
+    size_list.sort()
+    size_list.reverse()
+    size_list=list(dict.fromkeys(size_list))
+    size_array=np.array(size_list)
+    
+    mom_data=()
+    for i in range(0,org_var_mom_1.size):
+        #when swaprate is varied use function below
+        mom_data= mom_data+(np.zeros((number_of_solutions,org_var_mom_2.size,j_,(size_array[i,0]))),)
+        #when vtarget is varied use function below    
+        #mom_data= mom_data+(np.zeros((number_of_solutions,org_var_mom_2.size,j_,(size_array[0,0]))),)
+            
          
     return size_array,mom_data,pass_count
 
