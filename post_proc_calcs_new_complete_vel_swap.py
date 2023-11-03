@@ -161,15 +161,8 @@ for item in box_size_key:
 box_side_length_scaled=np.array([box_side_length_scaled])
 number_of_solutions=len(no_SRD_key)
 
-
-#%% Velocity profiles 
-# this cell reads lammps output files, for velocity and temperature profiles. 
-# if possible just load in the data as this method is slower. 
-
-
 simulation_file="MYRIAD_LAMMPS_runs/"+filepath
 Path_2_VP="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/"+simulation_file
-
 # these are the organisation variables which are held in the file names and allow the code to sort them
 # org_var_1=swap_rate
 # loc_org_var_1=20
@@ -177,6 +170,10 @@ org_var_1=vel_target
 loc_org_var_1=24
 org_var_2=swap_number #spring_constant
 loc_org_var_2=22#25
+
+#%% Velocity profiles 
+# this cell reads lammps output files, for velocity and temperature profiles. 
+# if possible just load in the data as this method is slower. 
 
 VP_raw_data=VP_organiser_and_reader(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,org_var_1,org_var_2,no_SRD_key,realisation_name_VP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
 
@@ -478,7 +475,9 @@ shear_rate_standard_deviation_upper_error_relative=truncation_and_SS_averaging_d
 shear_rate_standard_deviation_lower_error_relative=truncation_and_SS_averaging_data[1]/np.sqrt((no_timesteps-truncation_timestep)/VP_ave_freq)# error from fluctuations 
 shear_rate_standard_deviation_both_cell_error_relative= (np.abs(shear_rate_standard_deviation_upper_error_relative)+np.abs(shear_rate_standard_deviation_lower_error_relative)) * 0.5 
 pearson_coeff_upper_mean_SS=truncation_and_SS_averaging_data[2]
+r_squared_upper_mean= pearson_coeff_upper_mean_SS**2
 pearson_coeff_lower_mean_SS=truncation_and_SS_averaging_data[3]
+r_squared_lower_mean= pearson_coeff_lower_mean_SS**2
 pearson_coeff_mean_SS= (np.abs(pearson_coeff_lower_mean_SS)+np.abs(pearson_coeff_upper_mean_SS))*0.5
 shear_rate_lower_steady_state_mean=truncation_and_SS_averaging_data[4]
 #print(shear_rate_lower_steady_state_mean)
@@ -492,6 +491,7 @@ shear_rate_lower_steady_state_mean_error=truncation_and_SS_averaging_data[9]# er
 #print(shear_rate_lower_steady_state_mean_error)
 
 # checking the linear fit 
+rsquared_mean= (r_squared_lower_mean+r_squared_upper_mean)*0.5
 mean_fitting_error= (np.abs(shear_rate_upper_steady_state_mean_error)+np.abs(shear_rate_lower_steady_state_mean_error))*0.5
 #cell_mean_std_dev_error= (np.abs(shear_rate_upper_steady_state_mean_error)+np.abs(shear_rate_lower_steady_state_mean_error))*0.5
 cell_mean_shear_rate= (np.abs(shear_rate_upper_steady_state_mean)+np.abs(shear_rate_lower_steady_state_mean))*0.5
@@ -499,10 +499,20 @@ relative_error_in_velocity_profile_fit=shear_rate_standard_deviation_both_cell_e
 
 shear_rate_mean= (shear_rate_upper_steady_state_mean+ np.abs(shear_rate_lower_steady_state_mean)) *0.5
 
+def plot_meanfitting_error_vs_SS_shear(number_of_solutions,mean_fitting_error,shear_rate_mean):
+    for z in range(0,number_of_solutions):
+        plt.scatter(shear_rate_mean[z,:,0],mean_fitting_error[z,:,0],label="$L="+str(box_side_length_scaled[0,z])+"$", marker='x', color=colour[z])
+        plt.yscale('log')
+        plt.xlabel("$\dot{\\gamma}_{SS}$")
+        plt.ylabel("$\sigma_{m}$", rotation=0)
+        plt.xscale('log')
+        plt.legend(loc='best', bbox_to_anchor=(1,1.05))   
+    plt.show()
+
 
 def plot_relative_error_vs_SS_shear(number_of_solutions,relative_error_in_velocity_profile_fit,shear_rate_mean):
     for z in range(0,number_of_solutions):
-        plt.scatter(shear_rate_mean[z,:,0],relative_error_in_velocity_profile_fit[z,:,0],label="$L="+str(box_side_length_scaled[0,z])+"$", marker='x')
+        plt.scatter(shear_rate_mean[z,:,0],relative_error_in_velocity_profile_fit[z,:,0],label="$L="+str(box_side_length_scaled[0,z])+"$", marker='x', color=colour[z])
         plt.yscale('log')
         plt.xlabel("$\dot{\\gamma}_{SS}$")
         plt.ylabel("$\\frac{\sigma_{std}}{\dot{\\gamma}_{SS}}$", rotation=0)
@@ -510,26 +520,47 @@ def plot_relative_error_vs_SS_shear(number_of_solutions,relative_error_in_veloci
         plt.legend(loc='best', bbox_to_anchor=(1,1.05))   
     plt.show()
 
+def plot_Rsquared_vs_SS_shear(number_of_solutions,rsquared_mean,shear_rate_mean):
+    for z in range(0,number_of_solutions):
+        plt.scatter(shear_rate_mean[z,:,0],rsquared_mean[z,:,0],label="$L="+str(box_side_length_scaled[0,z])+"$", marker='x', color=colour[z])
+       
+        #plt.yscale('log')
+        plt.xlabel("$\dot{\\gamma}_{SS}$")
+        plt.ylabel("$R^{2}$", rotation=0, labelpad=20)
+        plt.xscale('log')
+        plt.legend(loc='best', bbox_to_anchor=(1,1.05))   
+    plt.hlines(0.55,0,np.max(shear_rate_mean), linestyles='dashed')
+    plt.show()
+    
+    
+plot_meanfitting_error_vs_SS_shear(number_of_solutions,mean_fitting_error,shear_rate_mean)
+
 plot_relative_error_vs_SS_shear(number_of_solutions,relative_error_in_velocity_profile_fit,shear_rate_mean)
+
+plot_Rsquared_vs_SS_shear(number_of_solutions,rsquared_mean,shear_rate_mean)
+
+
+
+
 #print(mean_fitting_error)
 # need to compare the mean error to the value, if its very lrge iu
 # VP_mean_velocity= 0.5*(np.abs(VP_steady_state_data_lower_truncated_time_averaged)+np.abs(VP_steady_state_data_upper_truncated_time_averaged))
 # VP_slab_mean_velocity= np.mean(VP_mean_velocity, axis=3)
 
 
-if np.all(mean_fitting_error<0.0024):
+# if np.all(mean_fitting_error<0.0024):
    
-    print("All data accepts linear fit")
+#     print("All data accepts linear fit")
 
-else:
+# else:
    
-     print("Check curve fitting error")
+#      print("Check curve fitting error")
 
-cutoff=4
-if np.all(relative_error_in_velocity_profile_fit[:,0:cutoff]<2):
-    print("Signal to noise ratio acceptable")
-else:
-    print("signal to noise ratio not acceptable")
+# cutoff=4
+# if np.all(relative_error_in_velocity_profile_fit[:,0:cutoff]<2):
+#     print("Signal to noise ratio acceptable")
+# else:
+#     print("signal to noise ratio not acceptable")
 truncation_and_SS_averaging_data_TP=  truncation_step_and_SS_average_of_VP_and_stat_tests(shear_rate_upper_error,shear_rate_lower_error,timestep_points,pearson_coeff_lower,pearson_coeff_upper,shear_rate_upper,shear_rate_lower,VP_ave_freq,truncation_timestep,TP_data_lower_realisation_averaged,TP_data_upper_realisation_averaged)
 
 TP_steady_state_data_lower_truncated_time_averaged=truncation_and_SS_averaging_data_TP[6]
@@ -613,16 +644,63 @@ org_var_1_choice_index=org_var_1.size
 fontsize=35
 labelpadx=10
 labelpady=15
-width_plot=9
-height_plot=8
+width_plot=12
+height_plot=6
+plt.figure(figsize=(width_plot,height_plot))
 legend_x_pos=1
 legend_y_pos=1
-org_var_1_index_start=0
+org_var_1_index_start=6
 org_var_1_index_end=11
 org_var_2_index_start=0
 org_var_2_index_end=1
+def func_linear(x,a,b):
+    return (a*x) + b 
+
+# now testing R^2 of steady state profiles 
+def R_squared_test_on_steady_state_vps_vtarget(number_of_solutions,org_var_2,org_var_1,VP_steady_state_data_lower_truncated_time_averaged):
+    r_squared_of_steady_state_VP_upper= np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
+    r_squared_of_steady_state_VP_lower= np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
+    for z in range(0,number_of_solutions):
+    
+        for m in range(0,org_var_2.size):
+       
+            for k in range(0,org_var_1.size):  
+                y_1=VP_steady_state_data_lower_truncated_time_averaged[z,k,m,:]
+                #print(x_1.shape)
+                y_2=VP_steady_state_data_upper_truncated_time_averaged[z,k,m,:]
+                x_1=VP_z_data_lower[z,0,:]
+                #print(y_1.shape)
+                x_2=VP_z_data_upper[z,0,:]
+                #print(k)
+                #x_1[:],y_1[:]
+                #for i in range(org_var_2_index_start,org_var_1_index_end):
+                # a=scipy.stats.linregress(x_1[:],y_1[:]).slope
+                # b=scipy.stats.linregress(x_1[:],y_1[:]).intercept
+                # c=scipy.stats.linregress(x_1[:],y_1[:]).stderr
+                r_squared_of_steady_state_VP_lower[z,m,k]=(scipy.stats.linregress(x_1[:],y_1[:]).rvalue)**2
+                r_squared_of_steady_state_VP_upper[z,m,k]=(scipy.stats.linregress(x_2[:],y_2[:]).rvalue)**2
+    
+    r_squared_of_steady_state_VP=  (r_squared_of_steady_state_VP_lower + r_squared_of_steady_state_VP_upper)*0.5
+    plt.figure(figsize=(width_plot,height_plot))
+    for z in range(0,number_of_solutions):
+        plt.scatter(org_var_1[:], r_squared_of_steady_state_VP[z,0,:], label="$L="+str(int(box_side_length_scaled[:,z]))+"$", color=colour[z])
+        #plt.yscale('log')
+        plt.xlabel("$\pm v_{target}$", rotation=0, labelpad=labelpadx)
+        plt.ylabel("$R^{2}$",rotation=0, labelpad=20)
+        
+    plt.hlines(0.7,0,10,linestyle='dashed',label="$R^{2}_{tol}=0.7$")
+    plt.legend(bbox_to_anchor=(1,1.1))
+    plt.show()
+    
+    
+    return  r_squared_of_steady_state_VP
+    
+R_squared_test_on_steady_state_vps_vtarget(number_of_solutions,org_var_2,org_var_1,VP_steady_state_data_lower_truncated_time_averaged)
+#%%
 # need to add all these settings for every plot
 #yticks=np.arange(-0.09,0.11,0.02)
+width_plot=9
+height_plot=8
 def plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,legend_x_pos, legend_y_pos,labelpadx,labelpady,fontsize,number_of_solutions,org_var_1_choice_index,width_plot,height_plot,org_var_1,org_var_2,VP_ave_freq,no_timesteps,VP_steady_state_data_lower_truncated_time_averaged,VP_steady_state_data_upper_truncated_time_averaged,VP_z_data_lower,VP_z_data_upper):
     for z in range(0,number_of_solutions):
     
@@ -637,23 +715,35 @@ def plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,lege
         
 
 
-            for k in range(0,org_var_1_index_end):  
-                x_1=VP_steady_state_data_lower_truncated_time_averaged[z,k,m,:]
+            for k in range(org_var_1_index_start,org_var_1_index_end):  
+                y_1=VP_steady_state_data_lower_truncated_time_averaged[z,k,m,:]
                 #print(x_1.shape)
                 x_2=VP_steady_state_data_upper_truncated_time_averaged[z,k,m,:]
-                y_1=VP_z_data_lower[z,0,:]
+                x_1=VP_z_data_lower[z,0,:]
                 #print(y_1.shape)
                 y_2=VP_z_data_upper[z,0,:]
                 #print(k)
+                #x_1[:],y_1[:]
+                #for i in range(org_var_2_index_start,org_var_1_index_end):
+                a=scipy.stats.linregress(x_1[:],y_1[:]).slope
+                b=scipy.stats.linregress(x_1[:],y_1[:]).intercept
+                c=scipy.stats.linregress(x_1[:],y_1[:]).stderr
+                d=scipy.stats.linregress(x_1[:],y_1[:]).rvalue
+                
+                
+                #print(k)
                 #for i in range(org_var_2_index_start,org_var_1_index_end):
                 
-                ax1.plot(y_1[:],x_1[:],label='$v_{target}=\\pm '+str(org_var_1[k])+'$',marker=marker[k], markersize=6 ,linestyle=linestyle_tuple[k][1],linewidth=3,color=colour[k])
+                ax1.plot(x_1[:],func_linear(x_1[:],a,b),linestyle=linestyle_tuple[k][1],linewidth=3,color=colour[k])
+                ax1.scatter(x_1[:],y_1[:],label='$v_{target}= '+str(org_var_1[k])+', \sigma_{M}='+str(sigfig.round(c,sigfigs=3))+', R^{2}='+str(sigfig.round(d**2,sigfigs=3))+'$',marker=marker[k],color=colour[k])
+                
+               # ax1.plot(y_1[:],x_1[:],label='$v_{target}=\\pm '+str(org_var_1[k])+'$',marker=marker[k], markersize=6 ,linestyle=linestyle_tuple[k][1],linewidth=3,color=colour[k])
                 ax1.set_ylabel('$v_{x}$',rotation=0,labelpad=labelpady,fontsize=fontsize)
                 ax1.set_xlabel('$x_{z}$',rotation=0,labelpad=labelpadx,fontsize=fontsize)
                # ax1.set_title('$\\bar{L}='+str(box_side_length_scaled[0,z])+'$')
                 ax1.legend(loc=0,bbox_to_anchor=(legend_x_pos, legend_y_pos))     
         
-            plt.savefig("plots/"+fluid_name+"_velocity_profile_vtarget_var_box_size_"+str(int(box_side_length_scaled[0,z]))+"_.pdf", dpi=500, bbox_inches='tight')             #plt.yticks(yticks,usetex=True)  
+            #plt.savefig("plots/"+fluid_name+"_velocity_profile_vtarget_var_box_size_"+str(int(box_side_length_scaled[0,z]))+"_.pdf", dpi=500, bbox_inches='tight')             #plt.yticks(yticks,usetex=True)  
         plt.show()
     
 
@@ -811,9 +901,10 @@ def func4(x,c):
     return x + c
 
 
+# choose this index based on the R^2 values of the velocity profile 
 
 org_var_1_fitting_start_index=0
-org_var_1_fitting_end_index=7
+org_var_1_fitting_end_index=9
 size_of_new_data=org_var_1_fitting_end_index-org_var_1_fitting_start_index
 #shear_rate_error_of_both_cell_mean_over_all_points_relative = shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]/shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
 shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative= np.zeros((box_side_length_scaled.size))
@@ -873,6 +964,7 @@ else:
 
 viscosity_fit_absolute_error= np.mean(np.abs(viscosity_fit_residual), axis=1)
 viscosity_fit_relative_error= viscosity_fit_absolute_error/viscosity_fit_mean_individual[0,:]
+# here we are considering the shear rate errors and the error in the constitutive fitting curve
 total_error_relative_in_flux_fit= viscosity_fit_relative_error+shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative
 
 
