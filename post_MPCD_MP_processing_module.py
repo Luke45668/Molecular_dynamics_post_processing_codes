@@ -388,6 +388,53 @@ def Mom_organiser_and_reader(mom_data,count_mom,realisation_name_Mom,no_SRD_key,
         #     break
     return mom_data,error_count_mom,failed_list_realisations
 
+
+def Mom_organiser_and_reader_swap_rate(mom_data,count_mom,realisation_name_Mom,no_SRD_key,org_var_mom_1,loc_org_var_mom_1,org_var_mom_2,loc_org_var_mom_2,Path_2_mom_file):
+    from mom2numpy import mom2numpy_f
+    error_count_mom=0
+    failed_list_realisations=[]
+    for i in range(0,count_mom):
+        filename=realisation_name_Mom[i].split('_')
+    
+        no_SRD=filename[8]
+        z=no_SRD_key.index(no_SRD)
+    
+        realisation_index=filename[7]
+        j=int(float(realisation_index))-1
+        if isinstance(filename[loc_org_var_mom_1],int):
+            org_var_mom_1_find_in_name=int(filename[loc_org_var_mom_1])
+            tuple_index=np.where(org_var_mom_1==org_var_mom_1_find_in_name)[0][0]
+        # elif isinstance(filename[loc_org_var_mom_1],str):
+        #     org_var_mom_1_find_in_name=filename[loc_org_var_mom_1]
+        #     tuple_index=np.where(org_var_mom_1==org_var_mom_1_find_in_name)[0][0]
+
+        else:
+            org_var_mom_1_find_in_name=float(filename[loc_org_var_mom_1])
+            tuple_index=np.where(org_var_mom_1==org_var_mom_1_find_in_name)[0][0]
+    
+        if isinstance(filename[loc_org_var_mom_2],int):
+            org_var_mom_2_find_in_name=int(filename[loc_org_var_mom_2])
+            array_index_1= np.where(org_var_mom_2==org_var_mom_2_find_in_name)[0][0] 
+        else:
+            org_var_mom_2_find_in_name=float(filename[loc_org_var_mom_2])
+            array_index_1= np.where(org_var_mom_2==org_var_mom_2_find_in_name)[0][0] 
+        
+        realisation_name=realisation_name_Mom[i]
+        
+        #try:
+        mom_data[tuple_index][z,array_index_1,j,:]=mom2numpy_f(realisation_name,Path_2_mom_file)  
+        
+        
+
+        
+            
+        # except Exception as e:
+        #     print('Mom Data faulty')
+        #     error_count_mom=error_count_mom+1 
+        #     failed_list_realisations.append(realisation_name)
+        #     break
+    return mom_data,error_count_mom,failed_list_realisations
+
 # Averaging for one file 
 # VP_z_data_upper_repeated= np.repeat(VP_z_data_upper.T,VP_data_upper.shape[1],axis=1)
 # VP_z_data_lower_repeated= np.repeat(VP_z_data_lower.T,VP_data_lower.shape[1],axis=1)
