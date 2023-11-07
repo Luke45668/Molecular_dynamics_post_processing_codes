@@ -58,7 +58,12 @@ chunk = 20
 dump_freq=10000 # if you change the timestep rememebr to chaneg this 
 thermo_freq = 10000
 scaled_temp=1
-scaled_timestep=0.009270002009500069 #nubar=0.52
+scaled_timestep=0.009270002009500069 #
+nubar=0.52
+# scaled_timestep=0.0066350508792359635 # 
+# nubar=0.7 
+# scaled_timestep= 0.005071624521210362 # 
+# nubar=0.9
 realisation=np.array([1,2,3])
 VP_output_col_count = 4 
 r_particle =25e-6 # for some solutions, rememebrr to check if its 25 or 10
@@ -73,7 +78,7 @@ run_number=''
 #batchcode='966397'
 no_timesteps=2000000 # rememebr to change this depending on run 
 
-# for VACF run 
+#for VACF run 
 # fluid_name='VACF'
 # thermo_freq=10
 # equilibration_timesteps=10000
@@ -96,9 +101,9 @@ dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 
 
 #VACF file path 
-filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_0.52_data/VACF_data'
+filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_'+str(nubar)+'_data/VACF_data'
 # vtarget file path 
-filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_0.52_data/vtarget_test'
+filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_'+str(nubar)+'_data/vtarget_test'
 
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
@@ -688,8 +693,8 @@ R_squared_test_on_steady_state_vps_vtarget(number_of_solutions,org_var_2,org_var
 #yticks=np.arange(-0.09,0.11,0.02)
 width_plot=9
 height_plot=8
-org_var_1_index_start=9
-org_var_1_index_end=11
+org_var_1_index_start=0
+org_var_1_index_end=9
 org_var_2_index_start=0
 org_var_2_index_end=1
 def plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,legend_x_pos, legend_y_pos,labelpadx,labelpady,fontsize,number_of_solutions,org_var_1_choice_index,width_plot,height_plot,org_var_1,org_var_2,VP_ave_freq,no_timesteps,VP_steady_state_data_lower_truncated_time_averaged,VP_steady_state_data_upper_truncated_time_averaged,VP_z_data_lower,VP_z_data_upper):
@@ -912,7 +917,7 @@ def func4(x,c):
 # choose this index based on the R^2 values of the velocity profile 
 
 org_var_1_fitting_start_index=0
-org_var_1_fitting_end_index=7
+org_var_1_fitting_end_index=6
 size_of_new_data=org_var_1_fitting_end_index-org_var_1_fitting_start_index
 #shear_rate_error_of_both_cell_mean_over_all_points_relative = shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]/shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
 shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative= np.zeros((box_side_length_scaled.size))
@@ -1217,7 +1222,9 @@ plt.show()
     
 
 #%%Schmidt number 
-D_f=0.15
+D_f=0.15 #nubar=0.52 
+D_f=0.084 # nubar=0.9
+
 
 Sc_after =np.array([shear_viscosity]) / (D_f*rho_density)
 Sc_mean=np.repeat(np.mean(Sc_after),number_of_solutions)
