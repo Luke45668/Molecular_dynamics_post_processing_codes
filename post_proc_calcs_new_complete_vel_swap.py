@@ -167,6 +167,7 @@ for item in box_size_key:
 box_side_length_scaled=np.array([box_side_length_scaled])
 number_of_solutions=len(no_SRD_key)
 
+
 simulation_file="MYRIAD_LAMMPS_runs/"+filepath
 Path_2_VP="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/"+simulation_file
 # these are the organisation variables which are held in the file names and allow the code to sort them
@@ -674,7 +675,7 @@ def R_squared_test_on_steady_state_vps_vtarget(number_of_solutions,org_var_2,org
     r_squared_of_steady_state_VP=  (r_squared_of_steady_state_VP_lower + r_squared_of_steady_state_VP_upper)*0.5
     plt.figure(figsize=(width_plot,height_plot))
     for z in range(0,number_of_solutions):
-        plt.scatter(org_var_1[:], r_squared_of_steady_state_VP[z,0,:], label="$L="+str(int(box_side_length_scaled[:,z]))+"$", color=colour[z])
+        plt.scatter(org_var_1[:], r_squared_of_steady_state_VP[z,0,:], label="$L="+str(int(box_side_length_scaled[:,z]))+"$", color=colour[z], marker=marker[z])
         #plt.yscale('log')
         plt.xlabel("$\pm v_{target}$", rotation=0, labelpad=labelpadx)
         plt.ylabel("$R^{2}$",rotation=0, labelpad=20)
@@ -693,13 +694,16 @@ R_squared_test_on_steady_state_vps_vtarget(number_of_solutions,org_var_2,org_var
 #yticks=np.arange(-0.09,0.11,0.02)
 width_plot=9
 height_plot=8
-org_var_1_index_start=0
-org_var_1_index_end=9
+org_var_1_index_start=9
+org_var_1_index_end=11
 org_var_2_index_start=0
 org_var_2_index_end=1
 def plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,legend_x_pos, legend_y_pos,labelpadx,labelpady,fontsize,number_of_solutions,org_var_1_choice_index,width_plot,height_plot,org_var_1,org_var_2,VP_ave_freq,no_timesteps,VP_steady_state_data_lower_truncated_time_averaged,VP_steady_state_data_upper_truncated_time_averaged,VP_z_data_lower,VP_z_data_upper):
-    for z in range(0,number_of_solutions):
-    
+     for z in range(0,number_of_solutions):
+        r_squared_of_steady_state_VP_upper= np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
+        r_squared_of_steady_state_VP_lower= np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
+        r_squared_of_steady_state_VP=np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
+        
         for m in range(0,org_var_2.size):
         #for k in range(0,org_var_1.size):  
             
@@ -724,14 +728,15 @@ def plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,lege
                 a=scipy.stats.linregress(x_1[:],y_1[:]).slope
                 b=scipy.stats.linregress(x_1[:],y_1[:]).intercept
                 c=scipy.stats.linregress(x_1[:],y_1[:]).stderr
-                d=scipy.stats.linregress(x_1[:],y_1[:]).rvalue
-                
-                
+                d=(scipy.stats.linregress(x_1[:],y_1[:]).rvalue)**2
+                r_squared_of_steady_state_VP_lower[z,m,k]=(scipy.stats.linregress(x_1[:],y_1[:]).rvalue)**2
+                r_squared_of_steady_state_VP_upper[z,m,k]=(scipy.stats.linregress(x_2[:],y_2[:]).rvalue)**2
+                r_squared_of_steady_state_VP[z,m,k]=  (r_squared_of_steady_state_VP_lower[z,m,k] + r_squared_of_steady_state_VP_upper[z,m,k])*0.5
                 #print(k)
                 #for i in range(org_var_2_index_start,org_var_1_index_end):
                 
                 ax1.plot(x_1[:],func_linear(x_1[:],a,b),linestyle=linestyle_tuple[k][1],linewidth=3,color=colour[k])
-                ax1.scatter(x_1[:],y_1[:],label='$v_{target}= '+str(org_var_1[k])+', R^{2}='+str(sigfig.round(d**2,sigfigs=4))+'$',marker=marker[k],color=colour[k])
+                ax1.scatter(x_1[:],y_1[:],label='$v_{target}= '+str(org_var_1[k])+', R^{2}='+str(sigfig.round(r_squared_of_steady_state_VP[z,m,k],sigfigs=4))+'$',marker=marker[k],color=colour[k])
                 
                # ax1.plot(y_1[:],x_1[:],label='$v_{target}=\\pm '+str(org_var_1[k])+'$',marker=marker[k], markersize=6 ,linestyle=linestyle_tuple[k][1],linewidth=3,color=colour[k])
                 ax1.set_ylabel('$v_{x}$',rotation=0,labelpad=labelpady,fontsize=fontsize)
@@ -1223,7 +1228,7 @@ plt.show()
 
 #%%Schmidt number 
 D_f=0.15 #nubar=0.52 
-D_f=0.084 # nubar=0.9
+#D_f=0.084 # nubar=0.9
 
 
 Sc_after =np.array([shear_viscosity]) / (D_f*rho_density)

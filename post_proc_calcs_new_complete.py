@@ -50,7 +50,7 @@ swap_rate=np.array([15,30,60,90,120,150,180,360])
 vel_target=np.array([0.8]) 
 swap_number=np.array([1])
 fluid_name='swaprate'
-fluid_name='SRDedittest'
+#fluid_name='SRDedittest'
 equilibration_timesteps=1000
 VP_ave_freq =10000
 chunk = 20
@@ -86,8 +86,8 @@ dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 #swap_rate file path 
 filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_0.52_data/swaprate_test'
 # srdtest filepath 
-filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_'+str(nubar)+'_data/SRDedittest'
-fluid_name='SRDedittest'
+# filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_'+str(nubar)+'_data/SRDedittest'
+# fluid_name='SRDedittest'
 
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
@@ -168,7 +168,7 @@ else:
 
 # Temperature profiles
 # as long as the VP data have the same structure as the TP data this will work 
-TP_raw_data=VP_organiser_and_reader(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,org_var_1,org_var_2,no_SRD_key,realisation_name_TP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
+TP_raw_data=VP_organiser_and_reader_swap_rate_no_strings_input(loc_no_SRD,loc_org_var_1,loc_org_var_2,loc_Realisation_index,box_side_length_scaled,j_,number_of_solutions,org_var_1,org_var_2,no_SRD_key,realisation_name_TP,Path_2_VP,chunk,equilibration_timesteps,VP_ave_freq,no_timesteps,VP_output_col_count,count_VP)
 
 TP_data_upper=TP_raw_data[0]
 TP_data_lower=TP_raw_data[1]
@@ -512,10 +512,10 @@ def R_squared_test_on_steady_state_vps_swaprate(number_of_solutions,org_var_2,or
             for k in range(0,org_var_1.size):  
                 y_1=VP_steady_state_data_lower_truncated_time_averaged[z,k,m,:]
                 #print(x_1.shape)
-                y_2=VP_steady_state_data_upper_truncated_time_averaged[z,k,m,:]
+                x_2=VP_steady_state_data_upper_truncated_time_averaged[z,k,m,:]
                 x_1=VP_z_data_lower[z,0,:]
                 #print(y_1.shape)
-                x_2=VP_z_data_upper[z,0,:]
+                y_2=VP_z_data_upper[z,0,:]
                 #print(k)
                 #x_1[:],y_1[:]
                 #for i in range(org_var_2_index_start,org_var_1_index_end):
@@ -528,7 +528,7 @@ def R_squared_test_on_steady_state_vps_swaprate(number_of_solutions,org_var_2,or
     r_squared_of_steady_state_VP=  (r_squared_of_steady_state_VP_lower + r_squared_of_steady_state_VP_upper)*0.5
     plt.figure(figsize=(width_plot,height_plot))
     for z in range(0,number_of_solutions):
-        plt.scatter(org_var_1[:], r_squared_of_steady_state_VP[z,0,:], label="$L="+str(int(box_side_length_scaled[:,z]))+"$", color=colour[z])
+        plt.scatter(org_var_1[:], r_squared_of_steady_state_VP[z,0,:], label="$L="+str(int(box_side_length_scaled[:,z]))+"$", color=colour[z], marker=marker[z])
         #plt.yscale('log')
         plt.xlabel("$f_{p}$", rotation=0, labelpad=labelpadx)
         plt.ylabel("$R^{2}$",rotation=0, labelpad=20)
@@ -541,20 +541,24 @@ def R_squared_test_on_steady_state_vps_swaprate(number_of_solutions,org_var_2,or
     
     return  r_squared_of_steady_state_VP
     
-R_squared_test_on_steady_state_vps_swaprate(number_of_solutions,org_var_2,org_var_1,VP_steady_state_data_lower_truncated_time_averaged)
+
+r_squared_of_steady_state_VP=R_squared_test_on_steady_state_vps_swaprate(number_of_solutions,org_var_2,org_var_1,VP_steady_state_data_lower_truncated_time_averaged)
 
 #%% plottingvelocity profiles that passed R^2 and those that didnt 
 # need to add all these settings for every plot
 #yticks=np.arange(-0.09,0.11,0.02)
 width_plot=9
 height_plot=8
-org_var_1_index_start=0
-org_var_1_index_end=6
+org_var_1_index_start=6
+org_var_1_index_end=8
 org_var_2_index_start=0
 org_var_2_index_end=1
 def plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,legend_x_pos, legend_y_pos,labelpadx,labelpady,fontsize,number_of_solutions,org_var_1_choice_index,width_plot,height_plot,org_var_1,org_var_2,VP_ave_freq,no_timesteps,VP_steady_state_data_lower_truncated_time_averaged,VP_steady_state_data_upper_truncated_time_averaged,VP_z_data_lower,VP_z_data_upper):
     for z in range(0,number_of_solutions):
-    
+        r_squared_of_steady_state_VP_upper= np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
+        r_squared_of_steady_state_VP_lower= np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
+        r_squared_of_steady_state_VP=np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
+        
         for m in range(0,org_var_2.size):
         #for k in range(0,org_var_1.size):  
             
@@ -579,14 +583,15 @@ def plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,lege
                 a=scipy.stats.linregress(x_1[:],y_1[:]).slope
                 b=scipy.stats.linregress(x_1[:],y_1[:]).intercept
                 c=scipy.stats.linregress(x_1[:],y_1[:]).stderr
-                d=scipy.stats.linregress(x_1[:],y_1[:]).rvalue
-                
-                
+                d=(scipy.stats.linregress(x_1[:],y_1[:]).rvalue)**2
+                r_squared_of_steady_state_VP_lower[z,m,k]=(scipy.stats.linregress(x_1[:],y_1[:]).rvalue)**2
+                r_squared_of_steady_state_VP_upper[z,m,k]=(scipy.stats.linregress(x_2[:],y_2[:]).rvalue)**2
+                r_squared_of_steady_state_VP[z,m,k]=  (r_squared_of_steady_state_VP_lower[z,m,k] + r_squared_of_steady_state_VP_upper[z,m,k])*0.5
                 #print(k)
                 #for i in range(org_var_2_index_start,org_var_1_index_end):
                 
                 ax1.plot(x_1[:],func_linear(x_1[:],a,b),linestyle=linestyle_tuple[k][1],linewidth=3,color=colour[k])
-                ax1.scatter(x_1[:],y_1[:],label='$f_{p}= '+str(org_var_1[k])+', R^{2}='+str(sigfig.round(d**2,sigfigs=4))+'$',marker=marker[k],color=colour[k])
+                ax1.scatter(x_1[:],y_1[:],label='$f_{p}= '+str(org_var_1[k])+', R^{2}='+str(sigfig.round(r_squared_of_steady_state_VP[z,m,k],sigfigs=4))+'$',marker=marker[k],color=colour[k])
                 
                # ax1.plot(y_1[:],x_1[:],label='$v_{target}=\\pm '+str(org_var_1[k])+'$',marker=marker[k], markersize=6 ,linestyle=linestyle_tuple[k][1],linewidth=3,color=colour[k])
                 ax1.set_ylabel('$v_{x}$',rotation=0,labelpad=labelpady,fontsize=fontsize)
@@ -773,7 +778,7 @@ def func4(x,c):
 
 
 org_var_1_fitting_start_index=0
-org_var_1_fitting_end_index=4
+org_var_1_fitting_end_index=3
 size_of_new_data=org_var_1_fitting_end_index-org_var_1_fitting_start_index
 #shear_rate_error_of_both_cell_mean_over_all_points_relative = shear_rate_mean_error_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]/shear_rate_mean_of_both_cells[z,org_var_1_fitting_start_index:org_var_1_fitting_end_index,:]
 shear_rate_mean_error_of_both_cell_mean_over_selected_points_relative= np.zeros((box_side_length_scaled.size))
