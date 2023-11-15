@@ -51,7 +51,7 @@ colour = [
 swap_rate=np.array([15])
 vel_target=np.array(['INF',10,5,1,0.8,0.6,0.4,0.2,0.1,0.01,0.001]) 
 swap_number=np.array([1])
-fluid_name='vtargetnubar'
+
 equilibration_timesteps=1000
 VP_ave_freq =10000
 chunk = 20
@@ -79,10 +79,10 @@ run_number=''
 no_timesteps=2000000 # rememebr to change this depending on run 
 
 #for VACF run 
-# fluid_name='VACF'
-# thermo_freq=10
-# equilibration_timesteps=10000
-# no_timesteps=5000
+fluid_name='VACF'
+thermo_freq=10
+equilibration_timesteps=10000
+no_timesteps=5000
 
 
 
@@ -103,7 +103,7 @@ dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 #VACF file path 
 filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_'+str(nubar)+'_data/VACF_data'
 # vtarget file path 
-filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_'+str(nubar)+'_data/vtarget_test'
+#filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_'+str(nubar)+'_data/vtarget_test'
 
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
@@ -133,22 +133,22 @@ loc_Realisation_index= 7
 loc_box_size=9
 
 # using VP
-no_SRD=[]
-box_size=[]
-for i in range(0,count_VP):
-    no_srd=realisation_name_VP[i].split('_')
-    no_SRD.append(no_srd[loc_no_SRD])
-    box_size.append(no_srd[loc_box_size])
-    
-    
-# using log
-
-# loc_box_size=10
-# loc_no_SRD=9
-# for i in range(0,count_log):
-#     no_srd=realisation_name_log[i].split('_')
+# no_SRD=[]
+# box_size=[]
+# for i in range(0,count_VP):
+#     no_srd=realisation_name_VP[i].split('_')
 #     no_SRD.append(no_srd[loc_no_SRD])
 #     box_size.append(no_srd[loc_box_size])
+    
+    
+# using log, only needed for VACF
+
+loc_box_size=10
+loc_no_SRD=9
+for i in range(0,count_log):
+    no_srd=realisation_name_log[i].split('_')
+    no_SRD.append(no_srd[loc_no_SRD])
+    box_size.append(no_srd[loc_box_size])
 
 
 # sorting the simulations by number of fluid particles 
@@ -263,7 +263,7 @@ for i in range(0,count_log):
     fitting_tuple = scipy.optimize.curve_fit(func4,(log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,log_file[i,:VACF_cut_off,4],p0=[0, 0], bounds=(-np.inf, np.inf),maxfev = 6000)
     fitting[i,0]=  fitting_tuple[0][0]
     fitting[i,1]=  fitting_tuple[0][1]
-    fitting[i,2]=np.mean((func4((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,fitting[i,0], fitting[i,1])- log_file[i,:VACF_cut_off:sample_rate,4])**2)
+    fitting[i,2]=np.mean((func4((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,fitting[i,0],fitting[i,1] )- log_file[i,:VACF_cut_off:sample_rate,4])**2)
     diffusivity[i]=np.trapz(log_file[i,:VACF_cut_off:sample_rate,4],(log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep, dx=0.001,axis=0)/degrees_of_freedom
 
 fitting=np.mean(fitting,axis=0)
@@ -284,18 +284,19 @@ plt.show()
 
 # mean square displacement plot 
 # calculating diffusivity from MSD
-def func4(x, a, b):
-   return (a*x)+b
+def func5(x, a):
+   return (a*x)
 fitting=np.zeros((count_log,3))
 diffusivity=np.zeros((count_log))
 
 # VACF_mean= np.mean(np.sqrt(log_file[:,:,4]**2))
 # VACF_mean= np.mean(np.abs(log_file[:,:,4]))
 for i in range(0,count_log):
-    fitting_tuple = scipy.optimize.curve_fit(func4,(log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,log_file[i,:VACF_cut_off,5],p0=[0, 0], bounds=(-np.inf, np.inf),maxfev = 6000)
+    #fitting_tuple = scipy.optimize.curve_fit(func5,(log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep, log_file[i,:VACF_cut_off,5],p0=[0, 0], bounds=(-np.inf, np.inf),maxfev = 6000)
+    fitting_tuple = scipy.optimize.curve_fit(func5,(log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,log_file[i,:VACF_cut_off,5] , bounds=(-np.inf, np.inf),maxfev = 6000)
     fitting[i,0]=  fitting_tuple[0][0]
-    fitting[i,1]=  fitting_tuple[0][1]
-    fitting[i,2]=np.mean((func4((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,fitting[i,0], fitting[i,1])- log_file[i,:VACF_cut_off:sample_rate,5])**2)
+   #fitting[i,1]=  fitting_tuple[0][1]
+    fitting[i,2]=np.mean((func5((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,fitting[i,0])- log_file[i,:VACF_cut_off:sample_rate,5])**2)
     diffusivity[i]=fitting[i,0]/6 # 6Dt
     
 fitting=np.mean(fitting,axis=0)
@@ -307,8 +308,8 @@ for i in range(0,count_log):
     plt.scatter((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,log_file[i,:VACF_cut_off:sample_rate,5])
     plt.xlabel('$t$',fontsize=fontsize)
     plt.ylabel('$\langle \mathbf{r}\\rangle ^{2}$', rotation=0,fontsize=fontsize,labelpad=labelpad)
-plt.plot((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,func4((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,fitting[0],fitting[1]),'--',label= "$y=ax + b$, $a="+str(sigfig.round(fitting[0],sigfigs=4))+", b="+str(sigfig.round(fitting[1],sigfigs=4))+", \sigma_{m}="+str(sigfig.round(fitting[2],sigfigs=1))+",\ \\bar{D}="+str(sigfig.round(diffusivity,sigfigs=4))+"\\tau/\ell^{2}$", color='black')
-plt.legend(bbox_to_anchor=(1.4, -0.2))
+plt.plot((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,func5((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,fitting[0]),'--',label= "$y=ax,\ a="+str(sigfig.round(fitting[0],sigfigs=4))+", \sigma_{m}="+str(sigfig.round(fitting[2],sigfigs=1))+",\ \\bar{D}="+str(sigfig.round(diffusivity,sigfigs=4))+"\\tau/\ell^{2}$", color='black')
+plt.legend(bbox_to_anchor=(1.1, -0.2))
 plt.savefig("plots/"+fluid_name+"_diffusivity_from_MSD.pdf", dpi=500, bbox_inches='tight')
 plt.show()
 
@@ -694,15 +695,20 @@ R_squared_test_on_steady_state_vps_vtarget(number_of_solutions,org_var_2,org_var
 #yticks=np.arange(-0.09,0.11,0.02)
 width_plot=9
 height_plot=8
-org_var_1_index_start=9
-org_var_1_index_end=11
+org_var_1_index_start=0
+org_var_1_index_end=9
 org_var_2_index_start=0
 org_var_2_index_end=1
 def plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,legend_x_pos, legend_y_pos,labelpadx,labelpady,fontsize,number_of_solutions,org_var_1_choice_index,width_plot,height_plot,org_var_1,org_var_2,VP_ave_freq,no_timesteps,VP_steady_state_data_lower_truncated_time_averaged,VP_steady_state_data_upper_truncated_time_averaged,VP_z_data_lower,VP_z_data_upper):
-     for z in range(0,number_of_solutions):
-        r_squared_of_steady_state_VP_upper= np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
-        r_squared_of_steady_state_VP_lower= np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
-        r_squared_of_steady_state_VP=np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
+    r_squared_of_steady_state_VP_upper= np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
+    r_squared_of_steady_state_VP_lower= np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
+    r_squared_of_steady_state_VP=np.zeros((number_of_solutions,org_var_2.size,org_var_1.size))
+    std_err_of_steady_state_VP_upper= np.zeros((number_of_solutions,org_var_2.size,org_var_1_index_end-org_var_1_index_start))
+    std_err_of_steady_state_VP_lower= np.zeros((number_of_solutions,org_var_2.size,org_var_1_index_end-org_var_1_index_start))
+    std_err_of_steady_state_VP=np.zeros((number_of_solutions,org_var_2.size,org_var_1_index_end-org_var_1_index_start))
+      
+    for z in range(0,number_of_solutions):
+       
         
         for m in range(0,org_var_2.size):
         #for k in range(0,org_var_1.size):  
@@ -732,6 +738,9 @@ def plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,lege
                 r_squared_of_steady_state_VP_lower[z,m,k]=(scipy.stats.linregress(x_1[:],y_1[:]).rvalue)**2
                 r_squared_of_steady_state_VP_upper[z,m,k]=(scipy.stats.linregress(x_2[:],y_2[:]).rvalue)**2
                 r_squared_of_steady_state_VP[z,m,k]=  (r_squared_of_steady_state_VP_lower[z,m,k] + r_squared_of_steady_state_VP_upper[z,m,k])*0.5
+                std_err_of_steady_state_VP_lower[z,m,k]=(scipy.stats.linregress(x_1[:],y_1[:]).stderr)
+                std_err_of_steady_state_VP_upper[z,m,k]=(scipy.stats.linregress(x_2[:],y_2[:]).stderr)
+                std_err_of_steady_state_VP[z,m,k]= np.sqrt( (std_err_of_steady_state_VP_lower[z,m,k]**2 + std_err_of_steady_state_VP_upper[z,m,k]**2)*0.5)
                 #print(k)
                 #for i in range(org_var_2_index_start,org_var_1_index_end):
                 
@@ -746,10 +755,13 @@ def plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,lege
         
             plt.savefig("plots/"+fluid_name+"_velocity_profile_vtarget_var_box_size_"+str(int(box_side_length_scaled[0,z]))+"_range_vt_"+str(org_var_1[org_var_1_index_start-1])+"_"+str(org_var_1[org_var_1_index_end-1])+".pdf", dpi=500, bbox_inches='tight')             #plt.yticks(yticks,usetex=True)  
         plt.show()
+        
+    return std_err_of_steady_state_VP 
     
 
-plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,legend_x_pos, legend_y_pos,labelpadx,labelpady,fontsize,number_of_solutions,org_var_1_choice_index,width_plot,height_plot,org_var_1,org_var_2,VP_ave_freq,no_timesteps,VP_steady_state_data_lower_truncated_time_averaged,VP_steady_state_data_upper_truncated_time_averaged,VP_z_data_lower,VP_z_data_upper)
+std_err_of_steady_state_VP=plotting_SS_velocity_profiles(org_var_2_index_start,org_var_1_index_end,legend_x_pos, legend_y_pos,labelpadx,labelpady,fontsize,number_of_solutions,org_var_1_choice_index,width_plot,height_plot,org_var_1,org_var_2,VP_ave_freq,no_timesteps,VP_steady_state_data_lower_truncated_time_averaged,VP_steady_state_data_upper_truncated_time_averaged,VP_z_data_lower,VP_z_data_upper)
 
+std_err_of_steady_state_VP_mean=np.mean(std_err_of_steady_state_VP)
 
                 
 
