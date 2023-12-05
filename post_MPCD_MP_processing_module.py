@@ -29,7 +29,7 @@ import glob
 
 def VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string):
     #os.chdir('/Users/lukedebono/Documents/LAMMPS_projects_mac_book/OneDrive_1_24-02-2023/MYRIAD_lammps_runs/'+filepath)
-    os.chdir('/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/'+filepath)
+    os.chdir('/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/'+filepath)
     count_VP=0
     realisation_name_VP = []   
     count_mom=0
