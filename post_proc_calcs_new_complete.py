@@ -421,6 +421,7 @@ TP_steady_state_data_upper_truncated_time_averaged=truncation_and_SS_averaging_d
 plt.rcParams['text.usetex'] = True
 marker=['x','o','+','^',"1","X","d","*","P","v"]
 #yticks= np.arange(0,0.00275,0.00025)
+yticks= np.arange(0,0.1, 0.02)
 box_side_length_scaled_for_plot=np.repeat(box_side_length_scaled,org_var_1.size,axis=0)
 shear_rate_mean= (shear_rate_upper_steady_state_mean+ np.abs(shear_rate_lower_steady_state_mean)) *0.5
 # get fitting scaling for box size with shear rate 
@@ -458,7 +459,7 @@ for z in range(0,org_var_1.size):
         plt.xlabel("$L$")
         plt.ylabel("$\dot{\gamma}_{SS}$", rotation=0, labelpad=labelpady)
         #plt.yscale('log')
-        #plt.yticks(yticks,usetex=True)
+        plt.yticks(yticks,usetex=True)
 plt.legend(loc='best', bbox_to_anchor=(1,1))   
 
 plt.savefig("plots/test_with_"+str(number_of_solutions)+"_solutions_steady_shear_rate.pdf",dpi=500, bbox_inches='tight')
@@ -1134,8 +1135,12 @@ plt.show()
 #%%Schmidt number 
 D_f=0.15
 
+# nubar=0.52 
+# Sc=3.51 +/- 0.10 
+
 Sc_after =np.array([shear_viscosity]) /( D_f * rho_density)
 Sc_mean=np.repeat(np.mean(Sc_after),number_of_solutions)
+SC_std_dev= np.std(Sc_after)
 fontsize=25
 labelpady=20
 labelpadx=10

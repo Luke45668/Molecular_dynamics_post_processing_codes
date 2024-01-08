@@ -78,11 +78,11 @@ run_number=''
 #batchcode='966397'
 no_timesteps=2000000 # rememebr to change this depending on run 
 
-#for VACF run 
-fluid_name='VACF'
-thermo_freq=10
-equilibration_timesteps=10000
-no_timesteps=5000
+# #for VACF run 
+# fluid_name='VACF'
+# thermo_freq=10
+# equilibration_timesteps=10000
+# no_timesteps=5000
 
 
 
@@ -101,9 +101,9 @@ dump_general_name_string='test_run_dump_'+fluid_name+'_*'
 
 
 #VACF file path 
-filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_'+str(nubar)+'_data/VACF_data'
+#filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_'+str(nubar)+'_data/VACF_data'
 # vtarget file path 
-#filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_'+str(nubar)+'_data/vtarget_test'
+filepath='pure_fluid_new_method_validations/Final_MPCD_val_run/fluid_visc_'+str(nubar)+'_data/vtarget_test'
 
 realisation_name_info= VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string)
 realisation_name_Mom=realisation_name_info[0]
@@ -118,8 +118,8 @@ realisation_name_TP=realisation_name_info[8]
 count_TP=realisation_name_info[9]
 box_size_loc=9
 
-#filename_for_lengthscale=realisation_name_VP[0].split('_')
-filename_for_lengthscale=realisation_name_log[0].split('_')
+filename_for_lengthscale=realisation_name_VP[0].split('_')
+#filename_for_lengthscale=realisation_name_log[0].split('_')
 lengthscale=box_side_length/float(filename_for_lengthscale[box_size_loc])
 
 
@@ -132,23 +132,25 @@ loc_SN=22
 loc_Realisation_index= 7
 loc_box_size=9
 
-# using VP
-# no_SRD=[]
-# box_size=[]
-# for i in range(0,count_VP):
-#     no_srd=realisation_name_VP[i].split('_')
-#     no_SRD.append(no_srd[loc_no_SRD])
-#     box_size.append(no_srd[loc_box_size])
+#using VP
+no_SRD=[]
+box_size=[]
+for i in range(0,count_VP):
+    no_srd=realisation_name_VP[i].split('_')
+    no_SRD.append(no_srd[loc_no_SRD])
+    box_size.append(no_srd[loc_box_size])
     
     
 # using log, only needed for VACF
 
-loc_box_size=10
-loc_no_SRD=9
-for i in range(0,count_log):
-    no_srd=realisation_name_log[i].split('_')
-    no_SRD.append(no_srd[loc_no_SRD])
-    box_size.append(no_srd[loc_box_size])
+# loc_box_size=10
+# loc_no_SRD=9
+# no_SRD=[]
+# box_size=[]
+# for i in range(0,count_log):
+#     no_srd=realisation_name_log[i].split('_')
+#     no_SRD.append(no_srd[loc_no_SRD])
+#     box_size.append(no_srd[loc_box_size])
 
 
 # sorting the simulations by number of fluid particles 
@@ -245,7 +247,7 @@ for i in range(0,count_log):
 plt.rcParams.update({'font.size': 20})   
 plt.rcParams['text.usetex'] = True
 equilibration_timesteps=10000
-VACF_cut_off=500
+VACF_cut_off=40
 sample_rate=1
 number_of_data_points= VACF_cut_off/sample_rate
 degrees_of_freedom = 3
@@ -281,22 +283,23 @@ plt.plot((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scale
 plt.legend(bbox_to_anchor=(1.4, -0.2))
 plt.savefig("plots/"+fluid_name+"_diffusivity_from_VACF.pdf", dpi=500, bbox_inches='tight')
 plt.show()
-
+#%%
 # mean square displacement plot 
 # calculating diffusivity from MSD
 def func5(x, a):
    return (a*x)
 fitting=np.zeros((count_log,3))
 diffusivity=np.zeros((count_log))
-
+msd_start=20
+VACF_cut_off=500
 # VACF_mean= np.mean(np.sqrt(log_file[:,:,4]**2))
 # VACF_mean= np.mean(np.abs(log_file[:,:,4]))
 for i in range(0,count_log):
     #fitting_tuple = scipy.optimize.curve_fit(func5,(log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep, log_file[i,:VACF_cut_off,5],p0=[0, 0], bounds=(-np.inf, np.inf),maxfev = 6000)
-    fitting_tuple = scipy.optimize.curve_fit(func5,(log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,log_file[i,:VACF_cut_off,5] , bounds=(-np.inf, np.inf),maxfev = 6000)
+    fitting_tuple = scipy.optimize.curve_fit(func5,(log_file[i,msd_start:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,log_file[i,msd_start:VACF_cut_off,5] , bounds=(-np.inf, np.inf),maxfev = 6000)
     fitting[i,0]=  fitting_tuple[0][0]
    #fitting[i,1]=  fitting_tuple[0][1]
-    fitting[i,2]=np.mean((func5((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,fitting[i,0])- log_file[i,:VACF_cut_off:sample_rate,5])**2)
+    fitting[i,2]=np.mean((func5((log_file[i,msd_start:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,fitting[i,0])- log_file[i,msd_start:VACF_cut_off:sample_rate,5])**2)
     diffusivity[i]=fitting[i,0]/6 # 6Dt
     
 fitting=np.mean(fitting,axis=0)
@@ -305,12 +308,12 @@ labelpad=25
 
 # mean square displacement plot 
 for i in range(0,count_log):
-    plt.scatter((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,log_file[i,:VACF_cut_off:sample_rate,5])
+    plt.scatter((log_file[i,msd_start:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,log_file[i,msd_start:VACF_cut_off:sample_rate,5])
     plt.xlabel('$t$',fontsize=fontsize)
     plt.ylabel('$\langle \mathbf{r}\\rangle ^{2}$', rotation=0,fontsize=fontsize,labelpad=labelpad)
-plt.plot((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,func5((log_file[i,:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,fitting[0]),'--',label= "$y=ax,\ a="+str(sigfig.round(fitting[0],sigfigs=4))+", \sigma_{m}="+str(sigfig.round(fitting[2],sigfigs=1))+",\ \\bar{D}="+str(sigfig.round(diffusivity,sigfigs=4))+"\\tau/\ell^{2}$", color='black')
+plt.plot((log_file[i,msd_start:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,func5((log_file[i,msd_start:VACF_cut_off:sample_rate,0]-equilibration_timesteps)*scaled_timestep,fitting[0]),'--',label= "$y=ax,\ a="+str(sigfig.round(fitting[0],sigfigs=4))+", \sigma_{m}="+str(sigfig.round(fitting[2],sigfigs=1))+",\ \\bar{D}="+str(sigfig.round(diffusivity,sigfigs=4))+"\\tau/\ell^{2}$", color='black')
 plt.legend(bbox_to_anchor=(1.1, -0.2))
-plt.savefig("plots/"+fluid_name+"_diffusivity_from_MSD.pdf", dpi=500, bbox_inches='tight')
+#plt.savefig("plots/"+fluid_name+"_diffusivity_from_MSD.pdf", dpi=500, bbox_inches='tight')
 plt.show()
 
 
@@ -568,7 +571,7 @@ TP_steady_state_data_upper_truncated_time_averaged=truncation_and_SS_averaging_d
 #%% plotting mean shear rate for each box size 
 plt.rcParams['text.usetex'] = True
 marker=['x','o','+','^',"1","X","d","*","P","v","."]
-#yticks= np.arange(0,0.00275,0.00025)
+yticks= np.arange(0,0.1, 0.02)
 box_side_length_scaled_for_plot=np.repeat(box_side_length_scaled,org_var_1.size,axis=0)
 
 # get fitting scaling for box size with shear rate 
@@ -608,8 +611,8 @@ for z in range(0,org_var_1.size):
         # plt.xscale('log')
         plt.ylabel("$\dot{\gamma}_{SS}$", rotation=0, labelpad=labelpady)
         #plt.yscale('log')
-        #plt.yticks(yticks,usetex=True)
-plt.legend(loc='best', bbox_to_anchor=(1,1.05))   
+        plt.yticks(yticks,usetex=True)
+plt.legend(loc='best', bbox_to_anchor=(1,1))   
 
 plt.savefig("plots/test_with_"+str(number_of_solutions)+"_solutions_steady_shear_rate.pdf",dpi=500, bbox_inches='tight')
 plt.show()
@@ -1241,10 +1244,11 @@ plt.show()
 #%%Schmidt number 
 D_f=0.15 #nubar=0.52 
 #D_f=0.084 # nubar=0.9
-
+#Sc= 3.53 \pm 0.02 
 
 Sc_after =np.array([shear_viscosity]) / (D_f*rho_density)
 Sc_mean=np.repeat(np.mean(Sc_after),number_of_solutions)
+SC_std_dev= np.std(Sc_after)
 fontsize=25
 labelpady=20
 labelpadx=10
