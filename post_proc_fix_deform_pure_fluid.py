@@ -27,12 +27,23 @@ from velP2numpy import *
 from dump2numpy import * 
 import glob 
 from post_MPCD_MP_processing_module import *
-
+colour = [
+ 'black',
+ 'blueviolet',
+ 'cadetblue',
+ 'chartreuse',
+ 'coral',
+ 'cornflowerblue',
+ 'crimson',
+ 'darkblue',
+ 'darkcyan',
+ 'darkgoldenrod',
+ 'darkgray']
 
 #%% key inputs 
 
-no_SRD=2160
-box_size=6
+no_SRD=10000
+box_size=10
 #nu_bar=3
 #delta_t_srd=0.014872025172594354
 #nu_bar=0.9 
@@ -77,7 +88,7 @@ dump_general_name_string_after='*after*.dump'
 dump_general_name_string_before='*before*.dump'
 
 filepath="/KATHLEEN_LAMMPS_RUNS/equilibrium_fix_deform_pure_mpcd_test_file"
-filepath="Simulation_run_folder/test_analysis_small_equilibrium_test"
+filepath="Simulation_run_folder/test_analysis_small_equilibrium_test_box_10_M_10"
 Path_2_dump="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/"+filepath
 # can chnage this to another array on kathleen
 
@@ -132,7 +143,7 @@ plt.show()
 dump_start_line="ITEM: ATOMS id x y z vx vy vz xu yu zu"
 number_of_particles_per_dump = no_SRD
 number_of_dumps_per_realisation=int(no_timesteps/dump_freq)
-number_of_repeats=5
+number_of_repeats=4
 total_number_of_data_sets = int(count_dump_before/number_of_repeats)
 columns= 10
 
@@ -143,7 +154,7 @@ columns= 10
 def reading_in_unsorted_dumps(number_of_particles_per_dump,dump_start_line,Path_2_dump,total_number_of_data_sets,number_of_repeats,number_of_dumps_per_realisation,no_SRD,columns,realisation_name_dump_before,realisation_name_dump_after):
     from dump2numpy import dump2numpy_f
     dump_file_before=np.zeros((total_number_of_data_sets,number_of_repeats,number_of_dumps_per_realisation*no_SRD,columns))
-    dump_file_after=np.zeros((total_number_of_data_sets,number_of_repeats,(number_of_dumps_per_realisation)*no_SRD,columns))
+    dump_file_after=np.zeros((total_number_of_data_sets,number_of_repeats,(number_of_dumps_per_realisation+1)*no_SRD,columns))
 
 
     for j in range(0,total_number_of_data_sets):
@@ -166,7 +177,7 @@ dump_file_before=dump_files[1]
 # need to write a test to check this was done properly 
 loop_size=1000
 dump_file_shaped_before=np.reshape(dump_file_before,(total_number_of_data_sets,number_of_repeats,loop_size,number_of_particles_per_dump,columns))
-loop_size=1000
+loop_size=1001
 dump_file_shaped_after=np.reshape(dump_file_after,(total_number_of_data_sets,number_of_repeats,loop_size,number_of_particles_per_dump,columns))
 # freeing memory 
 del dump_file_before
@@ -175,16 +186,6 @@ del dump_file_after
 
 #%% sorting rows 
 
-
-# for i in range(0,loop_size):
-#     for j in range(0,number_of_particles_per_dump):
-#         id= int(float(dump_file_shaped_before[i,j,0]))-1
-#         dump_file_sorted_before[i,id,:]= dump_file_shaped_before[i,j,:]
-# # for i in range(0,loop_size):
-# #     for j in range(0,number_of_particles_per_dump):
-        
-#         id_1= int(float(dump_file_shaped_after[i,j,0]))-1
-#         dump_file_sorted_after[i,id_1,:]= dump_file_shaped_after[i,j,:]
 
 # sorting by the atom id column
 def sorting_and_checking_sort_dump_files(dump_file_shaped_after,dump_file_shaped_before,total_number_of_data_sets,number_of_repeats,loop_size,number_of_particles_per_dump,columns):
@@ -199,9 +200,9 @@ def sorting_and_checking_sort_dump_files(dump_file_shaped_after,dump_file_shaped
                      dummy_sort_array_after=dump_file_shaped_after[i,k,j,:,:]
                      dump_file_sorted_after[i,k,j,:,:]=dummy_sort_array_after[dummy_sort_array_after[:,0].argsort()]
         
-        # for i in range(0,total_number_of_data_sets): 
-        #     for k in range(0,number_of_repeats):
-        #             for j in range(0,loop_size-1):
+        for i in range(0,total_number_of_data_sets): 
+            for k in range(0,number_of_repeats):
+                    for j in range(0,loop_size-1):
                      dummy_sort_array_before=dump_file_shaped_before[i,k,j,:,:]
                      dump_file_sorted_before[i,k,j,:,:]=dummy_sort_array_before[dummy_sort_array_before[:,0].argsort()]
                         
@@ -259,8 +260,8 @@ success_count=sorting_results[3]
 
 #%% calculating the kinetic energy tensor 
 
-kinetic_energy_tensor=np.zeros((total_number_of_data_sets,number_of_repeats,loop_size,4))
-delta_mom_pos_tensor_from_dump=np.zeros((total_number_of_data_sets,number_of_repeats,loop_size-1,no_SRD,4))
+kinetic_energy_tensor=np.zeros((total_number_of_data_sets,number_of_repeats,loop_size,6))
+delta_mom_pos_tensor_from_dump=np.zeros((total_number_of_data_sets,number_of_repeats,loop_size-1,no_SRD,9))
 # is this right 
 for i in range(0,total_number_of_data_sets): 
             for k in range(0,number_of_repeats):
@@ -269,6 +270,11 @@ for i in range(0,total_number_of_data_sets):
                     kinetic_energy_tensor[i,k,j,1]= np.sum(dump_file_sorted_before[i,k,j,:,5]* dump_file_sorted_before[i,k,j,:,5])/box_vol#yy
                     kinetic_energy_tensor[i,k,j,2]= np.sum(dump_file_sorted_before[i,k,j,:,6]* dump_file_sorted_before[i,k,j,:,6])/box_vol#zz
                     kinetic_energy_tensor[i,k,j,3]= np.sum(dump_file_sorted_before[i,k,j,:,4]* dump_file_sorted_before[i,k,j,:,6])/box_vol#xz
+                    kinetic_energy_tensor[i,k,j,4]= np.sum(dump_file_sorted_before[i,k,j,:,4]* dump_file_sorted_before[i,k,j,:,5])/box_vol#xy
+                    kinetic_energy_tensor[i,k,j,5]= np.sum(dump_file_sorted_before[i,k,j,:,5]* dump_file_sorted_before[i,k,j,:,6])/box_vol#zy
+                
+
+
 
 # collisional tensor 
 for i in range(0,total_number_of_data_sets): 
@@ -279,7 +285,13 @@ for i in range(0,total_number_of_data_sets):
                     delta_mom_pos_tensor_from_dump[i,k,j,:,1]=(dump_file_sorted_after[i,k,j+1,:,5]- dump_file_sorted_before[i,k,j,:,5]) *  dump_file_sorted_after[i,k,j+1,:,2]#yy
                     delta_mom_pos_tensor_from_dump[i,k,j,:,2]=(dump_file_sorted_after[i,k,j+1,:,6]- dump_file_sorted_before[i,k,j,:,6]) *  dump_file_sorted_after[i,k,j+1,:,3]#zz
                     delta_mom_pos_tensor_from_dump[i,k,j,:,3]=(dump_file_sorted_after[i,k,j+1,:,4]- dump_file_sorted_before[i,k,j,:,4]) * dump_file_sorted_after[i,k,j+1,:,3]#xz
+                    delta_mom_pos_tensor_from_dump[i,k,j,:,4]=(dump_file_sorted_after[i,k,j+1,:,4]- dump_file_sorted_before[i,k,j,:,4]) * dump_file_sorted_after[i,k,j+1,:,2]#xy
+                    delta_mom_pos_tensor_from_dump[i,k,j,:,5]=(dump_file_sorted_after[i,k,j+1,:,5]- dump_file_sorted_before[i,k,j,:,5]) * dump_file_sorted_after[i,k,j+1,:,3]#yz
+                    delta_mom_pos_tensor_from_dump[i,k,j,:,6]=(dump_file_sorted_after[i,k,j+1,:,6]- dump_file_sorted_before[i,k,j,:,6]) * dump_file_sorted_after[i,k,j+1,:,1]#zx
+                    delta_mom_pos_tensor_from_dump[i,k,j,:,7]=(dump_file_sorted_after[i,k,j+1,:,5]- dump_file_sorted_before[i,k,j,:,5]) * dump_file_sorted_after[i,k,j+1,:,1]#yx
+                    delta_mom_pos_tensor_from_dump[i,k,j,:,8]=(dump_file_sorted_after[i,k,j+1,:,6]- dump_file_sorted_before[i,k,j,:,6]) * dump_file_sorted_after[i,k,j+1,:,2]#zy
                 
+                                
 
 # delta_mom_pos_tensor_from_dump_mean=np.mean(np.sum( delta_mom_pos_tensor_from_dump[1:,:],axis=3),axis=0)/(delta_t_srd*box_vol)
 delta_mom_pos_tensor_from_dump_summed=np.sum( delta_mom_pos_tensor_from_dump,axis=3)/(delta_t_srd*box_vol)
@@ -291,48 +303,48 @@ delta_mom_pos_tensor_from_dump_summed_mean=np.mean(delta_mom_pos_tensor_from_dum
 
 
 #%% calculating with lattice vector 
-lattice_vector=np.zeros((total_number_of_data_sets,number_of_repeats,loop_size,no_SRD,3))
-for i in range(0,total_number_of_data_sets): 
-            for k in range(0,number_of_repeats):
-                for j in range(0,loop_size-1):
-                      lattice_vector[i,k,j,:,0]=dump_file_sorted_after[i,k,j,:,7]-dump_file_sorted_after[i,k,j,:,1]
-                      lattice_vector[i,k,j,:,1]=dump_file_sorted_after[i,k,j,:,8]-dump_file_sorted_after[i,k,j,:,2]
-                      lattice_vector[i,k,j,:,2]=dump_file_sorted_after[i,k,j,:,9]-dump_file_sorted_after[i,k,j,:,3]
+# lattice_vector=np.zeros((total_number_of_data_sets,number_of_repeats,loop_size,no_SRD,3))
+# for i in range(0,total_number_of_data_sets): 
+#             for k in range(0,number_of_repeats):
+#                 for j in range(0,loop_size-1):
+#                       lattice_vector[i,k,j,:,0]=dump_file_sorted_after[i,k,j,:,7]-dump_file_sorted_after[i,k,j,:,1]
+#                       lattice_vector[i,k,j,:,1]=dump_file_sorted_after[i,k,j,:,8]-dump_file_sorted_after[i,k,j,:,2]
+#                       lattice_vector[i,k,j,:,2]=dump_file_sorted_after[i,k,j,:,9]-dump_file_sorted_after[i,k,j,:,3]
 
-external_stress_tensor = np.zeros((total_number_of_data_sets,number_of_repeats,loop_size-1,no_SRD,3))
+# external_stress_tensor = np.zeros((total_number_of_data_sets,number_of_repeats,loop_size-1,no_SRD,3))
 
 
-for i in range(0,total_number_of_data_sets): 
-            for k in range(0,number_of_repeats):
-                for j in range(0,loop_size-1):
-                      external_stress_tensor[i,k,j,:,0]=(dump_file_sorted_after[i,k,j+1,:,4]- dump_file_sorted_before[i,k,j,:,4])* lattice_vector[i,k,j,:,0]
-                      external_stress_tensor[i,k,j,:,1]=(dump_file_sorted_after[i,k,j+1,:,5]- dump_file_sorted_before[i,k,j,:,5])* lattice_vector[i,k,j,:,1]
-                      external_stress_tensor[i,k,j,:,2]=(dump_file_sorted_after[i,k,j+1,:,5]- dump_file_sorted_before[i,k,j,:,5])* lattice_vector[i,k,j,:,2]
+# for i in range(0,total_number_of_data_sets): 
+#             for k in range(0,number_of_repeats):
+#                 for j in range(0,loop_size-1):
+#                       external_stress_tensor[i,k,j,:,0]=(dump_file_sorted_after[i,k,j+1,:,4]- dump_file_sorted_before[i,k,j,:,4])* lattice_vector[i,k,j,:,0]
+#                       external_stress_tensor[i,k,j,:,1]=(dump_file_sorted_after[i,k,j+1,:,5]- dump_file_sorted_before[i,k,j,:,5])* lattice_vector[i,k,j,:,1]
+#                       external_stress_tensor[i,k,j,:,2]=(dump_file_sorted_after[i,k,j+1,:,5]- dump_file_sorted_before[i,k,j,:,5])* lattice_vector[i,k,j,:,2]
                       
-external_stress_tensor_summed=np.sum(external_stress_tensor,axis=3)/(delta_t_srd*box_vol)
-external_stress_tensor_summed_mean=np.mean(external_stress_tensor_summed,axis=2)
-external_stress_tensor_realisation_mean=np.mean(external_stress_tensor_summed_mean)
+# external_stress_tensor_summed=np.sum(external_stress_tensor,axis=3)/(delta_t_srd*box_vol)
+# external_stress_tensor_summed_mean=np.mean(external_stress_tensor_summed,axis=2)
+# external_stress_tensor_realisation_mean=np.mean(external_stress_tensor_summed_mean)
 
-plt.plot(external_stress_tensor_summed[0,:,:,0])
+# plt.plot(external_stress_tensor_summed[0,:,:,0])
 
-plt.show()
+# plt.show()
 
-#%%
-# computing equation 14 in winkler 2009 
+# #%%
+# # computing equation 14 in winkler 2009 
 
-Force_term=np.zeros((total_number_of_data_sets,number_of_repeats,loop_size,no_SRD,3))
+# Force_term=np.zeros((total_number_of_data_sets,number_of_repeats,loop_size,no_SRD,3))
 
 
-for i in range(0,total_number_of_data_sets): 
-            for k in range(0,number_of_repeats):
-                for j in range(0,loop_size-1): 
-                      Force_term[i,k,j,:,0]=external_stress_tensor[i,k,j,:,0]+ delta_mom_pos_tensor_from_dump[i,k,j,:,0]
-                      Force_term[i,k,j,:,1]=external_stress_tensor[i,k,j,:,1]+ delta_mom_pos_tensor_from_dump[i,k,j,:,1]
-                      Force_term[i,k,j,:,2]=external_stress_tensor[i,k,j,:,2]+ delta_mom_pos_tensor_from_dump[i,k,j,:,2]
+# for i in range(0,total_number_of_data_sets): 
+#             for k in range(0,number_of_repeats):
+#                 for j in range(0,loop_size-1): 
+#                       Force_term[i,k,j,:,0]=external_stress_tensor[i,k,j,:,0]+ delta_mom_pos_tensor_from_dump[i,k,j,:,0]
+#                       Force_term[i,k,j,:,1]=external_stress_tensor[i,k,j,:,1]+ delta_mom_pos_tensor_from_dump[i,k,j,:,1]
+#                       Force_term[i,k,j,:,2]=external_stress_tensor[i,k,j,:,2]+ delta_mom_pos_tensor_from_dump[i,k,j,:,2]
 
-Force_term=Force_term/(delta_t_srd*box_vol)
-Force_term_summed=np.sum(Force_term,axis=3)
-Force_term_mean=np.mean(Force_term_summed,axis=2)
+# Force_term=Force_term/(delta_t_srd*box_vol)
+# Force_term_summed=np.sum(Force_term,axis=3)
+# Force_term_mean=np.mean(Force_term_summed,axis=2)
 
                       
 
@@ -343,7 +355,7 @@ Force_term_mean=np.mean(Force_term_summed,axis=2)
 
 #NOTE: This isnt correct
 
-delta_mom_from_dump=np.zeros((total_number_of_data_sets,number_of_repeats,loop_size-1,no_SRD,4))
+delta_mom_from_dump=np.zeros((total_number_of_data_sets,number_of_repeats,loop_size-1,no_SRD,3))
 
 for i in range(0,total_number_of_data_sets): 
             for k in range(0,number_of_repeats):
@@ -351,9 +363,7 @@ for i in range(0,total_number_of_data_sets):
                     delta_mom_from_dump[i,k,j,:,0]=(dump_file_sorted_after[i,k,j+1,:,4]- dump_file_sorted_before[i,k,j,:,4]) 
                     delta_mom_from_dump[i,k,j,:,1]=(dump_file_sorted_after[i,k,j+1,:,5]- dump_file_sorted_before[i,k,j,:,5]) 
                     delta_mom_from_dump[i,k,j,:,2]=(dump_file_sorted_after[i,k,j+1,:,6]- dump_file_sorted_before[i,k,j,:,6]) 
-                    delta_mom_from_dump[i,k,j,:,3]=(dump_file_sorted_after[i,k,j+1,:,4]- dump_file_sorted_before[i,k,j,:,4]) 
-                
-
+                   
 
 delta_mom_from_dump_summed=np.sum(delta_mom_from_dump,axis=3)
 delta_mom_from_dump_mean=np.mean(delta_mom_from_dump_summed,axis=2)
@@ -414,25 +424,92 @@ plt.show()
     
 #%% checking convergence of the sum 
 
-delta_mom_pos_tensor_from_dump_partial_sum = np.zeros((total_number_of_data_sets,number_of_repeats,loop_size-1,4))
+delta_mom_pos_tensor_from_dump_partial_sum = np.zeros((total_number_of_data_sets,number_of_repeats,loop_size-1,9))
 
 for i in range(0,total_number_of_data_sets): 
             for k in range(0,number_of_repeats):
                 for j in range(0,loop_size-1):
                  delta_mom_pos_tensor_from_dump_partial_sum[i,k,j,:]=np.mean(delta_mom_pos_tensor_from_dump_summed[i,k,:j,:],axis=0)
+delta_mom_pos_tensor_from_dump_partial_sum_realisation_mean=np.mean(delta_mom_pos_tensor_from_dump_partial_sum,axis=1)
+
+np.save("delta_mom_pos_tensor_from_dump_partial_sum_realisation_mean_"+str(box_size)+".py",delta_mom_pos_tensor_from_dump_partial_sum_realisation_mean)
+
+
 
 #%%
-labels=["dP_c,xx","dP_c,yy","dP_c,zz"]
+labels=["$\Delta p_{x}r_{x}$","$\Delta p_{y}r_{y}$","$\Delta p_{z}r_{z}$","$\Delta p_{x}r_{z}$","$\Delta p_{x}r_{y}$","$\Delta p_{y}r_{z}$","$\Delta p_{z}r_{x}$","$\Delta p_{y}r_{x}$","$\Delta p_{z}r_{y}$"]
+labelpady=30
+fontsize=15
+plt.rcParams.update({'font.size': 9})
 for i in range(0,total_number_of_data_sets): 
-            for k in range(0,number_of_repeats):
-                for j in range(2,3):
-                    plt.plot(delta_mom_pos_tensor_from_dump_partial_sum[i,k,:,j],label=labels[j])
-                    plt.ylabel('$\\langle \Delta P_{coll} \\rangle_{T}$', rotation=0)
+                for j in range(0,3):
+                    plt.plot(delta_mom_pos_tensor_from_dump_partial_sum_realisation_mean[i,:,j],label=labels[j],color=colour[j])
+                    plt.ylabel('$\\langle \Delta p_{coll,\\alpha}r_{\\beta} \\rangle_{T}$', rotation=0, labelpad=labelpady)
                     plt.xlabel("$N_{coll}$")
-                   # plt.ylim((None,1))
-                    plt.legend()
+                    plt.title("Rolling average of collisional contribution, $\\alpha \parallel \\beta$, $L="+str(box_size)+"$")
 
+                    #plt.ylim((None,1))
+                    plt.axhline(delta_mom_pos_tensor_from_dump_partial_sum_realisation_mean[i,-1,j],0,4, label="Final mean "+labels[j]+"="+str(sigfig.round(delta_mom_pos_tensor_from_dump_partial_sum_realisation_mean[i,-1,j],sigfigs=2)),linestyle='dashed',color=colour[j])
+                    plt.legend(bbox_to_anchor=(1,1))
+                plt.tight_layout()
+                plt.savefig("rolling_ave_collisional_contribution_L"+str(box_size)+".png")
                 plt.show()
+
+
+for i in range(0,total_number_of_data_sets): 
+                for j in range(3,9):
+                        plt.plot(delta_mom_pos_tensor_from_dump_partial_sum_realisation_mean[i,:,j],label=labels[j],color=colour[j])
+                        plt.ylabel('$\\langle \Delta p_{coll,\\alpha}r_{\\beta} \\rangle_{T}$', rotation=0, labelpad=labelpady)
+                        plt.xlabel("$N_{coll}$")
+                        plt.title("Rolling average of collisional contribution, $\\alpha \perp \\beta$, $L="+str(box_size)+"$")
+
+                        #plt.ylim((None,1))
+                        plt.axhline(delta_mom_pos_tensor_from_dump_partial_sum_realisation_mean[i,-1,j],0,4, label="Final mean "+labels[j]+"="+str(sigfig.round(delta_mom_pos_tensor_from_dump_partial_sum_realisation_mean[i,-1,j],sigfigs=2)),linestyle='dashed',color=colour[j])
+                        plt.legend(loc='right',bbox_to_anchor=(1,0.3))
+                plt.tight_layout()
+                plt.savefig("rolling_ave_collisional_contribution_perp_L"+str(box_size)+".png")
+                plt.show()
+
+
+# for i in range(0,total_number_of_data_sets): 
+#                 for j in range(0,3):
+#                     plt.plot(delta_mom_pos_tensor_from_dump_summed_mean[i,:,j],label=labels[j])
+                  
+#                     plt.ylabel('$\\langle \Delta p_{coll,\\alpha}r_{\\beta} \\rangle_{T}$', rotation=0, labelpad=labelpady)
+#                     plt.xlabel("Realisation index")
+#                     plt.title("Final mean of  $\Delta p_{coll,\\alpha}r_{\\beta}, \\alpha \parallel \\beta $, $L="+str(box_size)+"$")
+
+#                     #plt.ylim((None,1))
+                    
+#                 plt.axhline(np.mean(delta_mom_pos_tensor_from_dump_summed_mean[0,:,0:3]),0,4, label="$\\bar{\Delta p_{coll,\\alpha}r_{\\beta}}$",linestyle='dashed')
+#                 plt.legend()
+#                 plt.tight_layout()
+#                 plt.savefig("final_mean_of_dp_coll_L"+str(box_size)+".png")
+#                 plt.show()
+
+# for i in range(0,total_number_of_data_sets): 
+#                 for j in range(3,9):
+#                     plt.plot(delta_mom_pos_tensor_from_dump_summed_mean[i,:,j],label=labels[j])
+                  
+#                     plt.ylabel('$\\langle \Delta p_{coll,\\alpha}r_{\\beta} \\rangle_{T}$', rotation=0, labelpad=labelpady)
+#                     plt.xlabel("Realisation index")
+#                     plt.title("Final mean of  $\Delta p_{coll,\\alpha}r_{\\beta}, \\alpha \perp \\beta$, $L="+str(box_size)+"$")
+
+#                     #plt.ylim((None,1))
+                    
+#                 plt.axhline(np.mean(delta_mom_pos_tensor_from_dump_summed_mean[0,:,3:]),0,4, label="$\\bar{\Delta p_{coll,\\alpha}r_{\\beta}}$",linestyle='dashed')
+#                 plt.legend()
+#                 plt.tight_layout()
+#                 plt.savefig("final_mean_of_dp_coll_perp_L"+str(box_size)+".png")
+#                 plt.show()
+
+
+# saving block
+                
+np.save("delta_mom_pos_tensor_from_dump_summed_mean_L_"+str(box_size)+".py",delta_mom_pos_tensor_from_dump_summed_mean)
+
+
+
 
 
 #%%
