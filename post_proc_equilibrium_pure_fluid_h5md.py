@@ -43,23 +43,29 @@ colour = [
  'darkgray']
 
 #%% key inputs 
+no_SRD=10
+box_size=1
+# no_SRD=80
+# box_size=2
+# no_SRD=270
+# box_size=3
 # no_SRD=1038230
 # box_size=47
-no_SRD=506530
-box_size=37
-# no_SRD=2160
-# box_size=6
+# no_SRD=506530
+# box_size=37
+no_SRD=2160
+box_size=6
 #nu_bar=3
 #delta_t_srd=0.014872025172594354
 #nu_bar=0.9 
-delta_t_srd=0.05674857690605889
+delta_t_srd=1   #0.05674857690605889
 
 box_vol=box_size**3
 erate=0
-no_timesteps=10000
+no_timesteps=100000
 # estimating number of steps  required
 strain=3
-delta_t_md=delta_t_srd/10
+delta_t_md=delta_t_srd/1000
 strain_rate= np.array([0.001,0.002,0.003,0.01,0.0005])
 number_steps_needed= np.ceil(strain/(strain_rate*delta_t_md))
 dump_freq=10
@@ -80,6 +86,7 @@ dump_general_name_string_before='*'+str(no_timesteps)+'*before*.h5'
 
 filepath="/KATHLEEN_LAMMPS_RUNS/equilibrium_fix_deform_pure_mpcd_test_file"
 filepath="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/Simulation_run_folder/hfd5_runs/test_analysis_small_equilibrium_test_box_"+str(int(box_size))+"_M_10"
+filepath="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/Simulation_run_folder/hfd5_runs/equilibrium_test_1_vary_lambda/box_6_2160/lambda_"+str(delta_t_srd)
 #filepath="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/Simulation_run_folder/hfd5_runs/tests_equilibrium_with_more_regular_neighbour_listing_box_"+str(int(box_size))+"_M_10"
 Path_2_dump=filepath
 # can chnage this to another array on kathleen
@@ -96,14 +103,17 @@ with h5.File(realisation_name_h5_after[0], 'r') as f:
     shape_after= f['particles']['SRDs']['position']['value'].shape
     print(f['particles']['SRDs']['species'].keys())
 #%%
-j_=4
+j_=1
 delta_mom_summed= np.zeros((j_,shape_after[0]-1,3))
 delta_mom_pos_tensor_summed= np.zeros((j_,shape_after[0]-1,9))
 stress_tensor_summed=np.zeros((j_,shape_after[0]-1,9))
 kinetic_energy_tensor_summed=np.zeros((j_,shape_after[0]-1,6))
+average_cell_velocity=np.zeros((j_,shape_after[0]-1,3))
 
 for k in range(0,j_):
     for j in range(1,shape_after[0]-1):
+    #for j in range(35000,35002):
+
         with h5.File(realisation_name_h5_after[k], 'r') as f_a:
 
                 SRD_positions_initial= f_a['particles']['SRDs']['position']['value'][j-1]
@@ -114,7 +124,9 @@ for k in range(0,j_):
                 delta_mom=SRD_velocities_after-SRD_velocities_initial
                 delta_mom_summed[k,j,:]=np.sum(SRD_velocities_after-SRD_velocities_initial,axis=0)
 
-                # need to add kinetic contribution
+                # need to add kinetic contributi
+
+
 
                 
                 delta_mom_pos_tensor_summed[k,j,0]=np.sum((SRD_velocities_after[:,0]- SRD_velocities_initial[:,0])*SRD_positions_after[:,0],axis=0)/(box_vol*delta_t_srd)#xx
@@ -155,6 +167,7 @@ kinetic_energy_tensor_summed_realisation_mean=np.mean(kinetic_energy_tensor_summ
 delta_mom_pos_tensor_summed_realisation_mean_rolling=np.zeros((shape_after[0]-1,9))
 stress_tensor_summed_realisation_mean_rolling= np.zeros((shape_after[0]-1,9))
 kinetic_energy_tensor_summed_realisation_mean_rolling=np.zeros((shape_after[0]-1,3))
+average_cell_velocity_rolling=np.zeros((shape_after[0]-1,3))
 
 for k in range(0,9):
     for i in range(0,shape_after[0]-1): 
@@ -163,12 +176,13 @@ for k in range(0,9):
 for k in range(0,3):
     for i in range(0,shape_after[0]-1):  
                  kinetic_energy_tensor_summed_realisation_mean_rolling[i,k]= np.mean(kinetic_energy_tensor_summed_realisation_mean[:i,k],axis=0)
-                       
+                 average_cell_velocity_rolling[i,k]=np.mean(average_cell_velocity[0,i:,k],axis=0)
                 
 #%% loading bloc reproduce plots
-stress_tensor_summed_realisation_mean_rolling=np.load("equilibrium_stress_tensor_summed_realisation_mean_rolling_M_"+str(rho)+"_L_"+str(box_size)+".py")
-delta_mom_pos_tensor_summed_realisation_mean_rolling=np.load("equilibrium_delta_mom_pos_tensor_summed_realisation_mean_rolling_M_"+str(rho)+"_L_"+str(box_size)+".py")
-kinetic_energy_tensor_summed_realisation_mean=np.load("equilibrium_kinetic_energy_tensor_summed_realisation_mean_rolling_M_"+str(rho)+"_L_"+str(box_size)+".py")
+os.chdir("/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/Simulation_run_folder/hfd5_runs/test_analysis_small_equilibrium_test_box_"+str(int(box_size))+"_M_10")
+stress_tensor_summed_realisation_mean_rolling=np.load("equilibrium_stress_tensor_summed_realisation_mean_rolling_M_"+str(rho)+"_L_"+str(box_size)+".npy")
+delta_mom_pos_tensor_summed_realisation_mean_rolling=np.load("equilibrium_delta_mom_pos_tensor_summed_realisation_mean_rolling_M_"+str(rho)+"_L_"+str(box_size)+".npy")
+kinetic_energy_tensor_summed_realisation_mean=np.load("equilibrium_kinetic_energy_tensor_summed_realisation_mean_rolling_M_"+str(rho)+"_L_"+str(box_size)+".npy")
                 
 #%% plotting rolling average diagonal 
 
@@ -185,7 +199,7 @@ for j in range(0,3):
     plt.plot(stress_tensor_summed_realisation_mean_rolling[:,j],label=labels_stress[j],color=colour[j])
     plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
     plt.xlabel("$N_{coll}$")
-    plt.ylim((9,11))
+    #plt.ylim((0,1))
 
 plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\alpha}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
 plt.legend(loc='best')
@@ -193,6 +207,20 @@ plt.legend(loc='best')
 plt.savefig("rolling_ave_equilibrium_stress_tensor_elements_1_3_M_"+str(rho)+"_L_"+str(box_size)+".png",dpi=1200)
 plt.show()
 
+#%%
+delta_mom_pos_tensor_summed_realisation_mean_rolling_hline=np.mean(delta_mom_pos_tensor_summed_realisation_mean_rolling[500:,0:3])
+for j in range(0,3):
+    plt.plot(delta_mom_pos_tensor_summed_realisation_mean_rolling[:,j],label=labels_coll[j],color=colour[j])
+    plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
+    plt.xlabel("$N_{coll}$")
+    plt.ylim((0.5,0.7))
+   # plt.xlim((9000,10000))
+
+plt.axhline(delta_mom_pos_tensor_summed_realisation_mean_rolling_hline,0,100000, label="$\\bar{\Delta p_{\\alpha}r_{\\alpha}}="+str(sigfig.round(delta_mom_pos_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
+plt.legend(loc='best')
+#plt.tight_layout()
+plt.savefig("rolling_ave_equilibrium_mom_pos_tensor_elements_1_3_M_"+str(rho)+"_L_"+str(box_size)+".png",dpi=1200)
+plt.show()
 #%% plotting off diagonal 
 labelpady=15
 fontsize=15
@@ -202,24 +230,21 @@ for j in range(3,9):
     plt.plot(stress_tensor_summed_realisation_mean_rolling[:,j],label=labels_stress[j],color=colour[j])
     plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
     plt.xlabel("$N_{coll}$")
-    plt.ylim((-1,1))
+    #plt.ylim((-0.2,0.2))
 
-plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\beta}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
+plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\beta}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[9])
 plt.legend(loc='best')
 #plt.tight_layout()
 plt.savefig("rolling_ave_equilibrium_stress_tensor_elements_4_9_M_"+str(rho)+"_L_"+str(box_size)+".png",dpi=1200)
 plt.show()
 
 
-#%% saving bloc so graphs can be reproduced 
+#saving bloc so graphs can be reproduced 
 
-np.save("equilibrium_stress_tensor_summed_realisation_mean_rolling_M_"+str(rho)+"_L_"+str(box_size)+".py",stress_tensor_summed_realisation_mean_rolling)
-np.save("equilibrium_delta_mom_pos_tensor_summed_realisation_mean_rolling_M_"+str(rho)+"_L_"+str(box_size)+".py",delta_mom_pos_tensor_summed_realisation_mean_rolling)
-np.save("equilibrium_kinetic_energy_tensor_summed_realisation_mean_rolling_M_"+str(rho)+"_L_"+str(box_size)+".py",kinetic_energy_tensor_summed_realisation_mean)
-
-
+np.save("equilibrium_stress_tensor_summed_realisation_mean_rolling_M_"+str(rho)+"_L_"+str(box_size),stress_tensor_summed_realisation_mean_rolling)
+np.save("equilibrium_delta_mom_pos_tensor_summed_realisation_mean_rolling_M_"+str(rho)+"_L_"+str(box_size),delta_mom_pos_tensor_summed_realisation_mean_rolling)
+np.save("equilibrium_kinetic_energy_tensor_summed_realisation_mean_rolling_M_"+str(rho)+"_L_"+str(box_size),kinetic_energy_tensor_summed_realisation_mean)
 
 
-  
 
 # %%
