@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import regex as re
 import pandas as pd
-import sigfig
+
 plt.rcParams.update(plt.rcParamsDefault)
 plt.rcParams['text.usetex'] = True
 #from mpl_toolkits import mplot3d
@@ -47,8 +47,10 @@ colour = [
 # box_size=23
 # no_SRD=58320
 # box_size=18
-no_SRD=2160
-box_size=6
+# no_SRD=2160
+# box_size=6
+no_SRD=270
+box_size=3
 # no_SRD=2560
 # box_size=8
 #nu_bar=3
@@ -58,7 +60,7 @@ delta_t_srd=0.05674857690605889
 
 box_vol=box_size**3
 erate= np.array([0.001,0.002,0.003])
-no_timesteps=100000
+no_timesteps=50000
 # estimating number of steps  required
 strain=3
 delta_t_md=delta_t_srd/10
@@ -103,10 +105,13 @@ print(count_h5_after)
 # # find dump file size
 with h5.File(realisation_name_h5_after[0], 'r') as f:
     shape_after= f['particles']['SRDs']['position']['value'].shape
+    f.close()
 print(shape_after)
+
 # #
 with h5.File(realisation_name_h5_before[0], 'r') as f_i:
       first_step= f_i['particles']['SRDs']['position']['step'][0]
+      f.close()
 
 #     # print(first_step)
 #     print(f_i['particles'].keys())
@@ -123,7 +128,9 @@ stress_tensor_summed=np.zeros((no_data_sets,j_,shape_after[0]-1,9))
 kinetic_energy_tensor_summed=np.zeros((no_data_sets,j_,shape_after[0]-1,6))
 
 
-
+import multiprocessing as mp
+from multiprocessing import Process, Queue, Array ,Lock
+import time
 def stress_tensor_total_compute_shear(realisation_name_h5_after,realisation_name_h5_before,shape_after,j_,no_data_sets,erate,delta_t_srd):    
 
     delta_mom_summed= np.zeros((no_data_sets,j_,shape_after[0]-1,3))
@@ -137,8 +144,6 @@ def stress_tensor_total_compute_shear(realisation_name_h5_after,realisation_name
             k=np.where(realisation_index==float(realisation_name_h5_after.split('_')[9]))[0][0]
             for j in range(1,shape_after[0]-1):
        
-                    data_set = np.where(erate==float(realisation_name_h5_after.split('_')[15]))[0][0]
-                    k=np.where(realisation_index==float(realisation_name_h5_after.split('_')[9]))[0][0]
                     
                     SRD_positions_initial= f_b['particles']['SRDs']['position']['value'][j-1]
                     
@@ -186,54 +191,61 @@ def stress_tensor_total_compute_shear(realisation_name_h5_after,realisation_name
             return stress_tensor_summed,kinetic_energy_tensor_summed,delta_mom_pos_tensor_summed
 
 import multiprocessing as mp
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Array ,Lock
 import time
 # count=[1,2,3,4]
 # count2=[1,2,3,4]
 
-p1=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[0],realisation_name_h5_before[0],shape_after,j_,no_data_sets,erate,delta_t_srd])
-p2=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[1],realisation_name_h5_before[1],shape_after,j_,no_data_sets,erate,delta_t_srd])
-p3=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[2],realisation_name_h5_before[2],shape_after,j_,no_data_sets,erate,delta_t_srd])
-p4=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[3],realisation_name_h5_before[3],shape_after,j_,no_data_sets,erate,delta_t_srd])
-p5=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[4],realisation_name_h5_before[4],shape_after,j_,no_data_sets,erate,delta_t_srd])
-p6=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[5],realisation_name_h5_before[5],shape_after,j_,no_data_sets,erate,delta_t_srd])
-p7=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[6],realisation_name_h5_before[6],shape_after,j_,no_data_sets,erate,delta_t_srd])
-p8=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[7],realisation_name_h5_before[7],shape_after,j_,no_data_sets,erate,delta_t_srd])
-p9=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[8],realisation_name_h5_before[8],shape_after,j_,no_data_sets,erate,delta_t_srd])
+#p1=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[0],realisation_name_h5_before[0],shape_after,j_,no_data_sets,erate,delta_t_srd])
+# p2=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[1],realisation_name_h5_before[1],shape_after,j_,no_data_sets,erate,delta_t_srd])
+# p3=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[2],realisation_name_h5_before[2],shape_after,j_,no_data_sets,erate,delta_t_srd])
+# p4=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[3],realisation_name_h5_before[3],shape_after,j_,no_data_sets,erate,delta_t_srd])
+# p5=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[4],realisation_name_h5_before[4],shape_after,j_,no_data_sets,erate,delta_t_srd])
+# p6=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[5],realisation_name_h5_before[5],shape_after,j_,no_data_sets,erate,delta_t_srd])
+# p7=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[6],realisation_name_h5_before[6],shape_after,j_,no_data_sets,erate,delta_t_srd])
+# p8=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[7],realisation_name_h5_before[7],shape_after,j_,no_data_sets,erate,delta_t_srd])
+# p9=Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[8],realisation_name_h5_before[8],shape_after,j_,no_data_sets,erate,delta_t_srd])
 
+queue= Queue()
+stress_tensor_total_compute_shear_tuple=()
+realisation_count_to_do= count_h5_after
+tasks_to_do=queue
+tasks_done=queue
+processes=[]
 
+tic=time.perf_counter()
 if __name__ =='__main__':
-        queue= Queue() # not sure about this yet 
-        tic=time.perf_counter()
-        p1.start()
-        p2.start()
-        p3.start()
-        p4.start()
-        p5.start()
-        p6.start()
-        p7.start()
-        p8.start()
-        p9.start()
+        lock=Lock()
+        
+        for p in  range(count_h5_after):
+            
 
-        p1.join()
-        p2.join()
-        p3.join()
-        p4.join()
-        p5.join()
-        p6.join()
-        p7.join()
-        p8.join()
-        p9.join()
+        
+            # not sure about this yet 
+            proc= Process(target=stress_tensor_total_compute_shear,args=[realisation_name_h5_after[p],realisation_name_h5_before[p],shape_after,j_,no_data_sets,erate,delta_t_srd])
+            
+            processes.append(proc)
+            proc.start()
+        
+        for proc in  processes:
+             proc.join()
+             print(proc)
+             
         toc=time.perf_counter()
-        print("done in ", toc-tic)
+        print("done in ", (toc-tic)/60)
+        print(len(stress_tensor_total_compute_shear_tuple))
 
-print(p1)
-print(p2)
-print(p3)
-print(p4)
+# print(p2)
+# print(p3)
+# print(p4)
+# print(p5)
+# print(p6)
+# print(p7)
+# print(p8)
+# print(p9)
 
 # standard loop took 26 mins approx 
 
 # need to write this loop so it only uses the right amount of cores, eg. six at a time, until its analysed all the files 
    
-
+# need to organise tuple output 
