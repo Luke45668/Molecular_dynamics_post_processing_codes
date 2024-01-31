@@ -50,6 +50,8 @@ colour = [
 # box_size=37
 no_SRD=121670
 box_size=23
+no_SRD=270
+box_size=3
 # no_SRD=58320
 # box_size=18
 # no_SRD=2160
@@ -110,8 +112,41 @@ with h5.File(realisation_name_h5_before[1], 'r') as f_i:
     # first_step= f_i['particles']
     # print(first_step)
     print(f_i['particles']['SRDs']['position']['step'].shape)
+#%% reorganising the list of realisations 
+
+realisation_name_h5_after_sorted=['0']*9
+realisation_name_h5_before_sorted=['0']*9
+for i in range(9):
+     realisation_index_=int(np.where(realisation_index==float(realisation_name_h5_after[i].split('_')[9]))[0][0])
+
+     print(realisation_index_)
+     data_set = int(np.where(erate==float(realisation_name_h5_after[i].split('_')[15]))[0][0])
+     print(data_set)
+     if data_set==0:
+        realisation_name_h5_after_sorted[realisation_index_]=realisation_name_h5_after[i]
+     elif data_set==1:
+        realisation_name_h5_after_sorted[3+realisation_index_]=realisation_name_h5_after[i]
+     else:
+        realisation_name_h5_after_sorted[6+realisation_index_]=realisation_name_h5_after[i]
+for i in range(9):
+     realisation_index_=int(np.where(realisation_index==float(realisation_name_h5_before[i].split('_')[9]))[0][0])
+     
+     print(realisation_index_)
+     data_set = int(np.where(erate==float(realisation_name_h5_before[i].split('_')[15]))[0][0])
+     print(data_set)
+     if data_set==0:
+        realisation_name_h5_before_sorted[realisation_index_]=realisation_name_h5_before[i]
+     elif data_set==1:
+        realisation_name_h5_before_sorted[3+realisation_index_]=realisation_name_h5_before[i]
+     else:
+        realisation_name_h5_before_sorted[6+realisation_index_]=realisation_name_h5_before[i]
+          
+realisation_name_h5_before=realisation_name_h5_before_sorted
+realisation_name_h5_after=realisation_name_h5_after_sorted   
+
+
+
 #%%
-    
 # this needs to be changed back to the old version where we looked at file N and N-1, since the shear could  change things in the collision step
 
 # need to look into adding multi-processing to this section of the code
@@ -288,7 +323,7 @@ for i in range(0,erate.shape[0]):
         plt.plot(stress_tensor_summed_realisation_mean_rolling[i,:,j],label=labels_stress[j],color=colour[j])
         plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$N_{coll}$")
-        plt.ylim((9,11))
+        #plt.ylim((9,11))
 
     plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\alpha}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
     plt.legend(loc='best')
@@ -386,5 +421,10 @@ plt.xlabel("$\dot{\gamma}$",rotation=0)
 
 plt.ylabel("$\sigma_{xz}$",rotation=0,labelpad=labelpady)
 plt.show()
+
+# %% testing parallel results 
+stress_tensor_summed=np.load("stress_tensor_summed_test.npy")
+delta_mom_pos_tensor_summed=np.load("delta_mom_pos_tensor_summed_test.npy")
+kinetic_energy_tensor_summed=np.load("kinetic_energy_tensor_summed_test.npy")
 
 # %%
