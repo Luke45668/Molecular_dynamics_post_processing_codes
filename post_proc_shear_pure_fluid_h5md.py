@@ -50,10 +50,10 @@ colour = [
 # box_size=37
 no_SRD=121670
 box_size=23
-no_SRD=270
-box_size=3
-# no_SRD=58320
-# box_size=18
+# no_SRD=270
+# box_size=3
+no_SRD=58320
+box_size=18
 # no_SRD=2160
 # box_size=6
 # no_SRD=2560
@@ -323,7 +323,7 @@ for i in range(0,erate.shape[0]):
         plt.plot(stress_tensor_summed_realisation_mean_rolling[i,:,j],label=labels_stress[j],color=colour[j])
         plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$N_{coll}$")
-        #plt.ylim((9,11))
+        plt.ylim((9,11))
 
     plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\alpha}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
     plt.legend(loc='best')
@@ -334,6 +334,7 @@ for i in range(0,erate.shape[0]):
 #%% first normal stress difference 
 stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[:,3000:,0:3])
 N_1=stress_tensor_summed_realisation_mean_rolling[:,:,0]-stress_tensor_summed_realisation_mean_rolling[:,:,1]
+N_1_mean=np.mean(N_1[:,3000:])
 labelpady=15
 fontsize=15
 plt.rcParams.update({'font.size': 12})
@@ -344,10 +345,10 @@ for i in range(0,erate.shape[0]):
         plt.xlabel("$N_{coll}$")
         plt.ylim((-1,1))
 
-    #plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\alpha}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
-        plt.legend(loc='best')
+plt.axhline(N_1_mean,0,5000, label="$\\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
+plt.legend(loc='best')
     #plt.tight_layout()
-    #plt.savefig("rolling_ave_shear_stress_tensor_elements_1_3_gdot_"+str(erate[i])+"_M_"+str(rho)+"_L_"+str(box_size)+".png",dpi=1200)
+plt.savefig("N_1_"+str(erate[i])+"_M_"+str(rho)+"_L_"+str(box_size)+".png",dpi=1200)
 plt.show()
 #%% plotting off diagonal 
 labelpady=15
