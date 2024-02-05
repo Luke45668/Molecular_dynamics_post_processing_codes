@@ -52,19 +52,24 @@ no_SRD=121670
 box_size=23
 # no_SRD=270
 # box_size=3
-no_SRD=58320
-box_size=18
+# no_SRD=58320
+# box_size=18
 # no_SRD=2160
 # box_size=6
 # no_SRD=2560
 # box_size=8
+# no_SRD=60835
+# box_size=23
 #nu_bar=3
 #delta_t_srd=0.014872025172594354
 #nu_bar=0.9 
 delta_t_srd=0.05674857690605889
+#delta_t_srd=0.05071624521210362
 
 box_vol=box_size**3
-erate= np.array([0.001,0.002,0.003])
+#erate= np.array([0.01,0.001,0.0001])
+#erate=np.array([0.01])
+erate=np.array([0.001,0.002,0.003])
 no_timesteps=50000
 # estimating number of steps  required
 strain=3
@@ -73,6 +78,7 @@ strain_rate= np.array([0.001,0.002,0.003])
 number_steps_needed= np.ceil(strain/(strain_rate*delta_t_md))
 dump_freq=10
 rho=10 
+j_=3
 #rho=5
 realisation_index=np.array([1,2,3])
 #%% finding all the dump files in a folder
@@ -107,51 +113,71 @@ count_h5_after=dump_realisation_name_info_after[7]
 with h5.File(realisation_name_h5_after[0], 'r') as f:
     shape_after= f['particles']['SRDs']['position']['value'].shape
     print(f['particles']['SRDs']['position']['step'].shape)
+
+no_data_sets=erate.shape[0]
 #%%
-with h5.File(realisation_name_h5_before[1], 'r') as f_i:
-    # first_step= f_i['particles']
-    # print(first_step)
+with h5.File(realisation_name_h5_before[0], 'r') as f_i:
+    first_step= f_i['particles']['SRDs']['position']['step'][0]
+    print(first_step)
     print(f_i['particles']['SRDs']['position']['step'].shape)
 #%% reorganising the list of realisations 
 
-realisation_name_h5_after_sorted=['0']*9
-realisation_name_h5_before_sorted=['0']*9
-for i in range(9):
-     realisation_index_=int(np.where(realisation_index==float(realisation_name_h5_after[i].split('_')[9]))[0][0])
+# found this method https://www.youtube.com/watch?v=D3JvDWO-BY4&ab_channel=CoreySchafer
+class realisation():
+     def __init__(self,realisation_full_str,data_set,realisation_index_):
+          self.realisation_full_str= realisation_full_str
+          self.data_set= data_set
+          self.realisation_index_=realisation_index_
+     def __repr__(self):
+        return '({},{},{})'.format(self.realisation_full_str,self.data_set,self.realisation_index_)
+realisations_for_sorting_after=[]
+for i in realisation_name_h5_after:
+          realisation_index_=i.split('_')[9]
+          data_set =i.split('_')[15]
+          realisations_for_sorting_after.append(realisation(i,data_set,realisation_index_))
 
-     print(realisation_index_)
-     data_set = int(np.where(erate==float(realisation_name_h5_after[i].split('_')[15]))[0][0])
-     print(data_set)
-     if data_set==0:
-        realisation_name_h5_after_sorted[realisation_index_]=realisation_name_h5_after[i]
-     elif data_set==1:
-        realisation_name_h5_after_sorted[3+realisation_index_]=realisation_name_h5_after[i]
-     else:
-        realisation_name_h5_after_sorted[6+realisation_index_]=realisation_name_h5_after[i]
-for i in range(9):
-     realisation_index_=int(np.where(realisation_index==float(realisation_name_h5_before[i].split('_')[9]))[0][0])
-     
-     print(realisation_index_)
-     data_set = int(np.where(erate==float(realisation_name_h5_before[i].split('_')[15]))[0][0])
-     print(data_set)
-     if data_set==0:
-        realisation_name_h5_before_sorted[realisation_index_]=realisation_name_h5_before[i]
-     elif data_set==1:
-        realisation_name_h5_before_sorted[3+realisation_index_]=realisation_name_h5_before[i]
-     else:
-        realisation_name_h5_before_sorted[6+realisation_index_]=realisation_name_h5_before[i]
-          
-realisation_name_h5_before=realisation_name_h5_before_sorted
-realisation_name_h5_after=realisation_name_h5_after_sorted   
+realisations_for_sorting_before=[]
+for i in realisation_name_h5_before:
+          realisation_index_=i.split('_')[9]
+          data_set =i.split('_')[15]
+          realisations_for_sorting_before.append(realisation(i,data_set,realisation_index_))
+
+        
+realisation_name_h5_after_sorted=sorted(realisations_for_sorting_after,key=lambda x: (x.data_set, x.realisation_index_))
+realisation_name_h5_after_sorted_final=[]
+for i in realisation_name_h5_after_sorted:
+     realisation_name_h5_after_sorted_final.append(i.realisation_full_str)
+realisation_name_h5_before_sorted=sorted(realisations_for_sorting_before,key=lambda x: (x.data_set, x.realisation_index_))
+realisation_name_h5_before_sorted_final=[]
+for i in realisation_name_h5_before_sorted:
+     realisation_name_h5_before_sorted_final.append(i.realisation_full_str)
+
+
+print(realisation_name_h5_after_sorted_final)
+print(realisation_name_h5_before_sorted_final)
+
 
 
 
 #%%
+def producing_plus_N_sequence_for_ke(increment,n_terms):
+    n=np.arange(1,n_terms) # if steps change need to chnage this number 
+    terms_n=[0]
+    for i in n:
+            terms_n.append(terms_n[i-1]+int(increment))
+       
+    return terms_n 
+
+n_terms=j_*no_data_sets*(shape_after[0]-1)
+terms_9=producing_plus_N_sequence_for_ke(9,n_terms)
+terms_6=producing_plus_N_sequence_for_ke(6,n_terms)
+
+
+#%% old method for reading in data files 
 # this needs to be changed back to the old version where we looked at file N and N-1, since the shear could  change things in the collision step
 
 # need to look into adding multi-processing to this section of the code
-j_=3
-no_data_sets=erate.shape[0]
+
 delta_mom_summed= np.zeros((no_data_sets,j_,shape_after[0]-1,3))
 delta_mom_pos_tensor_summed= np.zeros((no_data_sets,j_,shape_after[0]-1,9))
 stress_tensor_summed=np.zeros((no_data_sets,j_,shape_after[0]-1,9))
@@ -212,74 +238,16 @@ for i in range(0,len(realisation_name_h5_after)):
                 stress_tensor_summed[data_set,k,j,8]=delta_mom_pos_tensor_summed[data_set,k,j,8] + kinetic_energy_tensor_summed[data_set,k,j,3]#yx
 
 
-             
-#%% using multiprocessing to speed up the code 
 
-# first need to turn the previous calc into a function 
-# def stress_tensor_total_compute(realisation_name_h5_after,shape_after,j_,no_data_sets,erate,delta_t_srd):
-#     delta_mom_summed= np.zeros((no_data_sets,j_,shape_after[0]-1,3))
-#     delta_mom_pos_tensor_summed= np.zeros((no_data_sets,j_,shape_after[0]-1,9))
-#     stress_tensor_summed=np.zeros((no_data_sets,j_,shape_after[0]-1,9))
-#     kinetic_energy_tensor_summed=np.zeros((no_data_sets,j_,shape_after[0]-1,6))
-#     #for i in range(0,len(realisation_name_h5_after)):
-#     with h5.File(realisation_name_h5_after, 'r') as f_a:
-#             data_set = np.where(erate==float(realisation_name_h5_after.split('_')[15]))[0][0]
-#             k=np.where(realisation_index==float(realisation_name_h5_after.split('_')[9]))[0][0]
-#             for j in range(1,shape_after[0]-1):
-#         #for j in range(0,10):
-        
-#             #with h5.File(realisation_name_h5_before[k], 'r') as f_b:
-#                     data_set = np.where(erate==float(realisation_name_h5_after.split('_')[15]))[0][0]
-#                     k=np.where(realisation_index==float(realisation_name_h5_after.split('_')[9]))[0][0]
-                    
-#                     SRD_positions_initial= f_a['particles']['SRDs']['position']['value'][j-1]
-                    
-#                     SRD_positions_after= f_a['particles']['SRDs']['position']['value'][j]
-#                     #print(SRD_positions_after)
+# %% loading  parallel results 
+stress_tensor_summed_1d=np.load("stress_tensor_summed_1d_test_M_"+str(rho)+"_L_"+str(box_size)+".npy")
+delta_mom_pos_tensor_summed_1d=np.load("delta_mom_pos_tensor_summed_1d_test_M_"+str(rho)+"_L_"+str(box_size)+".npy")
+kinetic_energy_tensor_summed_1d=np.load("kinetic_energy_tensor_summed_1d_test_M_"+str(rho)+"_L_"+str(box_size)+".npy")
 
-#                     SRD_velocities_initial=f_a['particles']['SRDs']['velocity']['value'][j-1]
-#                     SRD_velocities_after=f_a['particles']['SRDs']['velocity']['value'][j]
-#                     #print(SRD_velocities_after)
-#                     delta_mom=SRD_velocities_after-SRD_velocities_initial
-#                     delta_mom_summed[data_set,k,j,:]=np.sum(SRD_velocities_after-SRD_velocities_initial,axis=0)
-
-#                     # need to add kinetic contribution
-
-                    
-#                     delta_mom_pos_tensor_summed[data_set,k,j,0]=np.sum((SRD_velocities_after[:,0]- SRD_velocities_initial[:,0])*SRD_positions_after[:,0],axis=0)/(box_vol*delta_t_srd)#xx
-#                     delta_mom_pos_tensor_summed[data_set,k,j,1]=np.sum((SRD_velocities_after[:,1]- SRD_velocities_initial[:,1])*SRD_positions_after[:,1],axis=0)/(box_vol*delta_t_srd)#yy
-#                     delta_mom_pos_tensor_summed[data_set,k,j,2]=np.sum((SRD_velocities_after[:,2]- SRD_velocities_initial[:,2])*SRD_positions_after[:,2],axis=0)/(box_vol*delta_t_srd)#zz
-#                     delta_mom_pos_tensor_summed[data_set,k,j,3]=np.sum((SRD_velocities_after[:,0]- SRD_velocities_initial[:,0])*SRD_positions_after[:,2],axis=0)/(box_vol*delta_t_srd)#xz
-#                     delta_mom_pos_tensor_summed[data_set,k,j,4]=np.sum((SRD_velocities_after[:,0]- SRD_velocities_initial[:,0])*SRD_positions_after[:,1],axis=0)/(box_vol*delta_t_srd)#xy
-#                     delta_mom_pos_tensor_summed[data_set,k,j,5]=np.sum((SRD_velocities_after[:,1]- SRD_velocities_initial[:,1])*SRD_positions_after[:,2],axis=0)/(box_vol*delta_t_srd)#yz
-#                     delta_mom_pos_tensor_summed[data_set,k,j,6]=np.sum((SRD_velocities_after[:,2]- SRD_velocities_initial[:,2])*SRD_positions_after[:,0],axis=0)/(box_vol*delta_t_srd)#zx
-#                     delta_mom_pos_tensor_summed[data_set,k,j,7]=np.sum((SRD_velocities_after[:,2]- SRD_velocities_initial[:,2])*SRD_positions_after[:,1],axis=0)/(box_vol*delta_t_srd)#zy
-#                     delta_mom_pos_tensor_summed[data_set,k,j,8]=np.sum((SRD_velocities_after[:,1]- SRD_velocities_initial[:,1])*SRD_positions_after[:,0],axis=0)/(box_vol*delta_t_srd)#yx
-
-#                     kinetic_energy_tensor_summed[data_set,k,j,0]=np.sum(SRD_velocities_initial[:,0]*SRD_velocities_initial[:,0],axis=0)/(box_vol)#xx
-#                     kinetic_energy_tensor_summed[data_set,k,j,1]=np.sum(SRD_velocities_initial[:,1]*SRD_velocities_initial[:,1],axis=0)/(box_vol)#yy
-#                     kinetic_energy_tensor_summed[data_set,k,j,2]=np.sum(SRD_velocities_initial[:,2]*SRD_velocities_initial[:,2],axis=0)/(box_vol)#zz
-#                     kinetic_energy_tensor_summed[data_set,k,j,3]=np.sum(SRD_velocities_initial[:,0]*SRD_velocities_initial[:,1],axis=0)/(box_vol)#xy
-#                     kinetic_energy_tensor_summed[data_set,k,j,4]=np.sum(SRD_velocities_initial[:,0]*SRD_velocities_initial[:,2],axis=0)/(box_vol)#xz
-#                     kinetic_energy_tensor_summed[data_set,k,j,5]=np.sum(SRD_velocities_initial[:,1]*SRD_velocities_initial[:,2],axis=0)/(box_vol)#yz
-                    
-#                     stress_tensor_summed[data_set,k,j,0]=delta_mom_pos_tensor_summed[data_set,k,j,0] + kinetic_energy_tensor_summed[data_set,k,j,0]#xx
-#                     stress_tensor_summed[data_set,k,j,1]=delta_mom_pos_tensor_summed[data_set,k,j,1] + kinetic_energy_tensor_summed[data_set,k,j,1]#yy
-#                     stress_tensor_summed[data_set,k,j,2]=delta_mom_pos_tensor_summed[data_set,k,j,2] + kinetic_energy_tensor_summed[data_set,k,j,2]#zz
-                    
-                    
-#                     stress_tensor_summed[data_set,k,j,3]=delta_mom_pos_tensor_summed[data_set,k,j,3] + kinetic_energy_tensor_summed[data_set,k,j,4] + (erate[data_set]*delta_t_srd*0.5)*kinetic_energy_tensor_summed[data_set,k,j,2]#xz
-#                     stress_tensor_summed[data_set,k,j,4]=delta_mom_pos_tensor_summed[data_set,k,j,4] + kinetic_energy_tensor_summed[data_set,k,j,3] #xy 
-#                     stress_tensor_summed[data_set,k,j,5]=delta_mom_pos_tensor_summed[data_set,k,j,5] + kinetic_energy_tensor_summed[data_set,k,j,5]#yz
-#                     stress_tensor_summed[data_set,k,j,6]=delta_mom_pos_tensor_summed[data_set,k,j,6] + kinetic_energy_tensor_summed[data_set,k,j,4] + (erate[data_set]*delta_t_srd*0.5)*kinetic_energy_tensor_summed[data_set,k,j,2] #zx
-#                     stress_tensor_summed[data_set,k,j,7]=delta_mom_pos_tensor_summed[data_set,k,j,7] + kinetic_energy_tensor_summed[data_set,k,j,5]#zy
-#                     stress_tensor_summed[data_set,k,j,8]=delta_mom_pos_tensor_summed[data_set,k,j,8] + kinetic_energy_tensor_summed[data_set,k,j,3]#yx
-
-#             return stress_tensor_summed,kinetic_energy_tensor_summed,delta_mom_pos_tensor_summed
-    
-
-
-
+array_size=49999
+stress_tensor_summed=np.reshape(stress_tensor_summed_1d,((erate.shape[0],j_,array_size,9)))
+kinetic_energy_tensor_summed=np.reshape(kinetic_energy_tensor_summed_1d,((erate.shape[0],j_,array_size,6)))
+delta_mom_pos_tensor_summed=np.reshape(delta_mom_pos_tensor_summed_1d,((erate.shape[0],j_,array_size,9)))
 
 
 #%% taking realisation mean
@@ -289,17 +257,17 @@ stress_tensor_summed_realisation_mean=np.mean(stress_tensor_summed,axis=1)
 kinetic_energy_tensor_summed_realisation_mean=np.mean(kinetic_energy_tensor_summed,axis=1)   
 
 # calculating rolling average 
-delta_mom_pos_tensor_summed_realisation_mean_rolling=np.zeros((no_data_sets,shape_after[0]-1,9))
-stress_tensor_summed_realisation_mean_rolling= np.zeros((no_data_sets,shape_after[0]-1,9))
-kinetic_energy_tensor_summed_realisation_mean_rolling=np.zeros((no_data_sets,shape_after[0]-1,3))
+delta_mom_pos_tensor_summed_realisation_mean_rolling=np.zeros((no_data_sets,array_size,9))
+stress_tensor_summed_realisation_mean_rolling= np.zeros((no_data_sets,array_size,9))
+kinetic_energy_tensor_summed_realisation_mean_rolling=np.zeros((no_data_sets,array_size,3))
 for j in range(0,erate.shape[0]):
     for k in range(0,9):
-        for i in range(0,shape_after[0]-1): 
+        for i in range(0,array_size): 
                     delta_mom_pos_tensor_summed_realisation_mean_rolling[j,i,k]=np.mean(delta_mom_pos_tensor_summed_realisation_mean[j,:i,k],axis=0)
                     stress_tensor_summed_realisation_mean_rolling[j,i,k]=np.mean(stress_tensor_summed_realisation_mean[j,:i,k],axis=0)
 for j in range(0,erate.shape[0]):
     for k in range(0,3):
-        for i in range(0,shape_after[0]-1):  
+        for i in range(0,array_size):  
                     kinetic_energy_tensor_summed_realisation_mean_rolling[j,i,k]= np.mean(kinetic_energy_tensor_summed_realisation_mean[j,:i,k],axis=0)
                         
                 
@@ -314,42 +282,61 @@ labels_coll=["$\Delta p_{x}r_{x}$","$\Delta p_{y}r_{y}$","$\Delta p_{z}r_{z}$","
 labels_stress=["$\sigma_{xx}$","$\sigma_{yy}$","$\sigma_{zz}$","$\sigma_{xz}$","$\sigma_{xy}$","$\sigma_{yz}$","$\sigma_{zx}$","$\sigma_{zy}$","$\sigma_{yx}$"]
 
 
-stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[:,3000:,0:3])
+stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[:,:,0:3])
 labelpady=15
 fontsize=15
 plt.rcParams.update({'font.size': 12})
 for i in range(0,erate.shape[0]):
     for j in range(0,3):
-        plt.plot(stress_tensor_summed_realisation_mean_rolling[i,:,j],label=labels_stress[j],color=colour[j])
+        plt.plot(stress_tensor_summed_realisation_mean_rolling[i,1:,j],label=labels_stress[j],color=colour[j])
         plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$N_{coll}$")
-        plt.ylim((9,11))
+        plt.ylim((10.5,11))
 
-    plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\alpha}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
+    #plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\alpha}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
     plt.legend(loc='best')
     #plt.tight_layout()
     plt.savefig("rolling_ave_shear_stress_tensor_elements_1_3_gdot_"+str(erate[i])+"_M_"+str(rho)+"_L_"+str(box_size)+".png",dpi=1200)
     plt.show()
 
-#%% first normal stress difference 
-stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[:,3000:,0:3])
+#%% first normal stress difference rolling
+stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[:,:,0:3])
 N_1=stress_tensor_summed_realisation_mean_rolling[:,:,0]-stress_tensor_summed_realisation_mean_rolling[:,:,1]
-N_1_mean=np.mean(N_1[:,3000:])
+labels_gdot=["$\dot{\gamma}= "]
+N_1_mean=np.mean(N_1[0,3000:])
 labelpady=15
 fontsize=15
 plt.rcParams.update({'font.size': 12})
 for i in range(0,erate.shape[0]):
     #for j in range(0,3):
-        plt.plot(N_1[i,:])
+        plt.plot(N_1[i,:],label=labels_gdot[0]+str(erate[i])+"$")
+        plt.ylabel('$N_{1}$', rotation=0, labelpad=labelpady)
+        plt.xlabel("$N_{coll}$")
+        plt.ylim((-1,1))
+
+plt.axhline(N_1_mean,0,5000, label=labels_gdot[0]+str(erate[0])+", \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
+plt.legend(loc='best')
+    #plt.tight_layout()
+plt.savefig("N_1_M_"+str(rho)+"_L_"+str(box_size)+".png",dpi=1200)
+plt.show()
+
+#%% first normal stress no rolling average 
+N_1_no_roll=stress_tensor_summed_realisation_mean[:,:,0]-stress_tensor_summed_realisation_mean[:,:,1]
+N_1_no_roll_mean=np.mean(N_1_no_roll)
+for i in range(0,erate.shape[0]):
+    #for j in range(0,3):
+        plt.plot(N_1_no_roll[i,:])
         plt.ylabel('$N_{1}$', rotation=0, labelpad=labelpady)# m, label="$\dot{\gamma}="+str(erate[i])+"$")
         plt.xlabel("$N_{coll}$")
         plt.ylim((-1,1))
 
-plt.axhline(N_1_mean,0,5000, label="$\\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
+plt.axhline(N_1_no_roll_mean,0,500, label="$\\bar{N_{1}}="+str(sigfig.round(N_1_no_roll_mean,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
 plt.legend(loc='best')
     #plt.tight_layout()
-plt.savefig("N_1_"+str(erate[i])+"_M_"+str(rho)+"_L_"+str(box_size)+".png",dpi=1200)
+#plt.savefig("N_1_"+str(erate[i])+"_M_"+str(rho)+"_L_"+str(box_size)+".png",dpi=1200)
 plt.show()
+
+
 #%% plotting off diagonal 
 labelpady=15
 fontsize=15
@@ -357,13 +344,13 @@ plt.rcParams.update({'font.size': 12})
 
 for i in range(0,erate.shape[0]):
     for j in range(3,4):
-        stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[i,3000:,3])
+        stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[i,:,3])
         plt.plot(stress_tensor_summed_realisation_mean_rolling[i,:,j],label=labels_stress[j],color=colour[j])
         plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$N_{coll}$")
         plt.ylim((0,0.5))
 
-    plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\beta}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
+    #plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\beta}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
     plt.legend(loc='best')
     #plt.tight_layout()
     plt.savefig("rolling_ave_shear_stress_tensor_elements_xy_gdot_"+str(erate[i])+"_M_"+str(rho)+"_L_"+str(box_size)+".png",dpi=1200)
@@ -398,7 +385,7 @@ for i in range(0,erate.shape[0]):
 
 
 #%% viscosity estimate
-stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[:,3000:,3],axis=1)
+stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[:,8000:,3],axis=1)
 viscosity=stress_tensor_summed_realisation_mean_rolling_hline/erate
 alpha=np.pi
 dim=3
@@ -417,15 +404,12 @@ np.save("shear_visc_"+str(rho)+"_L_"+str(box_size),viscosity)
 fit=np.polyfit(erate,stress_tensor_summed_realisation_mean_rolling_hline,1)
 plt.scatter(np.asarray(erate[:],float), stress_tensor_summed_realisation_mean_rolling_hline[:])
 plt.plot(erate,fit[0]*erate + fit[1])
-plt.xticks(erate) 
+#plt.xticks(erate) 
 plt.xlabel("$\dot{\gamma}$",rotation=0)
 
 plt.ylabel("$\sigma_{xz}$",rotation=0,labelpad=labelpady)
 plt.show()
 
-# %% testing parallel results 
-stress_tensor_summed=np.load("stress_tensor_summed_test.npy")
-delta_mom_pos_tensor_summed=np.load("delta_mom_pos_tensor_summed_test.npy")
-kinetic_energy_tensor_summed=np.load("kinetic_energy_tensor_summed_test.npy")
+
 
 # %%
