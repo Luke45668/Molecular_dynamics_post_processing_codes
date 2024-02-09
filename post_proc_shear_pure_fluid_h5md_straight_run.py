@@ -44,8 +44,8 @@ colour = [
 # box_size=47
 # no_SRD=506530
 # box_size=37
-no_SRD=121670
-box_size=23
+# no_SRD=121670
+# box_size=23
 # no_SRD=58320
 # box_size=18
 # no_SRD=2160
@@ -54,28 +54,27 @@ box_size=23
 # box_size=3
 # no_SRD=2560
 # box_size=8
-# no_SRD=60835
-# box_size=23
+no_SRD=60835
+box_size=23
 #nu_bar=3
 #delta_t_srd=0.014872025172594354
 #nu_bar=0.9 
 #rho=10
 delta_t_srd=0.05674857690605889
-#rho=5
-#delta_t_srd=0.05071624521210362
+rho=5
+delta_t_srd=0.05071624521210362
 
 box_vol=box_size**3
 erate= np.array([0.01,0.001,0.0001])
 erate=np.array([0.01])
-no_timesteps=500000
+no_timesteps=100000
 # estimating number of steps  required
 strain=3
 delta_t_md=delta_t_srd/10
 strain_rate= np.array([0.01,0.001,0.0001])
 number_steps_needed= np.ceil(strain/(strain_rate*delta_t_md))
 dump_freq=10
-rho=10 
-#rho=5
+
 realisation_index=np.array([1,2,3])
 # finding all the dump files in a folder
 
@@ -191,6 +190,7 @@ def stress_tensor_total_compute_shear(shape_truncated_in,terms_9,terms_6,box_vol
     with h5.File(realisation_name_h5_after, 'r') as f_a:
         with h5.File(realisation_name_h5_before, 'r') as f_b:
             data_set = int(np.where(erate==float(realisation_name_h5_after.split('_')[15]))[0][0])
+            print(data_set)
             k=int(np.where(realisation_index==float(realisation_name_h5_after.split('_')[9]))[0][0])
         
             # if we are using the whole array    
