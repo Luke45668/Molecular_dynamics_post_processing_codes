@@ -70,13 +70,13 @@ box_vol=box_size**3
 #erate= np.array([0.01,0.001,0.0001])
 # #erate=np.array([0.01])
 #erate=np.array([0.001,0.002,0.003])
-erate= np.array([0.0001,0.0005,0.001,0.002])
+erate= np.array([0.0001,0.0005,0.001,0.002,0.005,0.01])
 
 no_timesteps=100000
 # estimating number of steps  required
 strain=3
 delta_t_md=delta_t_srd/10
-strain_rate= np.array([0.0001,0.001,0.01])
+strain_rate= erate
 number_steps_needed= np.ceil(strain/(strain_rate*delta_t_md))
 dump_freq=10
 #rho=10 
