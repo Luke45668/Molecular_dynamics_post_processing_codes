@@ -263,14 +263,17 @@ realisation_name_h5_after_pol=realisation_name_h5_after_sorted_final_pol
 realisation_name_h5_before_phantom=realisation_name_h5_before_sorted_final_phantom
 realisation_name_h5_after_phantom=realisation_name_h5_after_sorted_final_phantom
 
-#%%
-def stress_tensor_flat_elastic_total_compute_shear_full_run(terms_9,box_vol,realisation_index,stress_tensor_summed_shared,realisation_name_h5_after_srd,realisation_name_h5_before_srd,realisation_name_h5_after_pol,realisation_name_h5_before_pol,realisation_name_h5_after_phantom,shape_after,erate,delta_t_srd,p):    
+#%% Computing full stress tensor of flat elastic.
+mass_pol=5 
+
+
+def stress_tensor_flat_elastic_total_compute_shear_full_run(mass_pol,eq_spring_length,spring_stiffness,terms_9,box_vol,realisation_index,stress_tensor_summed_shared,realisation_name_h5_after_srd,realisation_name_h5_before_srd,realisation_name_h5_after_pol,realisation_name_h5_before_pol,realisation_name_h5_after_phantom,shape_after,erate,delta_t_srd,p):    
     
     # make sure to put the realisation name arguments with list index [p]
     with h5.File(realisation_name_h5_after_srd, 'r') as f_a:
         with h5.File(realisation_name_h5_before_srd, 'r') as f_b:
             with h5.File(realisation_name_h5_after_pol,'r') as f_c:
-                with h5.ile(realisation_name_h5_before_pol,'r') as f_d:
+                with h5.File(realisation_name_h5_before_pol,'r') as f_d:
                       with h5.File(realisation_name_h5_after_phantom,'r') as f_ph:
 
 
@@ -278,7 +281,7 @@ def stress_tensor_flat_elastic_total_compute_shear_full_run(terms_9,box_vol,real
                             # erate
                             data_set = int(np.where(erate==float(realisation_name_h5_after_srd.split('_')[16]))[0][0])
                             # spring constant 
-                            K=int(np.where(realisation_index==float(realisation_name_h5_after_srd.split('_')[20]))[0][0])
+                            K=int(np.where(spring_stiffness==float(realisation_name_h5_after_srd.split('_')[20]))[0][0])
                         
                         
                             
@@ -292,9 +295,10 @@ def stress_tensor_flat_elastic_total_compute_shear_full_run(terms_9,box_vol,real
                                     SRD_positions_after= f_a['particles']['SRDs']['position']['value'][j]
                                     SRD_velocities_initial=f_b['particles']['SRDs']['velocity']['value'][j-1]
                                     SRD_velocities_after=f_a['particles']['SRDs']['velocity']['value'][j]
-                                    pol_positions_after= f_c['particles']['pol']['position']['value'][j]
-                                    pol_velocities_initial=f_d['particles']['pol']['velocity']['value'][j-1]
-                                    pol_velocities_after=f_c['particles']['pol']['velocity']['value'][j]
+                                    # have to use small for hirotori edit , not pol
+                                    pol_positions_after= f_c['particles']['small']['position']['value'][j]
+                                    pol_velocities_initial=f_d['particles']['small']['velocity']['value'][j-1]
+                                    pol_velocities_after=f_c['particles']['small']['velocity']['value'][j]
 
                                     phantom_positions_after=f_ph['particles']['phantom']['position']['value'][j]
                                   
@@ -310,15 +314,15 @@ def stress_tensor_flat_elastic_total_compute_shear_full_run(terms_9,box_vol,real
                                     delta_mom_pos_tensor_summed_yx_srd=np.sum((SRD_velocities_after[:,1]- SRD_velocities_initial[:,1])*SRD_positions_after[:,0],axis=0)/(box_vol*delta_t_srd)#yx
                                     
                                     # calculating the mom_pos tensor pol
-                                    delta_mom_pos_tensor_summed_xx_pol=np.sum((pol_velocities_after[:,0]- pol_velocities_initial[:,0])*pol_positions_after[:,0],axis=0)/(box_vol*delta_t_srd)#xx
-                                    delta_mom_pos_tensor_summed_yy_pol=np.sum((pol_velocities_after[:,1]- pol_velocities_initial[:,1])*pol_positions_after[:,1],axis=0)/(box_vol*delta_t_srd)#yy
-                                    delta_mom_pos_tensor_summed_zz_pol=np.sum((pol_velocities_after[:,2]- pol_velocities_initial[:,2])*pol_positions_after[:,2],axis=0)/(box_vol*delta_t_srd)#zz
-                                    delta_mom_pos_tensor_summed_xz_pol=np.sum((pol_velocities_after[:,0]- pol_velocities_initial[:,0])*pol_positions_after[:,2],axis=0)/(box_vol*delta_t_srd)#xz
-                                    delta_mom_pos_tensor_summed_xy_pol=np.sum((pol_velocities_after[:,0]- pol_velocities_initial[:,0])*pol_positions_after[:,1],axis=0)/(box_vol*delta_t_srd)#xy
-                                    delta_mom_pos_tensor_summed_yz_pol=np.sum((pol_velocities_after[:,1]- pol_velocities_initial[:,1])*pol_positions_after[:,2],axis=0)/(box_vol*delta_t_srd)#yz
-                                    delta_mom_pos_tensor_summed_zx_pol=np.sum((pol_velocities_after[:,2]- pol_velocities_initial[:,2])*pol_positions_after[:,0],axis=0)/(box_vol*delta_t_srd)#zx
-                                    delta_mom_pos_tensor_summed_zy_pol=np.sum((pol_velocities_after[:,2]- pol_velocities_initial[:,2])*pol_positions_after[:,1],axis=0)/(box_vol*delta_t_srd)#zy
-                                    delta_mom_pos_tensor_summed_yx_pol=np.sum((pol_velocities_after[:,1]- pol_velocities_initial[:,1])*pol_positions_after[:,0],axis=0)/(box_vol*delta_t_srd)#yx
+                                    delta_mom_pos_tensor_summed_xx_pol=np.sum((pol_velocities_after[:,0]- pol_velocities_initial[:,0])*pol_positions_after[:,0],axis=0)*mass_pol/(box_vol*delta_t_srd)#xx
+                                    delta_mom_pos_tensor_summed_yy_pol=np.sum((pol_velocities_after[:,1]- pol_velocities_initial[:,1])*pol_positions_after[:,1],axis=0)*mass_pol/(box_vol*delta_t_srd)#yy
+                                    delta_mom_pos_tensor_summed_zz_pol=np.sum((pol_velocities_after[:,2]- pol_velocities_initial[:,2])*pol_positions_after[:,2],axis=0)*mass_pol/(box_vol*delta_t_srd)#zz
+                                    delta_mom_pos_tensor_summed_xz_pol=np.sum((pol_velocities_after[:,0]- pol_velocities_initial[:,0])*pol_positions_after[:,2],axis=0)*mass_pol/(box_vol*delta_t_srd)#xz
+                                    delta_mom_pos_tensor_summed_xy_pol=np.sum((pol_velocities_after[:,0]- pol_velocities_initial[:,0])*pol_positions_after[:,1],axis=0)*mass_pol/(box_vol*delta_t_srd)#xy
+                                    delta_mom_pos_tensor_summed_yz_pol=np.sum((pol_velocities_after[:,1]- pol_velocities_initial[:,1])*pol_positions_after[:,2],axis=0)*mass_pol/(box_vol*delta_t_srd)#yz
+                                    delta_mom_pos_tensor_summed_zx_pol=np.sum((pol_velocities_after[:,2]- pol_velocities_initial[:,2])*pol_positions_after[:,0],axis=0)*mass_pol/(box_vol*delta_t_srd)#zx
+                                    delta_mom_pos_tensor_summed_zy_pol=np.sum((pol_velocities_after[:,2]- pol_velocities_initial[:,2])*pol_positions_after[:,1],axis=0)*mass_pol/(box_vol*delta_t_srd)#zy
+                                    delta_mom_pos_tensor_summed_yx_pol=np.sum((pol_velocities_after[:,1]- pol_velocities_initial[:,1])*pol_positions_after[:,0],axis=0)*mass_pol/(box_vol*delta_t_srd)#yx
                                     
                                 
 
@@ -333,12 +337,12 @@ def stress_tensor_flat_elastic_total_compute_shear_full_run(terms_9,box_vol,real
                                     kinetic_energy_tensor_summed_yz_srd=np.sum(SRD_velocities_initial[:,1]*SRD_velocities_initial[:,2],axis=0)/(box_vol)#yz
 
                                     # calculating ke tensor pol
-                                    kinetic_energy_tensor_summed_xx_pol=np.sum(pol_velocities_initial[:,0]*pol_velocities_initial[:,0],axis=0)/(box_vol)#xx
-                                    kinetic_energy_tensor_summed_yy_pol=np.sum(pol_velocities_initial[:,1]*pol_velocities_initial[:,1],axis=0)/(box_vol)#yy
-                                    kinetic_energy_tensor_summed_zz_pol=np.sum(pol_velocities_initial[:,2]*pol_velocities_initial[:,2],axis=0)/(box_vol)#zz
-                                    kinetic_energy_tensor_summed_xy_pol=np.sum(pol_velocities_initial[:,0]*pol_velocities_initial[:,1],axis=0)/(box_vol)#xy
-                                    kinetic_energy_tensor_summed_xz_pol=np.sum(pol_velocities_initial[:,0]*pol_velocities_initial[:,2],axis=0)/(box_vol)#xz
-                                    kinetic_energy_tensor_summed_yz_pol=np.sum(pol_velocities_initial[:,1]*pol_velocities_initial[:,2],axis=0)/(box_vol)#yz
+                                    kinetic_energy_tensor_summed_xx_pol=np.sum(pol_velocities_initial[:,0]*pol_velocities_initial[:,0],axis=0)*mass_pol/(box_vol)#xx
+                                    kinetic_energy_tensor_summed_yy_pol=np.sum(pol_velocities_initial[:,1]*pol_velocities_initial[:,1],axis=0)*mass_pol/(box_vol)#yy
+                                    kinetic_energy_tensor_summed_zz_pol=np.sum(pol_velocities_initial[:,2]*pol_velocities_initial[:,2],axis=0)*mass_pol/(box_vol)#zz
+                                    kinetic_energy_tensor_summed_xy_pol=np.sum(pol_velocities_initial[:,0]*pol_velocities_initial[:,1],axis=0)*mass_pol/(box_vol)#xy
+                                    kinetic_energy_tensor_summed_xz_pol=np.sum(pol_velocities_initial[:,0]*pol_velocities_initial[:,2],axis=0)*mass_pol/(box_vol)#xz
+                                    kinetic_energy_tensor_summed_yz_pol=np.sum(pol_velocities_initial[:,1]*pol_velocities_initial[:,2],axis=0)*mass_pol/(box_vol)#yz
                                     
                                 
                                     #calculating spring position tensor 
@@ -379,7 +383,7 @@ def stress_tensor_flat_elastic_total_compute_shear_full_run(terms_9,box_vol,real
                                     stress_tensor_summed_xz=spring_force_positon_tensor_xz+delta_mom_pos_tensor_summed_xz_srd + kinetic_energy_tensor_summed_xz_srd + (erate[data_set]*delta_t_srd*0.5)*kinetic_energy_tensor_summed_zz_srd +    delta_mom_pos_tensor_summed_xz_pol + kinetic_energy_tensor_summed_xz_pol + (erate[data_set]*delta_t_srd*0.5)*kinetic_energy_tensor_summed_zz_pol#xz
                                     stress_tensor_summed_xy=spring_force_positon_tensor_xy+delta_mom_pos_tensor_summed_xy_srd + kinetic_energy_tensor_summed_xy_srd+delta_mom_pos_tensor_summed_xy_pol + kinetic_energy_tensor_summed_xy_pol #xy 
                                     stress_tensor_summed_yz=spring_force_positon_tensor_yz+delta_mom_pos_tensor_summed_yz_srd + kinetic_energy_tensor_summed_yz_srd+ delta_mom_pos_tensor_summed_yz_pol + kinetic_energy_tensor_summed_yz_pol #yz
-                                    stress_tensor_summed_zx=spring_force_positon_tensor_zx+delta_mom_pos_tensor_summed_zx_srd + kinetic_energy_tensor_summed_xz_srd + (erate[data_set]*delta_t_srd*0.5)*kinetic_energy_tensor_summed_xz_srd + delta_mom_pos_tensor_summed_zx_pol + kinetic_energy_tensor_summed_xz_pol + (erate[data_set]*delta_t_srd*0.5)*kinetic_energy_tensor_summed_xz_pol #zx
+                                    stress_tensor_summed_zx=spring_force_positon_tensor_zx+delta_mom_pos_tensor_summed_zx_srd + kinetic_energy_tensor_summed_xz_srd + (erate[data_set]*delta_t_srd*0.5)*kinetic_energy_tensor_summed_xz_srd + delta_mom_pos_tensor_summed_zx_pol + kinetic_energy_tensor_summed_xz_pol + (erate[data_set]*delta_t_srd*0.5)*kinetic_energy_tensor_summed_zz_pol #zx
                                     stress_tensor_summed_zy=spring_force_positon_tensor_zy+delta_mom_pos_tensor_summed_zy_srd+ kinetic_energy_tensor_summed_yz_srd + delta_mom_pos_tensor_summed_zy_pol+ kinetic_energy_tensor_summed_yz_pol#zy
                                     stress_tensor_summed_yx=spring_force_positon_tensor_yx+delta_mom_pos_tensor_summed_yx_srd + kinetic_energy_tensor_summed_xy_srd+ delta_mom_pos_tensor_summed_yx_pol + kinetic_energy_tensor_summed_xy_pol#yx
                                     
@@ -405,94 +409,37 @@ def stress_tensor_flat_elastic_total_compute_shear_full_run(terms_9,box_vol,real
     return stress_tensor_summed_shared
 
 
-#%% test of function 
-j=2
-K=10
-eq_spring_length=3*np.sqrt(3)/2
-with h5.File(realisation_name_h5_after_pol[0],'r') as f_p:
-    with h5.File(realisation_name_h5_after_phantom[0],'r') as f_ph:
-            pol_positions_after= f_p['particles']['pol']['position']['value'][j]
-            # pol_velocities_after=f_p['particles']['pol']['velocity']['value'][j]
-            phantom_positions_after=f_ph['particles']['phantom']['position']['value'][j]
-            # phantom_velocities_after=f_d['particles']['phantom']['velocity']['value'][j]
-
-             # spring 1
-            f_spring_1_dirn=pol_positions_after[0,:]-phantom_positions_after[1,:]
-            f_spring_1_mag=np.sqrt(np.sum((f_spring_1_dirn)**2))
-            f_spring_1=K*(f_spring_1_dirn/f_spring_1_mag)*(f_spring_1_mag-eq_spring_length)
-             # spring 2
-            f_spring_2_dirn=pol_positions_after[1,:]-phantom_positions_after[2,:]
-            f_spring_2_mag=np.sqrt(np.sum((f_spring_2_dirn)**2))
-            f_spring_2=K*(f_spring_2_dirn/f_spring_2_mag)*(f_spring_2_mag-eq_spring_length)
-             # spring 3
-            f_spring_3_dirn=pol_positions_after[2,:]-phantom_positions_after[0,:]
-            f_spring_3_mag=np.sqrt(np.sum((f_spring_3_dirn)**2))
-            f_spring_3=K*(f_spring_3_dirn/f_spring_3_mag)*(f_spring_3_mag-eq_spring_length)
-
-
-            # force position tensor 
-
-            spring_force_positon_tensor_xx=f_spring_1[0]*f_spring_1_dirn[0] + f_spring_2[0]*f_spring_2_dirn[0] +f_spring_3[0]*f_spring_3_dirn[0] 
-            spring_force_positon_tensor_yy=f_spring_1[1]*f_spring_1_dirn[1] + f_spring_2[1]*f_spring_2_dirn[1] +f_spring_3[1]*f_spring_3_dirn[1] 
-            spring_force_positon_tensor_zz=f_spring_1[2]*f_spring_1_dirn[2] + f_spring_2[2]*f_spring_2_dirn[2] +f_spring_3[2]*f_spring_3_dirn[2] 
-            spring_force_positon_tensor_xz=f_spring_1[0]*f_spring_1_dirn[2] + f_spring_2[0]*f_spring_2_dirn[2] +f_spring_3[0]*f_spring_3_dirn[2] 
-            spring_force_positon_tensor_xy=f_spring_1[0]*f_spring_1_dirn[1] + f_spring_2[0]*f_spring_2_dirn[1] +f_spring_3[0]*f_spring_3_dirn[1] 
-            spring_force_positon_tensor_yz=f_spring_1[1]*f_spring_1_dirn[2] + f_spring_2[1]*f_spring_2_dirn[2] +f_spring_3[1]*f_spring_3_dirn[2] 
-            spring_force_positon_tensor_zx=f_spring_1[2]*f_spring_1_dirn[0] + f_spring_2[2]*f_spring_2_dirn[0] +f_spring_3[2]*f_spring_3_dirn[0] 
-            spring_force_positon_tensor_zy=f_spring_1[2]*f_spring_1_dirn[1] + f_spring_2[2]*f_spring_2_dirn[1] +f_spring_3[2]*f_spring_3_dirn[1] 
-            spring_force_positon_tensor_yx=f_spring_1[1]*f_spring_1_dirn[0] + f_spring_2[1]*f_spring_2_dirn[0] +f_spring_3[1]*f_spring_3_dirn[0] 
-            
-            
-
-            
-
-            
-
-
-
-
-
-
-
-##springs 
-# create_bonds single/bond 1 1 5
-# create_bonds single/bond 1 2 6 
-# create_bonds single/bond 1 3 4
-
-
-
-#%%
-
-
+#%% parallel analysis of small run 
 
 # determine 1-D array size 
-size_delta_mom_pos_tensor_summed=int(no_data_sets*j_*((shape_after[0])-1)*9)
-print(size_delta_mom_pos_tensor_summed)
+# size_delta_mom_pos_tensor_summed=int(no_data_sets*j_*((shape_after[0])-1)*9)
+# print(size_delta_mom_pos_tensor_summed)
 size_stress_tensor_summed=int(no_data_sets*j_*((shape_after[0])-1)*9) 
 print(size_stress_tensor_summed)
-size_kinetic_energy_tensor_summed=int(no_data_sets*j_*((shape_after[0])-1))*6
-print(size_kinetic_energy_tensor_summed)
+# size_kinetic_energy_tensor_summed=int(no_data_sets*j_*((shape_after[0])-1))*6
+# print(size_kinetic_energy_tensor_summed)
 processes=[]
-
+print(count_h5_after_srd)
   
 
 
 tic=time.perf_counter()
 
 if __name__ =='__main__':
+        
         # need to change this code so it only does 5 arrays at a time 
         
         # creating shared memory arrays that can be updated by multiple processes
-        delta_mom_pos_tensor_summed_shared=  mp.Array('d',range(size_delta_mom_pos_tensor_summed))
+        #delta_mom_pos_tensor_summed_shared=  mp.Array('d',range(size_delta_mom_pos_tensor_summed))
         stress_tensor_summed_shared=   mp.Array('d',range(size_stress_tensor_summed))
-        kinetic_energy_tensor_summed_shared=   mp.Array('d',range(size_kinetic_energy_tensor_summed))
+        # kinetic_energy_tensor_summed_shared=   mp.Array('d',range(size_kinetic_energy_tensor_summed))
         list_done=[]
         
             
         #creating processes, iterating over each realisation name 
         for p in  range(count_h5_after_srd):
               
-            proc= Process(target=stress_tensor_total_compute_shear_full_run,args=(terms_9,terms_6,box_vol,realisation_index,delta_mom_pos_tensor_summed_shared,stress_tensor_summed_shared,kinetic_energy_tensor_summed_shared,realisation_name_h5_after[p],realisation_name_h5_before[p],shape_after,erate,delta_t_srd,p,))
+            proc= Process(target=stress_tensor_flat_elastic_total_compute_shear_full_run,args=(mass_pol,eq_spring_length,spring_stiffness,terms_9,box_vol,realisation_index,stress_tensor_summed_shared,realisation_name_h5_after_srd[p],realisation_name_h5_before_srd[p],realisation_name_h5_after_pol[p],realisation_name_h5_before_pol[p],realisation_name_h5_after_phantom[p],shape_after,erate,delta_t_srd,p,))
                                         
             processes.append(proc)
             proc.start()
@@ -505,12 +452,12 @@ if __name__ =='__main__':
         print("Parallel analysis done in ", (toc-tic)/60," mins")
        
         # could possibly make this code save the unshaped arrays to save the problem 
-        np.save("stress_tensor_summed_1d_test_M_"+str(rho)+"_L_"+str(box_size),stress_tensor_summed_shared)
-        np.save("delta_mom_pos_tensor_summed_1d_test_M_"+str(rho)+"_L_"+str(box_size),delta_mom_pos_tensor_summed_shared)
-        np.save("kinetic_energy_tensor_summed_1d_test_M_"+str(rho)+"_L_"+str(box_size),kinetic_energy_tensor_summed_shared)
+        np.save("stress_tensor_summed_1d_test_erate_"+str(erate[0])+"_bk_"+str(bending_stiffness)+"_M_"+str(rho)+"_L_"+str(box_size),stress_tensor_summed_shared)
+        # np.save("delta_mom_pos_tensor_summed_1d_test_M_"+str(rho)+"_L_"+str(box_size),delta_mom_pos_tensor_summed_shared)
+        # np.save("kinetic_energy_tensor_summed_1d_test_M_"+str(rho)+"_L_"+str(box_size),kinetic_energy_tensor_summed_shared)
 
 
 
+#%% Compute initial orientations 
         
-
-# could also use MPI4PY     
+def compute_initial_orientations_of_flat_elastic()

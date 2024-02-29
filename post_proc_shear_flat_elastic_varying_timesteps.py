@@ -72,15 +72,16 @@ box_vol=box_size**3
 #erate=np.array([0.001,0.002,0.003])
 erate= np.array([0.001])
 
-no_timestep=np.array([1000000])
+no_timestep=np.array([4000000])
 
 spring_stiffness=np.array([20,40,80,100])
-spring_stiffness=np.array([100,20,40,80]) # currently the sorting doesnt work perfectly , so this is the processing order.
+spring_stiffness=np.array([100,20,40,80]) 
+spring_stiffness=np.array([100,40,50,60,70,80,90]) # currently the sorting doesnt work perfectly , so this is the processing order.
 
 timestep_multiplier=0.05
 # estimating number of steps  required
 strain=2
-delta_t_md=delta_t_srd/10
+delta_t_md=(delta_t_srd/10)*timestep_multiplier
 strain_rate= erate
 number_steps_needed= np.ceil(strain/(strain_rate*delta_t_md))
 dump_freq=10
@@ -91,7 +92,7 @@ rho=5
 realisation_index=np.array([1,2,3])
 
 filepath="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/Simulation_run_folder/hfd5_runs/flat_elastic_tests/test_box_23_M_5_k_10_30"
-filepath="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/flat_elastic/internal_stiffness_prelim_test"
+filepath="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/flat_elastic/internal_stiffness_10000_tstep_4mil/"
 
 os.chdir(filepath)
 
@@ -109,11 +110,11 @@ array_size=((no_timestep/(dump_freq/timestep_multiplier))).astype('int')
 
 
 #for i in range(spring_stiffness.size):
-cumsum_divsor_array=np.repeat(np.array([np.arange(1,array_size+1)]), repeats=9, axis=0).T
+cumsum_divsor_array=np.repeat(np.array([np.arange(1,array_size)]), repeats=9, axis=0).T
 #loading in 
-stress_tensor_summed_1d_tuple=stress_tensor_summed_1d_tuple+(np.load("stress_tensor_summed_1d_test_erate_0.001_bk_10000_M_5_L_23.npy"),)
+stress_tensor_summed_1d_tuple=stress_tensor_summed_1d_tuple+(np.load("stress_tensor_summed_1d_test_4000000_erate_0.001_bk_10000_M_5_L_23.npy"),)
 # reshaping and taking realisation mean , then taking cumulative sum along timestep axis, then dividing by the array of total values 
-stress_tensor_summed_tuple_shaped=stress_tensor_summed_tuple_shaped+(np.cumsum(np.mean(np.reshape(stress_tensor_summed_1d_tuple[0],(4,j_,array_size[0],9)),axis=1),axis=1)/cumsum_divsor_array,)
+stress_tensor_summed_tuple_shaped=stress_tensor_summed_tuple_shaped+(np.cumsum(np.mean(np.reshape(stress_tensor_summed_1d_tuple[0],(7,j_,array_size[0]-1,9)),axis=1),axis=1)/cumsum_divsor_array,)
 
 #    delta_mom_pos_tensor_summed_1d_tuple=delta_mom_pos_tensor_summed_1d_tuple+(np.load("delta_mom_pos_tensor_summed_1d_test_erate_"+str(erate[i])+"_M_"+str(rho)+"_L_"+str(box_size)+".npy"),)
 #    delta_mom_pos_tensor_summed_tuple_shaped=delta_mom_pos_tensor_summed_tuple_shaped+(np.cumsum(np.mean(np.reshape(delta_mom_pos_tensor_summed_1d_tuple[i],(1,j_,array_size[i],9)),axis=1),axis=1)/cumsum_divsor_array,)
@@ -144,7 +145,7 @@ for i in range(0,erate.shape[0]):
     strainplot_tuple=strainplot_tuple+(strainplot,)
 
         
-mean_step=np.array([998])
+mean_step=np.array([9998])
 
 ####NOTE could i turn this set of plotting functions into a class? 
 
@@ -162,7 +163,7 @@ for i in range(0,spring_stiffness.size):
         plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$N_{coll}$")
     
-        plt.ylim(4,8)
+        #plt.ylim(4,8)
 
    
     plt.legend(loc='best')
@@ -182,7 +183,7 @@ for i in range(0,spring_stiffness.size):
 
     for j in range(0,3):
        
-        plt.plot(strainplot_tuple[0][:],stress_tensor_summed_tuple_shaped[0][i,:,j],label=labels_stress[j],color=colour[j])
+        plt.plot(strainplot_tuple[0][1:],stress_tensor_summed_tuple_shaped[0][i,:,j],label=labels_stress[j],color=colour[j])
         plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$\gamma$")
         #plt.ylim((10.5,11))
@@ -207,7 +208,7 @@ for i in range(0,spring_stiffness.size):
         plt.plot(N_1[:],label="$K="+str(spring_stiffness[i])+", \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
         plt.ylabel('$N_{1}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$N_{coll}$")
-        plt.ylim((-0.1,5))
+       # plt.ylim((-0.1,5))
 
 plt.legend(loc='best')
     #plt.tight_layout()
@@ -216,20 +217,21 @@ plt.show()
 
 #%%first normal stress difference rolling vs strain 
 
+
 labelpady=15
 fontsize=15
 plt.rcParams.update({'font.size': 12})
 for i in range(0,spring_stiffness.size):
     #for j in range(0,3):
        
-        N_1=stress_tensor_summed_tuple_shaped[0][i,:,0]-stress_tensor_summed_tuple_shaped[0][i,:,1]
+        N_1=stress_tensor_summed_tuple_shaped[0][i,:,0]-stress_tensor_summed_tuple_shaped[0][i,:,2]
         N_1_mean=np.mean(N_1[mean_step[0]:])
-        plt.plot(strainplot_tuple[0][:],N_1[:],label="$K="+str(spring_stiffness[i])+", \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
+        plt.plot(strainplot_tuple[0][1:],N_1[:],label="$K="+str(spring_stiffness[i])+", \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
         plt.ylabel('$N_{1}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$\gamma$")
-        plt.ylim((-0.1,5))
+        #plt.ylim((-0.1,5))
 
-plt.legend(loc='best')
+plt.legend(loc='best',bbox_to_anchor=(1,1))
     #plt.tight_layout()
 plt.savefig("N_1_vs_strain_gdot_"+str(erate[0])+"_K_"+str(spring_stiffness[i])+"_M_"+str(rho)+"_L_"+str(box_size)+".pdf",dpi=1200,bbox_inches='tight')
 plt.show()
@@ -262,14 +264,14 @@ fontsize=15
 plt.rcParams.update({'font.size': 12})
 for i in range(0,spring_stiffness.size):
     #for j in range(0,3):
-        N_2=stress_tensor_summed_tuple_shaped[0][i,:,1]-stress_tensor_summed_tuple_shaped[0][i,:,2]
+        N_2=stress_tensor_summed_tuple_shaped[0][i,:,2]-stress_tensor_summed_tuple_shaped[0][i,:,1]
         N_2_mean=np.mean(N_2[mean_step[0]:])
-        plt.plot(strainplot_tuple[0][:],N_2[:],label="$K="+str(spring_stiffness[i])+", \\bar{N_{2}}="+str(sigfig.round(N_2_mean,sigfigs=3))+"$",color=colour[i])
+        plt.plot(strainplot_tuple[0][1:],N_2[:],label="$K="+str(spring_stiffness[i])+", \\bar{N_{2}}="+str(sigfig.round(N_2_mean,sigfigs=3))+"$",color=colour[i])
         plt.ylabel('$N_{2}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$\gamma$")
         #plt.ylim((-0.1,0.1))
 
-plt.legend(loc='best')
+plt.legend(loc='best',bbox_to_anchor=(1,1))
     #plt.tight_layout()
 plt.savefig("N_2_strain_gdot_"+str(erate[0])+"_K_"+str(spring_stiffness[i])+"_M_"+str(rho)+"_L_"+str(box_size)+".pdf",dpi=1200,bbox_inches='tight')
 plt.show()
@@ -279,13 +281,13 @@ labelpady=10
 fontsize=15
 plt.rcParams.update({'font.size': 12})
 
-for i in range(0,spring_stiffness.size):
+for i in range(1,spring_stiffness.size):
     for j in range(3,4):
         #stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[i,mean_step:,3])
-        plt.plot(stress_tensor_summed_tuple_shaped[0][i,:,j],label=labels_stress[j]+", "+"$K="+str(spring_stiffness[i])+", \\bar{N_{2}}="+str(sigfig.round(N_2_mean,sigfigs=3))+"$",color=colour[i])
-        plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
+        plt.plot(stress_tensor_summed_tuple_shaped[0][i,:,j],label=labels_stress[j]+", "+"$K="+str(spring_stiffness[i])+"$",color=colour[i])
+        plt.ylabel('$\sigma_{xz}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$N_{coll}$")
-        plt.ylim((-,5))
+        plt.ylim((-0.5,5))
         
    
     plt.legend()
@@ -299,13 +301,13 @@ labelpady=10
 fontsize=15
 plt.rcParams.update({'font.size': 12})
 
-for i in range(0,erate.shape[0]):
+for i in range(0,spring_stiffness.size):
     for j in range(3,4):
         #stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[i,mean_step:,3])
-        plt.plot(strainplot_tuple[i][:],stress_tensor_summed_tuple_shaped[i][0,:,j],label=labels_stress[j]+", "+labels_gdot[0]+str(erate[i])+"$",color=colour[i])
+        plt.plot(strainplot_tuple[0][1:],stress_tensor_summed_tuple_shaped[0][i,:,j],label=labels_stress[j]+", "+labels_gdot[0]+str(erate[0])+"$",color=colour[i])
         plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$\gamma$")
-        plt.ylim((0,1))
+       # plt.ylim((0,1))
         
     #plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\beta}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
     plt.legend()
@@ -326,7 +328,7 @@ for i in range(0,erate.shape[0]):
         plt.plot(stress_tensor_summed_tuple_shaped[i][0,:,j],label=labels_stress[j]+", "+labels_gdot[0]+str(erate[i])+"$",color=colour[j])
         plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$N_{coll}$")
-        plt.ylim((-0.02,0.075))
+        #plt.ylim((-0.02,0.075))
 
     #plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\beta}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
     plt.legend()
@@ -340,19 +342,20 @@ labelpady=15
 fontsize=15
 plt.rcParams.update({'font.size': 12})
 
-for i in range(0,erate.shape[0]):
+for i in range(0,spring_stiffness.size):
     for j in range(3,9):
         #stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[i,mean_step:,3])
-        plt.plot(strainplot_tuple[i][:],stress_tensor_summed_tuple_shaped[i][0,:,j],label=labels_stress[j]+", "+labels_gdot[0]+str(erate[i])+"$",color=colour[j])
+        plt.plot(strainplot_tuple[0][1:],stress_tensor_summed_tuple_shaped[0][i,:,j],label=labels_stress[j],color=colour[j])
         plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$\gamma$")
-        plt.ylim((-0.02,0.075))
+        #plt.ylim((-0.02,0.075))
+        #plt.ylim((-5,5))
 
     #plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\beta}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
     plt.legend()
     #plt.tight_layout()
     #plt.savefig("rolling_ave_shear_stress_tensor_elements_xy_gdot_allgdot_M_"+str(rho)+"_L_"+str(box_size)+".png",dpi=1200)
-    plt.savefig("rolling_ave_shear_stress_tensor_vs_strain_all_elements_gdot_"+str(erate[i])+"_M_"+str(rho)+"_L_"+str(box_size)+".png",dpi=1200)
+    plt.savefig("rolling_ave_shear_stress_tensor_vs_strain_all_elements_gdot_"+str(erate[0])+"_K_"+str(spring_stiffness[i])+"_M_"+str(rho)+"_L_"+str(box_size)+".pdf",dpi=1200,bbox_inches='tight')
     plt.show()
 
 
