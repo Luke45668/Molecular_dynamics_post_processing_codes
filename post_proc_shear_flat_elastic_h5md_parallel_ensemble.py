@@ -5,7 +5,7 @@
 # to ensure fast analysis  
 # """
 # Importing packages
-#
+#%%
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -15,7 +15,6 @@ import multiprocessing as mp
 from multiprocessing import Process
 import time
 import h5py as h5
-import seaborn as sns
 plt.rcParams.update(plt.rcParamsDefault)
 plt.rcParams['text.usetex'] = True
 #from mpl_toolkits import mplot3d
@@ -84,6 +83,8 @@ bending_stiffness=10000
 
 #rho=5
 realisation_index=np.array([1,2,3])
+j_=1000
+realisation_index_=np.arange(0,j_,1)
 # finding all the dump files in a folder
 
 VP_general_name_string='vel.*'
@@ -103,7 +104,7 @@ dump_general_name_string_before_phantom='*phantom*before*.h5'
 
 
 #filepath="/home/ucahlrl/Scratch/output"
-filepath="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/Simulation_run_folder/dist_test_1000/"
+filepath="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/Simulation_run_folder/dist_test_run_2_1000/"
 
 Path_2_dump=filepath
 # can chnage this to another array on kathleen
@@ -138,16 +139,16 @@ count_h5_after_phantom=dump_realisation_name_info_after_phantom[7]
 
 # # find dump file size
 with h5.File(realisation_name_h5_after_pol[0], 'r') as f:
-    shape_after= f['particles']['pol']['position']['value'].shape
+    shape_after= f['particles']['small']['position']['value'].shape
     f.close()
 print(shape_after[0])
 
 with h5.File(realisation_name_h5_before_pol[0], 'r') as f_i:
-      first_step= f_i['particles']['pol']['position']['step'][0]
-      first_posn= f_i['particles']['pol']['position']['value'][0]
+      first_step= f_i['particles']['small']['position']['step'][0]
+      first_posn= f_i['particles']['small']['position']['value'][0]
       f.close()
 
-j_=1000
+
 no_data_sets=erate.shape[0]
 
 #
@@ -177,6 +178,9 @@ class realisation():
           self.realisation_index_=realisation_index_
      def __repr__(self):
         return '({},{},{})'.format(self.realisation_full_str,self.data_set,self.realisation_index_)
+     
+
+
 realisations_for_sorting_after_srd=[]
 realisation_split_index=6
 spring_stiff_index=20
@@ -296,10 +300,9 @@ def area_vector_calculation(spring_stiffness,terms_3,area_vector_summed_shared,r
                
 
                    
-                    # have to use small for hirotori edit , not pol
-                    pol_positions_after= f_c['particles']['pol']['position']['value'][j]
+               
                     # below for hirtori
-                    #pol_positions_after= f_c['particles']['small']['position']['value'][j]
+                    pol_positions_after= f_c['particles']['small']['position']['value'][j]
 
                     ell_1=pol_positions_after[1,:]-pol_positions_after[0,:]
                     ell_2=pol_positions_after[2,:]-pol_positions_after[0,:]
@@ -330,7 +333,7 @@ def area_vector_calculation(spring_stiffness,terms_3,area_vector_summed_shared,r
 # print(size_stress_tensor_summed)
 # size_kinetic_energy_tensor_summed=int(no_data_sets*j_*((shape_after[0])-1))*6
 # print(size_kinetic_energy_tensor_summed)
-size_area_vector_summed=int(no_data_sets*j_*((shape_after[0]))*3) 
+size_area_vector_summed=int(no_data_sets*j_*((shape_after[0]-1))*3) 
 print(size_area_vector_summed)
 processes=[]
 print(count_h5_after_srd)
@@ -338,7 +341,7 @@ print(count_h5_after_srd)
 
 
 tic=time.perf_counter()
-
+#%%
 if __name__ =='__main__':
         
         # need to change this code so it only does 5 arrays at a time 
@@ -407,3 +410,5 @@ if __name__ =='__main__':
                 
 
         
+
+# %%

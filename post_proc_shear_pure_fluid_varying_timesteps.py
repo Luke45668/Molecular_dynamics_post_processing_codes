@@ -58,10 +58,12 @@ colour = [
 # box_size=6
 # no_SRD=2560
 # box_size=8
-no_SRD=60835
-box_size=23
+# no_SRD=60835
+# box_size=23
 no_SRD=98415
 box_size=27
+# no_SRD=148955
+# box_size=31
 #nu_bar=3
 #delta_t_srd=0.014872025172594354
 #nu_bar=0.9 
@@ -72,11 +74,12 @@ box_vol=box_size**3
 #erate= np.array([0.01,0.001,0.0001])
 # #erate=np.array([0.01])
 #erate=np.array([0.001,0.002,0.003])
-erate= np.array([0.0005,0.001,0.002,0.005,0.01])
+#erate= np.array([0.0005,0.001,0.002,0.005,0.01])
 erate= np.array([0.001,0.002,0.005,0.01])
 
-no_timestep=np.array([800000,400000,200000,160000,160000])
-no_timestep=np.array([400000,200000,160000,120000])
+#no_timestep=np.array([800000,400000,200000,160000,120000]) # for box 27 and 31 
+#no_timestep=np.array([800000,400000,200000,160000,160000]) # for box 23 
+no_timestep=np.array([400000,200000,160000,160000])
 
 # estimating number of steps  required
 strain=2
@@ -89,7 +92,7 @@ total_strain_actual=no_timestep*strain_rate*delta_t_md
 j_=3
 rho=5
 realisation_index=np.array([1,2,3])
-filepath="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_srd_fix_deform_results/2_strain_units_test/box_"+str(box_size)
+filepath="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/MYRIAD_LAMMPS_runs/pure_srd_fix_deform_results/2_strain_units_test/box_"+str(box_size)+"_run_2"
 
 os.chdir(filepath)
 
@@ -144,8 +147,9 @@ for i in range(0,erate.shape[0]):
     strainplot_tuple=strainplot_tuple+(strainplot,)
 
         
-mean_step=np.array([79998,39998,19998,7998,3998])
-mean_step=np.array([39998,19998,7998,3998])
+# mean_step=np.array([79998,39998,19998,7998,3998])
+# mean_step=np.array([79998,39998,19998,7998,7998])
+mean_step=np.array([39998,19998,7998,7998])
 
 #%% plotting rolling average diagonal against collisions  
 
@@ -181,13 +185,13 @@ for i in range(0,erate.shape[0]):
    
 
     for j in range(0,3):
-        std_dv_stress.append(np.std(stress_tensor_summed_tuple_shaped[i][0,mean_step[i]:,j]))
+        #std_dv_stress.append(np.std(stress_tensor_summed_tuple_shaped[i][0,mean_step[i]:,j]))
         plt.plot(strainplot_tuple[i][:],stress_tensor_summed_tuple_shaped[i][0,:,j],label=labels_stress[j],color=colour[j])
         plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$\gamma$")
         #plt.ylim((10.5,11))
-        plt.ylim(5.3,5.4)
-        plt.ylim(5,6)
+       # plt.ylim(5.3,5.4)
+        plt.ylim(4,6)
 
     #plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\alpha}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
     plt.legend(loc='best')
@@ -354,6 +358,7 @@ for i in range(0,erate.shape[0]):
         plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$\gamma$")
         plt.ylim((-0.02,0.075))
+        plt.ylim((-0.02,0.2))
 
     #plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\beta}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
     plt.legend()
@@ -379,24 +384,26 @@ def kinetic_visc(alpha,rho):
 total_kinematic_visc= kinetic_visc(alpha,rho) + collisional_visc(alpha,rho,dim)
 shear_dynamic_visc_prediction= total_kinematic_visc*rho
 
-#%% stress vs strain rate plot 
+# stress vs strain rate plot 
 viscosity=np.zeros((erate.size))
 stress_tensor_summed_mean=np.zeros((erate.size))
-no_data_points=3
+no_data_points=4
 for i in range(no_data_points):
    stress_tensor_summed_mean[i]=np.mean(stress_tensor_summed_tuple_shaped[i][0,mean_step[i]:,3])
    viscosity[i]=stress_tensor_summed_mean[i]/erate[i]
 
 
-#%%
+#plot shear stress vs strain rate
 fit=np.polyfit(erate[:no_data_points],stress_tensor_summed_mean[:no_data_points],1)
+erate.astype('float')
 plt.scatter(erate, stress_tensor_summed_mean)
 plt.plot(erate,fit[0]*erate + fit[1], label="$\eta="+str(sigfig.round(fit[0],sigfigs=4))+", \eta_{T}="+str(sigfig.round(shear_dynamic_visc_prediction,sigfigs=4))+"$")
-plt.xticks(erate) 
+#plt.xticks(erate) 
 plt.xlabel("$\dot{\gamma}$",rotation=0)
 
 plt.ylabel("$\sigma_{xz}$",rotation=0,labelpad=labelpady)
 plt.legend()
+plt.tight_layout()
 plt.savefig("shear_stress_vs_shear_rate_gdot_"+str(erate[0])+"_"+str(erate[-1])+"_M"+str(rho)+"_L_"+str(box_size)+".png",dpi=1200)
 plt.show()
 
