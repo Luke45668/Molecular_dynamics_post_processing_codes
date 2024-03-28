@@ -85,7 +85,7 @@ number_steps_needed= np.ceil(strain/(strain_rate*delta_t_md))
 dump_freq=10
 spring_stiffness =np.array([20,40,80,100])
 bending_stiffness=10000
-j_=1000
+j_=100
 #rho=5
 realisation_index=np.array([1,2,3])
 
@@ -136,23 +136,34 @@ plt.show()
 
 
 
-#%% inverse transform sampling 
-# https://stackoverflow.com/questions/75751553/visualising-a-sine-random-variable-in-python
-# creating a 1/2 sin x distribution from random samples to compare to the one we produced
+#%% Producing sin histogram 
+import sympy as sy
 
-rng = np.random.default_rng()
+def sin_for_sym(x):
 
-rng = np.random.default_rng(12345)
-# will compare all simulation data sets to the same seeded distribution
+    return np.sin(x)
 
-def sample_sin(N):
-    u01 =rng.random(N)
-    q = np.arccos(1.0 - 2.0*u01)
-    return q
 
-plt.hist(sample_sin(j_), bins =bin_count , density = True)
-plt.title("1/2 sin(x)")
-plt.show()
+x = sy.Symbol("x") 
+bounds=np.arange(0,np.pi+np.pi/bin_count,np.pi/bin_count )
+#bounds=np.linspace(0,np.pi,bin_count )
+
+area_under_sin_curve_interval =np.zeros(bin_count)
+mid_point_of_bound=np.zeros(bin_count)
+
+for i in range(int(bounds.size-1)):
+    print(sy.integrate(sy.sin(x), (x, bounds[i], bounds[i+1])))
+    area_under_sin_curve_interval[i]=sy.integrate(sy.sin(x), (x, bounds[i], bounds[i+1]))
+    mid_point_of_bound[i]=(bounds[i]) +np.pi/bin_count
+
+
+total_area_under_curve=np.sum(area_under_sin_curve_interval)
+
+# have to normalise the areas so it can be scaled by any value of j_
+freq_sin_from_integral=np.round(area_under_sin_curve_interval*j_/2).astype('int')
+
+
+
 
 
 #%% phi test 
@@ -162,12 +173,14 @@ bin_count_expected = int(np.ceil(np.log2((j_))) + 1)
 pi_phi_ticks=[ 0,np.pi/4, np.pi/2,3*np.pi/4,np.pi]
 pi_phi_tick_labels=[ '0','π/4', 'π/2','3π/4' ,'π']
 frequencies_phi= np.histogram(spherical_coordinates_area_vector[:,2],bins=bin_count)[0]
-sin_histogram=np.histogram(sample_sin(j_), bins=bin_count )[0]
+
 deg_f = bin_count-1 
 sig = 0.05
-chi_stat_test_custom(sig,deg_f,frequencies_phi,sin_histogram)
+chi_stat_test_custom(sig,deg_f,frequencies_phi,freq_sin_from_integral)
 
 # plot phi hist
+
+
 
 plt.hist(spherical_coordinates_area_vector[:,2],density=True, bins=bin_count)
 plt.xticks(pi_phi_ticks,pi_phi_tick_labels)
