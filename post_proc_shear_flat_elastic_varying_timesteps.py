@@ -116,7 +116,7 @@ def window_averaging(i,window_size,input_tuple,array_size,outdim1,outdim3):
 
         #print(output_array_temp)
         non_nan_size=int(np.count_nonzero(~np.isnan(output_array_temp))/outdim3)
-        print("nan_size", non_nan_size)
+        print("non_nan_size", non_nan_size)
         output_array_final[k,:,:]=output_array_temp
 
     return output_array_final, non_nan_size
@@ -140,8 +140,8 @@ true_number_of_points=()
 os.chdir(filepath)
 
 array_size=((no_timesteps/(dump_freq/timestep_multiplier))).astype('int')
-window_size=10000
-     
+window_size=500 # think we need a different window size for each run 
+#500 gives nice oscillations on shear stress     
 
 
 for i in range(erate.size):
@@ -269,13 +269,6 @@ for i in range(0,erate.shape[0]):
     strainplot_tuple=strainplot_tuple+(strainplot,)
 
 
-
-
-
-
-# mean_step=np.array([9998])
-
-
 def folder_check_or_create(filepath,folder):
      os.chdir(filepath)
      # combine file name with wd path
@@ -290,9 +283,6 @@ def folder_check_or_create(filepath,folder):
           os.mkdir(folder)
   
 
-     
-
-     
 ####NOTE could i turn this set of plotting functions into a class?
 from whittaker_eilers import WhittakerSmoother        
 def use_whittaker_smoother(data_vector,lbda,ord):
@@ -410,8 +400,20 @@ for k in range(0,erate.size):
     #for j in range(0,3):
         start=int(stress_tensor_summed_tuple_rfp[k][i,:,0].size-strainplot_tuple[k].size)
         N_2=stress_tensor_summed_tuple_rfp[k][i,start:,2]-stress_tensor_summed_tuple_rfp[k][i,start:,1]
+        N_2_std_dev=np.std(N_2)
+        N_2_mean=np.mean(N_2)
+        N_2_median=np.median(N_2)
+        print(N_2_std_dev)
+        print(N_2_mean)
+        print(N_2_median)
+
+        #print(np.mean( N_2))
+        #plt.axhline(np.mean( N_2))
         #N_2_mean=np.mean(N_2[mean_step[0]:])
         plt.plot(strainplot_tuple[k][:],N_2[:],label="$K="+str(internal_stiffness[i])+"$")#, \\bar{N_{2}}="+str(sigfig.round(N_2_mean,sigfigs=3))+"$",color=colour[i])
+        plt.axhline(np.mean(N_2),\
+                        label="$\\bar{N}_{2}="+str(sigfig.round(N_2_mean,sigfigs=3))\
+                            +", \Sigma="+str(sigfig.round(N_2_std_dev,sigfigs=3))+",x\sim ="+str(sigfig.round(N_2_median,sigfigs=3))+",K="+str(internal_stiffness[i])+"$",linestyle='--',color=colour[i+3])
         #smoothed_data=use_whittaker_smoother(N_2,2000000000000,2)
         #plt.plot(strainplot_tuple[k][:],smoothed_data,colour[i+5],label="$K="+str(internal_stiffness[i])+"$, smoothed")
        
@@ -471,6 +473,13 @@ for k in range(0,erate.size):
             #stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[i,mean_step:,3])
             start=int(stress_tensor_summed_tuple_rfp[k][i,:,j].size-strainplot_tuple[k].size)
             plt.plot(strainplot_tuple[k][:],stress_tensor_summed_tuple_rfp[k][i,start:,j],label="$K="+str(internal_stiffness[i])+"$",color=colour[i])
+            sigmaxz_std_dev=np.std(stress_tensor_summed_tuple_rfp[k][i,start:,j])
+            sigmaxz_mean=np.mean(stress_tensor_summed_tuple_rfp[k][i,start:,j])
+            sigmaxz_median=np.median(stress_tensor_summed_tuple_rfp[k][i,start:,j])
+            print(sigmaxz_median)
+            plt.axhline(sigmaxz_mean,\
+                        label="$\\bar{\sigma}_{xz}="+str(sigfig.round(sigmaxz_mean,sigfigs=3))\
+                            +",\Sigma="+str(sigfig.round(sigmaxz_std_dev,sigfigs=3))+",x\sim="+str(sigfig.round(sigmaxz_median,sigfigs=3))+",K="+str(internal_stiffness[i])+"$",linestyle='--',color=colour[i+3])
             # smoothed_data=use_whittaker_smoother(stress_tensor_summed_tuple_shaped[k][i,:,j],5000000000000,2)
             # plt.plot(strainplot_tuple[k][:],smoothed_data,colour[i+5],label="$K="+str(internal_stiffness[i])+"$, smoothed")
        
@@ -502,8 +511,8 @@ for k in range(0,erate.size):
             #stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[i,mean_step:,3])
             start=int(stress_tensor_summed_tuple_rfp[k][i,:,j].size-strainplot_tuple[k].size)
             plt.plot(strainplot_tuple[k][:],stress_tensor_summed_tuple_shaped[k][i,start:,j],label=labels_stress[j],color=colour[j])
-            smoothed_data=use_whittaker_smoother(stress_tensor_summed_tuple_shaped[k][i,start:,j],5000000000000,2)
-            plt.plot(strainplot_tuple[k][:],smoothed_data,colour[i+1],label="$K="+str(internal_stiffness[i])+"$, smoothed")
+            #smoothed_data=use_whittaker_smoother(stress_tensor_summed_tuple_shaped[k][i,start:,j],5000000000000,2)
+           # plt.plot(strainplot_tuple[k][:],smoothed_data,colour[i+1],label="$K="+str(internal_stiffness[i])+"$, smoothed")
        
             plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
             plt.xlabel("$\gamma$")
