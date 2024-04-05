@@ -107,32 +107,19 @@ os.chdir(filepath)
 #%% new averaging fucntion 
 def window_averaging(i,window_size,input_tuple,array_size,outdim1,outdim3):
     
-    number_of_windows=int(array_size[i]/window_size)
-    # if type(number_of_windows) != int:
-    #     print("Window size must be a factor of the array size")
-    #     breakpoint
-    # else:
+    output_array_final=np.zeros((outdim1,array_size[i],outdim3))
+    for k in range(outdim1):
+        input_array=input_tuple[i][k,:,:]
+        df = pd.DataFrame(input_array)
+        output_dataframe=df.rolling(window_size,axis=0).mean()
+        output_array_temp=output_dataframe.to_numpy()
 
-    #averaged_input=[]#np.zeros((outdim1,number_of_windows,outdim3)) 
+        #print(output_array_temp)
+        non_nan_size=int(np.count_nonzero(~np.isnan(output_array_temp))/outdim3)
+        print("nan_size", non_nan_size)
+        output_array_final[k,:,:]=output_array_temp
 
-    for j in range(outdim1):
-        for l in range(outdim3):
-            k=0
-            averaged_input=[]
-            while k < int(input_tuple[i].shape[1]) - window_size+1 :
-                #print(np.mean(input_tuple[i][:,k:k+window_size,:],axis=1).shape)
-                
-                averaged_input.append(np.mean(input_tuple[i][:,k:k+window_size,:],axis=1))
-                k += 1 
-                        #input_tuple[i][:,window_indices[k-1],:]
-        
-    
-            
-    # averaged_input_tuple=averaged_input_tuple+(averaged_input,)
-    #print(averaged_input)
-    
-
-    return averaged_input
+    return output_array_final, non_nan_size
 
 #average_test,window_count=window_averaging(0,5,stress_tensor_summed_tuple_shaped,array_size,internal_stiffness.size,9)
 
@@ -149,10 +136,11 @@ ke_tensor_summed_1d_tuple=()
 ke_tensor_summed_tuple_shaped=()
 spring_pos_tensor_summed_1d_tuple=()
 spring_pos_tensor_summed_tuple_shaped=()
-
+true_number_of_points=()
+os.chdir(filepath)
 
 array_size=((no_timesteps/(dump_freq/timestep_multiplier))).astype('int')
-window_size=20
+window_size=10000
      
 
 
@@ -213,13 +201,17 @@ for i in range(erate.size):
         (np.mean\
         (np.reshape(stress_tensor_summed_1d_tuple[i],(internal_stiffness.size,j_,array_size[i],9))\
         ,axis=1),)
-    stress_tensor_summed_tuple_rfp=stress_tensor_summed_tuple_rfp+\
-        (window_averaging( i,
+    rfp,true_size=window_averaging( i,
                            window_size,
                          stress_tensor_summed_tuple_shaped,
                             array_size,
                             internal_stiffness.size,
-                            9)    ,)
+                            9)
+
+    stress_tensor_summed_tuple_rfp=stress_tensor_summed_tuple_rfp+\
+        (rfp  ,)
+    true_number_of_points=true_number_of_points+(true_size,)
+    
 
     # delta_mom_pos_tensor_summed_tuple_shaped=delta_mom_pos_tensor_summed_tuple_shaped+\
     #     (np.mean\
@@ -268,9 +260,10 @@ no_data_sets=internal_stiffness.size
 strainplot_tuple=()
 window_count=(array_size/window_size).astype('int')
 for i in range(0,erate.shape[0]):
-    units_strain=(total_strain_actual[i]/window_count[i])
-    strainplot=np.zeros((window_count[i]))
-    for j in range(1,window_count[i]+1):
+    window_count=(array_size[i]/window_size)
+    units_strain=(total_strain_actual[i]/true_number_of_points[i])
+    strainplot=np.zeros((true_number_of_points[i]))
+    for j in range(1,true_number_of_points[i]+1):
          strainplot[j-1]=j*units_strain
     
     strainplot_tuple=strainplot_tuple+(strainplot,)
@@ -327,8 +320,8 @@ for k in range(0,erate.size):
     
 
         for j in range(0,3):
-
-            plt.plot(strainplot_tuple[k], stress_tensor_summed_tuple_rfp[k][i,:,j],label=labels_stress[j],color=colour[j])
+            start=int(stress_tensor_summed_tuple_rfp[k][i,:,j].size-strainplot_tuple[k].size)
+            plt.plot(strainplot_tuple[k], stress_tensor_summed_tuple_rfp[k][i,start:,j],label=labels_stress[j],color=colour[j])
           #  smoothed_data=use_whittaker_smoother(stress_tensor_summed_tuple_shaped[k][i,:,j],20000000000000,2)
           #  plt.plot(strainplot_tuple[k][:],smoothed_data,colour[i+3],label="$K="+str(internal_stiffness[i])+"$, smoothed")
             plt.ylabel('$\sigma_{\\alpha \\alpha}$', rotation=0, labelpad=labelpady)
@@ -353,8 +346,8 @@ plt.rcParams.update({'font.size': 12})
 for k in range(0,erate.size):
     for i in range(0,internal_stiffness.size):
         #for j in range(0,3):
-           
-            N_1=stress_tensor_summed_tuple_rfp[k][i,:,0]-stress_tensor_summed_tuple_rfp[k][i,:,2]
+            start=int(stress_tensor_summed_tuple_rfp[k][i,:,j].size-strainplot_tuple[k].size)
+            N_1=stress_tensor_summed_tuple_rfp[k][i,start:,0]-stress_tensor_summed_tuple_rfp[k][i,start:,2]
            
             plt.plot(strainplot_tuple[k][:],N_1[:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i])#, \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
             plt.ylabel('$N_{1}$', rotation=0, labelpad=labelpady)
@@ -380,7 +373,8 @@ folder_check_or_create(filepath,folder)
 N_1_final=np.zeros((internal_stiffness.size,erate.size))
 for k in range(0,erate.size):
     for i in range(0,internal_stiffness.size):
-          N_1_final[i,k]=stress_tensor_summed_tuple_shaped[k][i,-1,0]-stress_tensor_summed_tuple_shaped[k][i,-1,2]
+          start=int(stress_tensor_summed_tuple_rfp[k][i,:,0].size-strainplot_tuple[k].size)
+          N_1_final[i,k]=np.mean(stress_tensor_summed_tuple_rfp[k][i,start:,0])-np.mean(stress_tensor_summed_tuple_rfp[k][i,start:,2])
            
 
 labelpady=15
@@ -414,7 +408,8 @@ plt.rcParams.update({'font.size': 12})
 for k in range(0,erate.size):
     for i in range(0,internal_stiffness.size):
     #for j in range(0,3):
-        N_2=stress_tensor_summed_tuple_rfp[k][i,:,2]-stress_tensor_summed_tuple_rfp[k][i,:,1]
+        start=int(stress_tensor_summed_tuple_rfp[k][i,:,0].size-strainplot_tuple[k].size)
+        N_2=stress_tensor_summed_tuple_rfp[k][i,start:,2]-stress_tensor_summed_tuple_rfp[k][i,start:,1]
         #N_2_mean=np.mean(N_2[mean_step[0]:])
         plt.plot(strainplot_tuple[k][:],N_2[:],label="$K="+str(internal_stiffness[i])+"$")#, \\bar{N_{2}}="+str(sigfig.round(N_2_mean,sigfigs=3))+"$",color=colour[i])
         #smoothed_data=use_whittaker_smoother(N_2,2000000000000,2)
@@ -474,7 +469,8 @@ for k in range(0,erate.size):
     for i in range(0,internal_stiffness.size):
         for j in range(3,4):
             #stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[i,mean_step:,3])
-            plt.plot(strainplot_tuple[k][:],stress_tensor_summed_tuple_rfp[k][i,:,j],label="$K="+str(internal_stiffness[i])+"$",color=colour[i])
+            start=int(stress_tensor_summed_tuple_rfp[k][i,:,j].size-strainplot_tuple[k].size)
+            plt.plot(strainplot_tuple[k][:],stress_tensor_summed_tuple_rfp[k][i,start:,j],label="$K="+str(internal_stiffness[i])+"$",color=colour[i])
             # smoothed_data=use_whittaker_smoother(stress_tensor_summed_tuple_shaped[k][i,:,j],5000000000000,2)
             # plt.plot(strainplot_tuple[k][:],smoothed_data,colour[i+5],label="$K="+str(internal_stiffness[i])+"$, smoothed")
        
@@ -504,8 +500,9 @@ for k in range(0,erate.size):
     for i in range(0,internal_stiffness.size):
         for j in range(4,6):
             #stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[i,mean_step:,3])
-            plt.plot(strainplot_tuple[k][:],stress_tensor_summed_tuple_shaped[k][i,:,j],label=labels_stress[j],color=colour[j])
-            smoothed_data=use_whittaker_smoother(stress_tensor_summed_tuple_shaped[k][i,:,j],5000000000000,2)
+            start=int(stress_tensor_summed_tuple_rfp[k][i,:,j].size-strainplot_tuple[k].size)
+            plt.plot(strainplot_tuple[k][:],stress_tensor_summed_tuple_shaped[k][i,start:,j],label=labels_stress[j],color=colour[j])
+            smoothed_data=use_whittaker_smoother(stress_tensor_summed_tuple_shaped[k][i,start:,j],5000000000000,2)
             plt.plot(strainplot_tuple[k][:],smoothed_data,colour[i+1],label="$K="+str(internal_stiffness[i])+"$, smoothed")
        
             plt.ylabel('$\sigma_{\\alpha \\beta}$', rotation=0, labelpad=labelpady)
@@ -602,8 +599,9 @@ shear_dynamic_visc_prediction= total_kinematic_visc*rho
 viscosity=np.zeros((erate.size))
 stress_tensor_summed_mean=np.zeros((internal_stiffness.size,erate.size))
 for k in range(0,internal_stiffness.size):
-    for i in range(4):
-     stress_tensor_summed_mean[k,i]=stress_tensor_summed_tuple_shaped[i][k,-1,3]
+    for i in range(5):
+     start=int(stress_tensor_summed_tuple_rfp[i][k,:,0].size-strainplot_tuple[k].size)
+     stress_tensor_summed_mean[k,i]=np.mean(stress_tensor_summed_tuple_shaped[i][k,start:,3])
 #    viscosity[i]=stress_tensor_summed_mean[i]/erate[i]
 
 
