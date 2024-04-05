@@ -158,6 +158,9 @@ def velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave
         #df_VP= pd.DataFrame()
         VP_list_size=VP_data_cols*VP_data_rows
         VP_final_array=np.zeros((VP_data_rows,number_of_VP_outputs)) #(np.array([[]])
+        VP_final_array_x=np.zeros((VP_data_rows,number_of_VP_outputs))
+        VP_final_array_y=np.zeros((VP_data_rows,number_of_VP_outputs))
+        VP_final_array_z=np.zeros((VP_data_rows,number_of_VP_outputs))
         #%%
         count=0
         for i in range(0,number_of_VP_outputs):# need to chnage 50 to number of VP read outs variable 
@@ -180,12 +183,15 @@ def velP2numpy_f(Path_2_VP,chunk,realisation_name,equilibration_timesteps,VP_ave
             #VP_numpy_array = VP_numpy_array.reshape(VP_data_rows,VP_data_cols)
             #df_VP[i] = pd.DataFrame({str(timestep): VP_numpy_array[:,3]})
             VP_final_array[:,i]= VP_numpy_array[:,3]
+            VP_final_array_x[:,i]= VP_numpy_array[:,3]
+            VP_final_array_y[:,i]=VP_numpy_array[:,4]
+            VP_final_array_z[:,i]=VP_numpy_array[:,5]
             VP_z_data = VP_numpy_array[:,1]
             count=count+1
         VP_z_data = VP_numpy_array[:,1]   
                 
         #print(VP_final_array)
-        return VP_final_array,VP_z_data 
+        return VP_final_array,VP_z_data,VP_final_array_x,VP_final_array_y,VP_final_array_z
                 
     
     #%%

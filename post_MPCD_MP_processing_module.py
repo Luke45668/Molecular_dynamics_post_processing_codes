@@ -29,7 +29,7 @@ import glob
 
 def VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_general_name_string,VP_general_name_string,Mom_general_name_string,filepath,dump_general_name_string):
     #os.chdir('/Users/lukedebono/Documents/LAMMPS_projects_mac_book/OneDrive_1_24-02-2023/MYRIAD_lammps_runs/'+filepath)
-    os.chdir('/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/'+filepath)
+    os.chdir(filepath)
     count_VP=0
     realisation_name_VP = []   
     count_mom=0
@@ -68,15 +68,15 @@ def VP_and_momentum_data_realisation_name_grabber(TP_general_name_string,log_gen
         realisation_name_dump.append(name)
     
     
-    if count_VP!=count_mom:
-       breakpoint()
-    else:
-        print('VP and Mom data consistent')
+    # if count_VP!=count_mom:
+    #    breakpoint()
+    # else:
+    #     print('VP and Mom data consistent')
     
-    if count_dump!=count_VP!=count_mom!=count_log:
-        print("Should there be dump files on this run? If not ignore this message, if yes there is an ERROR")
-    else:
-        print("dump file data consistent")
+    # if count_dump!=count_VP!=count_mom!=count_log:
+    #     print("Should there be dump files on this run? If not ignore this message, if yes there is an ERROR")
+    # else:
+    #     print("dump file data consistent")
         
     
    #number_of_solutions= int(count_VP/(j_*swap_number.size*swap_rate.size))
@@ -708,9 +708,204 @@ def plotting_flux_vs_shear_rate(func4,labelpadx,labelpady,params,fontsize,box_si
   
                 
     
-
+########################################
+###### Fix deform functions 
+########################################
 
         
+def reading_in_unsorted_dumps(number_of_particles_per_dump,dump_start_line,Path_2_dump,total_number_of_data_sets,number_of_repeats,number_of_dumps_per_realisation,no_SRD,columns,realisation_name_dump_before,realisation_name_dump_after):
+    from dump2numpy import dump2numpy_f
+    dump_file_before=np.zeros((total_number_of_data_sets,number_of_repeats,number_of_dumps_per_realisation*no_SRD,columns))
+    dump_file_after=np.zeros((total_number_of_data_sets,number_of_repeats,number_of_dumps_per_realisation*no_SRD,columns))
+
+
+    for j in range(0,total_number_of_data_sets):
+        for i in range(0,number_of_repeats): 
+           
+            dump_file_before[j,i,:,:]= dump2numpy_f(dump_start_line,Path_2_dump,realisation_name_dump_before[i],number_of_particles_per_dump)
+            dump_file_after[j,i,:,:]= dump2numpy_f(dump_start_line,Path_2_dump,realisation_name_dump_after[i],number_of_particles_per_dump)
 
 
 
+    np.save("raw_data_array_after.py",dump_file_after)
+    np.save("raw_data_array_before.py",dump_file_before)
+
+    return dump_file_after, dump_file_before
+
+def sorting_and_checking_sort_dump_files(dump_file_shaped_after,dump_file_shaped_before,total_number_of_data_sets,number_of_repeats,loop_size,number_of_particles_per_dump,columns):
+        dump_file_sorted_before=np.zeros((total_number_of_data_sets,number_of_repeats,loop_size,number_of_particles_per_dump,columns))
+        dump_file_sorted_after=np.zeros((total_number_of_data_sets,number_of_repeats,loop_size,number_of_particles_per_dump,columns))
+
+
+        for i in range(0,total_number_of_data_sets): 
+            for k in range(0,number_of_repeats):
+                    for j in range(0,loop_size):
+                     dummy_sort_array_before=dump_file_shaped_before[i,k,j,:,:]
+                     dummy_sort_array_after=dump_file_shaped_after[i,k,j,:,:]
+
+                     dump_file_sorted_before[i,k,j,:,:]=dummy_sort_array_before[dummy_sort_array_before[:,0].argsort()]
+                     dump_file_sorted_after[i,k,j,:,:]=dummy_sort_array_after[dummy_sort_array_after[:,0].argsort()]
+
+
+
+        # boolean to check order is correct 
+        comparison_list =np.arange(1,number_of_particles_per_dump+1,1)
+        error_count=0
+        success_count=0
+        for i in range(0,total_number_of_data_sets): 
+            for k in range(0,number_of_repeats):
+                for j in range(0,loop_size):
+
+                    boolean_result_1 = dump_file_sorted_before[i,k,j,:,0]==comparison_list
+                    if np.all(boolean_result_1)==True:
+                        success_count=success_count+1
+                        
+
+                    else:
+                        error_count=error_count+1
+
+                    boolean_result_2 = dump_file_sorted_after[i,k,j,:,0]==comparison_list
+                    if np.all(boolean_result_2)==True:
+                        
+                        success_count=success_count+1
+                    else:
+                        error_count=error_count+1
+
+        print(error_count)
+        if success_count==total_number_of_data_sets*number_of_repeats*loop_size*2:
+            print("sucessful sort")
+        else:
+            print("There were ",error_count," sorting errors")
+
+        # freeing memory 
+        np.save("dump_file_sorted_before.py",dump_file_sorted_before)
+        np.save("dump_file_sorted_after.py",dump_file_sorted_after)
+
+        return dump_file_sorted_before,dump_file_sorted_after,error_count,success_count
+
+def stress_tensor_total_compute(realisation_name_h5_after,shape_after,j_,no_data_sets,erate,delta_t_srd):
+    import h5py as h5 
+    delta_mom_summed= np.zeros((no_data_sets,j_,shape_after[0]-1,3))
+    delta_mom_pos_tensor_summed= np.zeros((no_data_sets,j_,shape_after[0]-1,9))
+    stress_tensor_summed=np.zeros((no_data_sets,j_,shape_after[0]-1,9))
+    kinetic_energy_tensor_summed=np.zeros((no_data_sets,j_,shape_after[0]-1,6))
+    #for i in range(0,len(realisation_name_h5_after)):
+    with h5.File(realisation_name_h5_after, 'r') as f_a:
+            data_set = np.where(erate==float(realisation_name_h5_after.split('_')[15]))[0][0]
+            k=np.where(realisation_index==float(realisation_name_h5_after.split('_')[9]))[0][0]
+            for j in range(1,shape_after[0]-1):
+        #for j in range(0,10):
+        
+            #with h5.File(realisation_name_h5_before[k], 'r') as f_b:
+                    data_set = np.where(erate==float(realisation_name_h5_after.split('_')[15]))[0][0]
+                    k=np.where(realisation_index==float(realisation_name_h5_after.split('_')[9]))[0][0]
+                    
+                    SRD_positions_initial= f_a['particles']['SRDs']['position']['value'][j-1]
+                    
+                    SRD_positions_after= f_a['particles']['SRDs']['position']['value'][j]
+                    #print(SRD_positions_after)
+
+                    SRD_velocities_initial=f_a['particles']['SRDs']['velocity']['value'][j-1]
+                    SRD_velocities_after=f_a['particles']['SRDs']['velocity']['value'][j]
+                    #print(SRD_velocities_after)
+                    delta_mom=SRD_velocities_after-SRD_velocities_initial
+                    delta_mom_summed[data_set,k,j,:]=np.sum(SRD_velocities_after-SRD_velocities_initial,axis=0)
+
+                    # need to add kinetic contribution
+
+                    
+                    delta_mom_pos_tensor_summed[data_set,k,j,0]=np.sum((SRD_velocities_after[:,0]- SRD_velocities_initial[:,0])*SRD_positions_after[:,0],axis=0)/(box_vol*delta_t_srd)#xx
+                    delta_mom_pos_tensor_summed[data_set,k,j,1]=np.sum((SRD_velocities_after[:,1]- SRD_velocities_initial[:,1])*SRD_positions_after[:,1],axis=0)/(box_vol*delta_t_srd)#yy
+                    delta_mom_pos_tensor_summed[data_set,k,j,2]=np.sum((SRD_velocities_after[:,2]- SRD_velocities_initial[:,2])*SRD_positions_after[:,2],axis=0)/(box_vol*delta_t_srd)#zz
+                    delta_mom_pos_tensor_summed[data_set,k,j,3]=np.sum((SRD_velocities_after[:,0]- SRD_velocities_initial[:,0])*SRD_positions_after[:,2],axis=0)/(box_vol*delta_t_srd)#xz
+                    delta_mom_pos_tensor_summed[data_set,k,j,4]=np.sum((SRD_velocities_after[:,0]- SRD_velocities_initial[:,0])*SRD_positions_after[:,1],axis=0)/(box_vol*delta_t_srd)#xy
+                    delta_mom_pos_tensor_summed[data_set,k,j,5]=np.sum((SRD_velocities_after[:,1]- SRD_velocities_initial[:,1])*SRD_positions_after[:,2],axis=0)/(box_vol*delta_t_srd)#yz
+                    delta_mom_pos_tensor_summed[data_set,k,j,6]=np.sum((SRD_velocities_after[:,2]- SRD_velocities_initial[:,2])*SRD_positions_after[:,0],axis=0)/(box_vol*delta_t_srd)#zx
+                    delta_mom_pos_tensor_summed[data_set,k,j,7]=np.sum((SRD_velocities_after[:,2]- SRD_velocities_initial[:,2])*SRD_positions_after[:,1],axis=0)/(box_vol*delta_t_srd)#zy
+                    delta_mom_pos_tensor_summed[data_set,k,j,8]=np.sum((SRD_velocities_after[:,1]- SRD_velocities_initial[:,1])*SRD_positions_after[:,0],axis=0)/(box_vol*delta_t_srd)#yx
+
+                    kinetic_energy_tensor_summed[data_set,k,j,0]=np.sum(SRD_velocities_initial[:,0]*SRD_velocities_initial[:,0],axis=0)/(box_vol)#xx
+                    kinetic_energy_tensor_summed[data_set,k,j,1]=np.sum(SRD_velocities_initial[:,1]*SRD_velocities_initial[:,1],axis=0)/(box_vol)#yy
+                    kinetic_energy_tensor_summed[data_set,k,j,2]=np.sum(SRD_velocities_initial[:,2]*SRD_velocities_initial[:,2],axis=0)/(box_vol)#zz
+                    kinetic_energy_tensor_summed[data_set,k,j,3]=np.sum(SRD_velocities_initial[:,0]*SRD_velocities_initial[:,1],axis=0)/(box_vol)#xy
+                    kinetic_energy_tensor_summed[data_set,k,j,4]=np.sum(SRD_velocities_initial[:,0]*SRD_velocities_initial[:,2],axis=0)/(box_vol)#xz
+                    kinetic_energy_tensor_summed[data_set,k,j,5]=np.sum(SRD_velocities_initial[:,1]*SRD_velocities_initial[:,2],axis=0)/(box_vol)#yz
+                    
+                    stress_tensor_summed[data_set,k,j,0]=delta_mom_pos_tensor_summed[data_set,k,j,0] + kinetic_energy_tensor_summed[data_set,k,j,0]#xx
+                    stress_tensor_summed[data_set,k,j,1]=delta_mom_pos_tensor_summed[data_set,k,j,1] + kinetic_energy_tensor_summed[data_set,k,j,1]#yy
+                    stress_tensor_summed[data_set,k,j,2]=delta_mom_pos_tensor_summed[data_set,k,j,2] + kinetic_energy_tensor_summed[data_set,k,j,2]#zz
+                    
+                    
+                    stress_tensor_summed[data_set,k,j,3]=delta_mom_pos_tensor_summed[data_set,k,j,3] + kinetic_energy_tensor_summed[data_set,k,j,4] + (erate[data_set]*delta_t_srd*0.5)*kinetic_energy_tensor_summed[data_set,k,j,2]#xz
+                    stress_tensor_summed[data_set,k,j,4]=delta_mom_pos_tensor_summed[data_set,k,j,4] + kinetic_energy_tensor_summed[data_set,k,j,3] #xy 
+                    stress_tensor_summed[data_set,k,j,5]=delta_mom_pos_tensor_summed[data_set,k,j,5] + kinetic_energy_tensor_summed[data_set,k,j,5]#yz
+                    stress_tensor_summed[data_set,k,j,6]=delta_mom_pos_tensor_summed[data_set,k,j,6] + kinetic_energy_tensor_summed[data_set,k,j,4] + (erate[data_set]*delta_t_srd*0.5)*kinetic_energy_tensor_summed[data_set,k,j,2] #zx
+                    stress_tensor_summed[data_set,k,j,7]=delta_mom_pos_tensor_summed[data_set,k,j,7] + kinetic_energy_tensor_summed[data_set,k,j,5]#zy
+                    stress_tensor_summed[data_set,k,j,8]=delta_mom_pos_tensor_summed[data_set,k,j,8] + kinetic_energy_tensor_summed[data_set,k,j,3]#yx
+
+            return stress_tensor_summed,kinetic_energy_tensor_summed,delta_mom_pos_tensor_summed
+    
+
+def helloworld(count):
+     print("hello world ",count)
+
+
+def stress_tensor_total_compute_shear(box_vol,realisation_index,delta_mom_summed,delta_mom_pos_tensor_summed,stress_tensor_summed,kinetic_energy_tensor_summed,realisation_name_h5_after,realisation_name_h5_before,shape_after,j_,no_data_sets,erate,delta_t_srd):    
+    import h5py as h5 
+    # delta_mom_summed= np.zeros((no_data_sets,j_,shape_after[0]-1,3))
+    # delta_mom_pos_tensor_summed= np.zeros((no_data_sets,j_,shape_after[0]-1,9))
+    # stress_tensor_summed=np.zeros((no_data_sets,j_,shape_after[0]-1,9))
+    # kinetic_energy_tensor_summed=np.zeros((no_data_sets,j_,shape_after[0]-1,6))
+    #for i in range(0,len(realisation_name_h5_after)):
+    with h5.File(realisation_name_h5_after, 'r') as f_a:
+        with h5.File(realisation_name_h5_before, 'r') as f_b:
+            data_set = int(np.where(erate==float(realisation_name_h5_after.split('_')[15]))[0][0])
+            k=int(np.where(realisation_index==float(realisation_name_h5_after.split('_')[9]))[0][0])
+            for j in range(1,shape_after[0]-1):
+       
+                    
+                    SRD_positions_initial= f_b['particles']['SRDs']['position']['value'][j-1]
+                    
+                    SRD_positions_after= f_a['particles']['SRDs']['position']['value'][j]
+                    #print(SRD_positions_after)
+
+                    SRD_velocities_initial=f_b['particles']['SRDs']['velocity']['value'][j-1]
+                    SRD_velocities_after=f_a['particles']['SRDs']['velocity']['value'][j]
+                    #print(SRD_velocities_after)
+                    delta_mom=SRD_velocities_after-SRD_velocities_initial
+                    delta_mom_summed[data_set,k,j,:]=np.sum(SRD_velocities_after-SRD_velocities_initial,axis=0)
+
+                    # need to add kinetic contribution
+
+                    
+                    delta_mom_pos_tensor_summed[data_set,k,j,0]=np.sum((SRD_velocities_after[:,0]- SRD_velocities_initial[:,0])*SRD_positions_after[:,0],axis=0)/(box_vol*delta_t_srd)#xx
+                    delta_mom_pos_tensor_summed[data_set,k,j,1]=np.sum((SRD_velocities_after[:,1]- SRD_velocities_initial[:,1])*SRD_positions_after[:,1],axis=0)/(box_vol*delta_t_srd)#yy
+                    delta_mom_pos_tensor_summed[data_set,k,j,2]=np.sum((SRD_velocities_after[:,2]- SRD_velocities_initial[:,2])*SRD_positions_after[:,2],axis=0)/(box_vol*delta_t_srd)#zz
+                    delta_mom_pos_tensor_summed[data_set,k,j,3]=np.sum((SRD_velocities_after[:,0]- SRD_velocities_initial[:,0])*SRD_positions_after[:,2],axis=0)/(box_vol*delta_t_srd)#xz
+                    delta_mom_pos_tensor_summed[data_set,k,j,4]=np.sum((SRD_velocities_after[:,0]- SRD_velocities_initial[:,0])*SRD_positions_after[:,1],axis=0)/(box_vol*delta_t_srd)#xy
+                    delta_mom_pos_tensor_summed[data_set,k,j,5]=np.sum((SRD_velocities_after[:,1]- SRD_velocities_initial[:,1])*SRD_positions_after[:,2],axis=0)/(box_vol*delta_t_srd)#yz
+                    delta_mom_pos_tensor_summed[data_set,k,j,6]=np.sum((SRD_velocities_after[:,2]- SRD_velocities_initial[:,2])*SRD_positions_after[:,0],axis=0)/(box_vol*delta_t_srd)#zx
+                    delta_mom_pos_tensor_summed[data_set,k,j,7]=np.sum((SRD_velocities_after[:,2]- SRD_velocities_initial[:,2])*SRD_positions_after[:,1],axis=0)/(box_vol*delta_t_srd)#zy
+                    delta_mom_pos_tensor_summed[data_set,k,j,8]=np.sum((SRD_velocities_after[:,1]- SRD_velocities_initial[:,1])*SRD_positions_after[:,0],axis=0)/(box_vol*delta_t_srd)#yx
+
+                    kinetic_energy_tensor_summed[data_set,k,j,0]=np.sum(SRD_velocities_initial[:,0]*SRD_velocities_initial[:,0],axis=0)/(box_vol)#xx
+                    kinetic_energy_tensor_summed[data_set,k,j,1]=np.sum(SRD_velocities_initial[:,1]*SRD_velocities_initial[:,1],axis=0)/(box_vol)#yy
+                    kinetic_energy_tensor_summed[data_set,k,j,2]=np.sum(SRD_velocities_initial[:,2]*SRD_velocities_initial[:,2],axis=0)/(box_vol)#zz
+                    kinetic_energy_tensor_summed[data_set,k,j,3]=np.sum(SRD_velocities_initial[:,0]*SRD_velocities_initial[:,1],axis=0)/(box_vol)#xy
+                    kinetic_energy_tensor_summed[data_set,k,j,4]=np.sum(SRD_velocities_initial[:,0]*SRD_velocities_initial[:,2],axis=0)/(box_vol)#xz
+                    kinetic_energy_tensor_summed[data_set,k,j,5]=np.sum(SRD_velocities_initial[:,1]*SRD_velocities_initial[:,2],axis=0)/(box_vol)#yz
+                    
+                    stress_tensor_summed[data_set,k,j,0]=delta_mom_pos_tensor_summed[data_set,k,j,0] + kinetic_energy_tensor_summed[data_set,k,j,0]#xx
+                    stress_tensor_summed[data_set,k,j,1]=delta_mom_pos_tensor_summed[data_set,k,j,1] + kinetic_energy_tensor_summed[data_set,k,j,1]#yy
+                    stress_tensor_summed[data_set,k,j,2]=delta_mom_pos_tensor_summed[data_set,k,j,2] + kinetic_energy_tensor_summed[data_set,k,j,2]#zz
+                    
+                    
+                    stress_tensor_summed[data_set,k,j,3]=delta_mom_pos_tensor_summed[data_set,k,j,3] + kinetic_energy_tensor_summed[data_set,k,j,4] + (erate[data_set]*delta_t_srd*0.5)*kinetic_energy_tensor_summed[data_set,k,j,2]#xz
+                    stress_tensor_summed[data_set,k,j,4]=delta_mom_pos_tensor_summed[data_set,k,j,4] + kinetic_energy_tensor_summed[data_set,k,j,3] #xy 
+                    stress_tensor_summed[data_set,k,j,5]=delta_mom_pos_tensor_summed[data_set,k,j,5] + kinetic_energy_tensor_summed[data_set,k,j,5]#yz
+                    stress_tensor_summed[data_set,k,j,6]=delta_mom_pos_tensor_summed[data_set,k,j,6] + kinetic_energy_tensor_summed[data_set,k,j,4] + (erate[data_set]*delta_t_srd*0.5)*kinetic_energy_tensor_summed[data_set,k,j,2] #zx
+                    stress_tensor_summed[data_set,k,j,7]=delta_mom_pos_tensor_summed[data_set,k,j,7] + kinetic_energy_tensor_summed[data_set,k,j,5]#zy
+                    stress_tensor_summed[data_set,k,j,8]=delta_mom_pos_tensor_summed[data_set,k,j,8] + kinetic_energy_tensor_summed[data_set,k,j,3]#yx
+
+            return stress_tensor_summed,kinetic_energy_tensor_summed,delta_mom_pos_tensor_summed
+    
