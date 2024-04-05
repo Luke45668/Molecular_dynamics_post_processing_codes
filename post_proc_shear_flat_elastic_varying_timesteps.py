@@ -327,8 +327,11 @@ for k in range(0,erate.size):
         plt.show()
 
 #%%first normal stress difference rolling vs strain 
+
+#NOTE could check gradient of these signals to check if theeyre stationary.
 folder="normal_stress_difference_plots"
 folder_check_or_create(filepath,folder)
+mean_N_1=np.zeros((internal_stiffness.size,erate.size))
 
 labelpady=15
 fontsize=15
@@ -338,13 +341,19 @@ for k in range(0,erate.size):
         #for j in range(0,3):
             start=int(stress_tensor_summed_tuple_rfp[k][i,:,j].size-strainplot_tuple[k].size)
             N_1=stress_tensor_summed_tuple_rfp[k][i,start:,0]-stress_tensor_summed_tuple_rfp[k][i,start:,2]
-           
+            N_1_mean=np.mean(N_1)
+            N_1_std_dev=np.std(N_1)
+            N_1_median=np.median(N_1)
             plt.plot(strainplot_tuple[k][:],N_1[:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i])#, \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
             plt.ylabel('$N_{1}$', rotation=0, labelpad=labelpady)
             plt.xlabel("$\gamma$")
+            plt.axhline(N_1_mean,label="$\\bar{N}_{1}="+str(sigfig.round(N_1_mean,sigfigs=3))\
+                            +",\Sigma="+str(sigfig.round(N_1_std_dev,sigfigs=3))+",x\sim="+str(sigfig.round(N_1_median,sigfigs=3))+",K="+str(internal_stiffness[i])+"$",linestyle='--',color=colour[i+3])
+            # s
             #smoothed_data=use_whittaker_smoother(N_1,10000000000000,2)
             #plt.plot(strainplot_tuple[k][:],smoothed_data,colour[i+3],label="$K="+str(internal_stiffness[i])+"$, smoothed")
             #plt.ylim((-0.1,5))
+            mean_N_1[i,k]=N_1_mean
 
     plt.legend(loc='best',bbox_to_anchor=(1,1))
     plt.title("Normal stress difference $N_{1}$ against strain $\gamma$, $\dot{\gamma}="\
@@ -373,7 +382,7 @@ plt.rcParams.update({'font.size': 12})
 
 for i in range(0,internal_stiffness.size):
         #for j in range(0,3):
-    plt.plot(erate[:],N_1_final[i,:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i],marker="x")#, \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
+    plt.plot(erate[:],mean_N_1[i,:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i],marker="x")#, \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
     
     plt.ylabel('$N_{1}$', rotation=0, labelpad=labelpady)
     plt.xlabel("$\dot{\gamma}$")
@@ -467,6 +476,7 @@ folder_check_or_create(filepath,folder)
 labelpady=10
 fontsize=15
 plt.rcParams.update({'font.size': 12})
+mean_shear_stress=np.zeros((internal_stiffness.size,erate.size))
 for k in range(0,erate.size):
     for i in range(0,internal_stiffness.size):
         for j in range(3,4):
@@ -477,14 +487,14 @@ for k in range(0,erate.size):
             sigmaxz_mean=np.mean(stress_tensor_summed_tuple_rfp[k][i,start:,j])
             sigmaxz_median=np.median(stress_tensor_summed_tuple_rfp[k][i,start:,j])
             print(sigmaxz_median)
-            plt.axhline(sigmaxz_mean,\
-                        label="$\\bar{\sigma}_{xz}="+str(sigfig.round(sigmaxz_mean,sigfigs=3))\
+            plt.axhline(sigmaxz_mean,label="$\\bar{\sigma}_{xz}="+str(sigfig.round(sigmaxz_mean,sigfigs=3))\
                             +",\Sigma="+str(sigfig.round(sigmaxz_std_dev,sigfigs=3))+",x\sim="+str(sigfig.round(sigmaxz_median,sigfigs=3))+",K="+str(internal_stiffness[i])+"$",linestyle='--',color=colour[i+3])
             # smoothed_data=use_whittaker_smoother(stress_tensor_summed_tuple_shaped[k][i,:,j],5000000000000,2)
             # plt.plot(strainplot_tuple[k][:],smoothed_data,colour[i+5],label="$K="+str(internal_stiffness[i])+"$, smoothed")
        
             plt.ylabel('$\sigma_{xz}$', rotation=0, labelpad=labelpady)
             plt.xlabel("$\gamma$")
+            mean_shear_stress[i,k]=sigmaxz_mean
     #plt.ylim((0,0.01))
        
     plt.legend()
@@ -498,6 +508,15 @@ for k in range(0,erate.size):
         #plt.savefig("rolling_ave_shear_stress_tensor_vs_strain_elements_xy_gdot_M_"+str(rho)+"_L_"+str(box_size)+".png",dpi=1200)
     plt.show()
 
+#%% shear stress mean vs erate 
+
+for i in range(0,internal_stiffness.size):
+        plt.plot(erate,mean_shear_stress[i,:],label="$K="+str(internal_stiffness[i])+"$")
+        plt.ylabel('$\\bar{\sigma}_{xz}$', rotation=0, labelpad=labelpady)
+        plt.xlabel("$\dot{\gamma}$")
+        plt.legend()
+
+plt.show()
 
 #%% plotting whole off diagonal of stress tensor apart from shearing plane
 folder="shear_stress_non_shear_plane_plots"
