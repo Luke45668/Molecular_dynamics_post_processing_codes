@@ -78,9 +78,9 @@ internal_stiffness=np.array([60,100])
 #erate= np.array([0.1,0.01,0.005,0.002,0.001,0.0008])
 #no_timesteps=np.array([ 355000,  3549000,  7098000, 17746000, 35492000, 44364000])
 no_timesteps=np.array([5915000,  6760000,  7887000,  9464000, 11831000 ])
-#no_timesteps=np.array([5915000,  7887000,  9464000, 11831000 ])
+#no_timesteps=np.array([5915000,  6760000,  7887000,  9464000 ])
 erate= np.array([0.02,0.0175,0.015,0.0125,0.01]) 
-#erate= np.array([0.02,0.015,0.0125,0.01]) 
+#erate= np.array([0.02,0.0175,0.015,0.0125]) 
 
 
 
@@ -370,6 +370,7 @@ folder_check_or_create(filepath,folder)
 # take last value as true N_1
 
 N_1_final=np.zeros((internal_stiffness.size,erate.size))
+residuals=np.zeros((internal_stiffness.size,erate.size))
 for k in range(0,erate.size):
     for i in range(0,internal_stiffness.size):
           start=int(stress_tensor_summed_tuple_rfp[k][i,:,0].size-strainplot_tuple[k].size)
@@ -380,10 +381,15 @@ labelpady=15
 fontsize=15
 plt.rcParams.update({'font.size': 12})
 
-for i in range(0,internal_stiffness.size):
+for i in range(0,1):#internal_stiffness.size):
         #for j in range(0,3):
-    plt.plot(erate[:],mean_N_1[i,:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i],marker="x")#, \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
+    fit=np.polyfit(erate,N_1_final[i,:],2)
+    residuals[i,:]=np.abs(N_1_final[i,:]-((fit[0]*(erate**2)) + erate*fit[1] +fit[2]))
     
+    plt.plot(erate,(fit[0]*(erate**2)) + erate*fit[1] +fit[2], label="$K="+str(internal_stiffness[i])+"$")
+    plt.scatter(erate[:], N_1_final[i,:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i],marker="x")#, \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
+    plt.errorbar(erate[:], N_1_final[i,:], yerr=residuals[i,:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i],marker="x",ls='none')
+
     plt.ylabel('$N_{1}$', rotation=0, labelpad=labelpady)
     plt.xlabel("$\dot{\gamma}$")
         
@@ -394,7 +400,7 @@ for i in range(0,internal_stiffness.size):
         #plt.tight_layout()
     plt.savefig("N_1_vs_shearrate_M_"+str(rho)+\
                 "_L_"+str(box_size)+".pdf",dpi=1200,bbox_inches='tight')
-plt.show()
+    plt.show()
     
 
 
@@ -447,16 +453,22 @@ folder_check_or_create(filepath,folder)
 N_2_final=np.zeros((internal_stiffness.size,erate.size))
 for k in range(0,erate.size):
     for i in range(0,internal_stiffness.size):
-          N_2_final[i,k]=stress_tensor_summed_tuple_rfp[k][i,-1,2]-stress_tensor_summed_tuple_rfp[k][i,-1,1]
+          N_2_final[i,k]=np.mean(stress_tensor_summed_tuple_rfp[k][i,start:,2])-np.mean(stress_tensor_summed_tuple_rfp[k][i,start:,1])
            
 
 labelpady=15
 fontsize=15
 plt.rcParams.update({'font.size': 12})
 
-for i in range(0,internal_stiffness.size):
+for i in range(0,1):#internal_stiffness.size):
         #for j in range(0,3):
-    plt.plot(erate[:],N_2_final[i,:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i])#, \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
+    fit=np.polyfit(erate,N_2_final[i,:],2)
+    residuals[i,:]=np.abs(N_2_final[i,:]-((fit[0]*(erate**2)) + erate*fit[1] +fit[2]))
+    
+    plt.plot(erate,(fit[0]*(erate**2)) + erate*fit[1] +fit[2], label="$K="+str(internal_stiffness[i])+"$")# & $\\frac{d \sigma_{xz}}{d \dot{\gamma}}="+str(sigfig.round(fit[0],sigfigs=3))+"$")
+    plt.scatter(erate[:],N_2_final[i,:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i])#, \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
+    plt.errorbar(erate[:], N_2_final[i,:], yerr=residuals[i,:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i],marker="x",ls='none')
+
     plt.ylabel('$N_{2}$', rotation=0, labelpad=labelpady)
     plt.xlabel("$\dot{\gamma}$")
         
@@ -467,7 +479,7 @@ for i in range(0,internal_stiffness.size):
         #plt.tight_layout()
     plt.savefig("N_2_vs_shearrate_M_"+str(rho)+\
                 "_L_"+str(box_size)+".pdf",dpi=1200,bbox_inches='tight')
-plt.show()
+    plt.show()
 
 
 #%% plotting xz component vs strain 
@@ -478,7 +490,7 @@ fontsize=15
 plt.rcParams.update({'font.size': 12})
 mean_shear_stress=np.zeros((internal_stiffness.size,erate.size))
 for k in range(0,erate.size):
-    for i in range(0,internal_stiffness.size):
+    for i in range(0,1):#internal_stiffness.size):
         for j in range(3,4):
             #stress_tensor_summed_realisation_mean_rolling_hline=np.mean(stress_tensor_summed_realisation_mean_rolling[i,mean_step:,3])
             start=int(stress_tensor_summed_tuple_rfp[k][i,:,j].size-strainplot_tuple[k].size)
@@ -510,11 +522,15 @@ for k in range(0,erate.size):
 
 #%% shear stress mean vs erate 
 
-for i in range(0,internal_stiffness.size):
-        plt.plot(erate,mean_shear_stress[i,:],label="$K="+str(internal_stiffness[i])+"$")
+for i in range(0,1):
+        fit=np.polyfit(erate,mean_shear_stress[i,:],1)
+        plt.plot(erate,fit[0]*erate +fit[1])#, label= "$\\frac{d \sigma_{xz}}{d \dot{\gamma}}="+str(sigfig.round(fit[0],sigfigs=3))+"$")
+
+        plt.scatter(erate,mean_shear_stress[i,:],label="$K="+str(internal_stiffness[i])+"$")
         plt.ylabel('$\\bar{\sigma}_{xz}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$\dot{\gamma}$")
         plt.legend()
+        plt.ylim(-1000,1000)
 
 plt.show()
 
