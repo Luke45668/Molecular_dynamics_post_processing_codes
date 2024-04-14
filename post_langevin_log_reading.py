@@ -32,9 +32,13 @@ import glob
 from post_MPCD_MP_processing_module import *
 
 #%% 
-path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder'
+# damp 0.1 seems to work well, need to add window averaging, figure out how to get imposed shear to match velocity of particle
+# neeed to then do a huge run 
+
+
+path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/damp_0.1'
 erate= np.array([0.02,0.0175,0.015,0.0125,0.01]) 
-K=60
+K=20
 
 pol_general_name_string='*pol*h5'
 
@@ -153,7 +157,7 @@ for i in range(0,count_pol):
             COM_velocity=np.zeros((outputdim,3))
             COM_position=np.zeros((outputdim,3))
             averaged_z_array=np.zeros((outputdim,1))
-            spring_force_positon_array=np.zeros((outputdim,9))
+            spring_force_positon_array=np.zeros((outputdim,6))
             erate_velocity_prediciton=np.zeros((outputdim,1))
 
             for j in range(0,outputdim):
@@ -165,7 +169,7 @@ for i in range(0,count_pol):
 
 
 
-                pol_positions_after=f_c['particles']['small']['velocity']['value'][j]
+                pol_positions_after=f_c['particles']['small']['position']['value'][j]
                 phantom_positions_after=f_ph['particles']['phantom']['position']['value'][j]
                 averaged_z_array[j,0]=np.mean(pol_velocities_array[j,:,2])
 
@@ -187,10 +191,7 @@ for i in range(0,count_pol):
                 spring_force_positon_tensor_xz=f_spring_1[0]*f_spring_1_dirn[2] + f_spring_2[0]*f_spring_2_dirn[2] +f_spring_3[0]*f_spring_3_dirn[2] 
                 spring_force_positon_tensor_xy=f_spring_1[0]*f_spring_1_dirn[1] + f_spring_2[0]*f_spring_2_dirn[1] +f_spring_3[0]*f_spring_3_dirn[1] 
                 spring_force_positon_tensor_yz=f_spring_1[1]*f_spring_1_dirn[2] + f_spring_2[1]*f_spring_2_dirn[2] +f_spring_3[1]*f_spring_3_dirn[2] 
-                spring_force_positon_tensor_zx=f_spring_1[2]*f_spring_1_dirn[0] + f_spring_2[2]*f_spring_2_dirn[0] +f_spring_3[2]*f_spring_3_dirn[0] 
-                spring_force_positon_tensor_zy=f_spring_1[2]*f_spring_1_dirn[1] + f_spring_2[2]*f_spring_2_dirn[1] +f_spring_3[2]*f_spring_3_dirn[1] 
-                spring_force_positon_tensor_yx=f_spring_1[1]*f_spring_1_dirn[0] + f_spring_2[1]*f_spring_2_dirn[0] +f_spring_3[1]*f_spring_3_dirn[0] 
-
+              
                 
                 np_array_spring_pos_tensor=np.array([spring_force_positon_tensor_xx,
                                                     spring_force_positon_tensor_yy,
@@ -198,9 +199,7 @@ for i in range(0,count_pol):
                                                     spring_force_positon_tensor_xz,
                                                     spring_force_positon_tensor_xy,
                                                     spring_force_positon_tensor_yz, 
-                                                    spring_force_positon_tensor_zx, 
-                                                    spring_force_positon_tensor_zy,
-                                                    spring_force_positon_tensor_yx])
+                                                     ])
                 spring_force_positon_array[j,:]= np_array_spring_pos_tensor
 
 
@@ -224,11 +223,63 @@ for i in range(erate.size):
       plt.axhline(np.mean(COM_velocity_tuple[i][:,0]), label="COM mean",linestyle=':')
       #plt.plot(erate_velocity_tuple[i][:,0])
       plt.axhline(np.mean(erate_velocity_tuple[i][:,0]), label="VP mean",linestyle='--')
+      print("error:",np.mean(erate_velocity_tuple[i][:,0])-np.mean(COM_velocity_tuple[i][:,0]))
+      plt.legend()
       plt.show()
-# 
 
+
+#%% look at internal stresses
+labels_stress=["$\sigma_{xx}$",
+               "$\sigma_{yy}$",
+               "$\sigma_{zz}$",
+               "$\sigma_{xz}$",
+               "$\sigma_{xy}$",
+               "$\sigma_{yz}$"]
+
+for i in range(erate.size):
+     for j in range(3,6):
+        plt.plot(spring_force_positon_tensor_tuple[i][:,j], label=labels_stress[j])
+        plt.legend()
+     plt.show()
+
+for i in range(erate.size):
+     for j in range(0,3):
+        plt.plot(spring_force_positon_tensor_tuple[i][:,j], label=labels_stress[j])
+        plt.legend()
+     plt.show()
+
+#%%
+N_1_mean=np.zeros((5))
+for i in range(erate.size):
+    N_1=spring_force_positon_tensor_tuple[i][:,0]-spring_force_positon_tensor_tuple[i][:,2]
+    N_1_mean[i]=np.mean(N_1)
+    plt.plot(N_1, label=labels_stress[j])
+    plt.axhline(np.mean(N_1))
+    plt.ylabel("$N_{1}$")
+    plt.legend()
+    plt.show()
+
+#%%
+N_2_mean=np.zeros((5))
+for i in range(erate.size):
+    N_2= spring_force_positon_tensor_tuple[i][:,2]-spring_force_positon_tensor_tuple[i][:,1]
+    N_2_mean[i]=np.mean(N_2)
+    plt.plot(N_2, label=labels_stress[j])
+    plt.axhline(np.mean(N_2))
+    plt.ylabel("$N_{2}$")
+    plt.legend()
+    plt.show()
+
+#%%
+# could add fittings to this run 
+plt.plot(erate,N_1_mean)
+
+plt.show()
+
+plt.plot(erate,N_2_mean)
+plt.show()
 # %% plot
-column=2
+column=3
 for i in range(0,count_log):
     plt.plot(log_file_tuple[i][:,column])
     mean_temp=np.mean(log_file_tuple[i][:,column])
