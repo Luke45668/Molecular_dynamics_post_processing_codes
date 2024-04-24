@@ -35,12 +35,14 @@ import pickle as pck
 #%% 
 # damp 0.1 seems to work well, need to add window averaging, figure out how to get imposed shear to match velocity of particle
 # neeed to then do a huge run 
-damp=0.01
+damp=0.05
 strain_total=600
 path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/Full_run_damp_'+str(damp)+'_temp_test_1'
 path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_60/Full_run_damp_0.01_dump_10000_strain_600'
+#path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_60/run_10_reals_damp_0.05_dump_10000_strain_600'
 #path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/'
 #path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_40/Full_run_damp_0.01_dump_10000_strain_600'
+path_2_log_files='/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs'
 erate= np.array([0.2,0.1,0.05,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01]) 
 erate= np.array([0.03,0.0275,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01,0.0075])
 erate= np.array([0.0075, 0.01  , 0.0125, 0.015 , 0.0175, 0.02  , 0.0225, 0.025 ,
@@ -63,6 +65,10 @@ j_=100
 K=60
 eq_spring_length=3*np.sqrt(3)/2
 mass_pol=5 
+damp_ratio=mass_pol/damp
+
+#NOTE: the damping force may be very large compared to the spring force at high shear rates, which could be cancelling 
+# out the spring forces.
 
 pol_general_name_string='*pol*h5'
 
@@ -151,6 +157,11 @@ def window_averaging(i,window_size,input_tuple,array_size,outdim1,outdim3):
 
     return output_array_final, non_nan_size
 
+from scipy.optimize import curve_fit
+ 
+def quadfunc(x, a):
+
+    return a*(x**2)
 
 realisations_for_sorting_after_pol=[]
 realisation_name_h5_after_sorted_final_pol=org_names(realisations_for_sorting_after_pol,
@@ -219,10 +230,10 @@ count=0
 for i in range(erate.size):
      i_=(count*j_)
      print("i_",i_)
-     with h5.File(realisation_name_h5_after_sorted_final_pol[i_],'r') as f_c:
+     with h5.File(realisation_name_h5_after_sorted_final_pol[i_],'r') as f_check:
          
         
-        outputdim_hdf5=f_c['particles']['small']['velocity']['value'].shape[0]
+        outputdim_hdf5=f_check['particles']['small']['velocity']['value'].shape[0]
         outputdim_log=log2numpy_reader(realisation_name_log_sorted_final[i_],
                                                             path_2_log_files,
                                                             thermo_vars).shape[0]
@@ -253,12 +264,13 @@ for i in range(erate.size):
                     
 
                     #for l in range(0,outputdim):
-                
+                    # this isnt working properly !
+                    # I think we need to compute row by t
                     pol_velocities_array[j,:,:,:]=f_c['particles']['small']['velocity']['value'][:]
                     pol_positions_array[j,:,:,:]=f_c['particles']['small']['position']['value'][:]
-                    ell_1=pol_positions_array[j,:,0,:]-pol_positions_array[j,:,1,:]
-                    ell_2=pol_positions_array[j,:,0,:]-pol_positions_array[j,:,2,:]
-                    area_vector_array[j,:,:]=np.cross(ell_1,ell_2)
+                    ell_1=pol_positions_array[j,:,1,:]-pol_positions_array[j,:,0,:]
+                    ell_2=pol_positions_array[j,:,2,:]-pol_positions_array[j,:,0,:]
+                    area_vector_array[j,:,:]=np.cross(ell_1,ell_2,axisa=1,axisb=1)
                     conform_tensor_array[j,:,0]=area_vector_array[j,:,0]*area_vector_array[j,:,0]#xx
                     conform_tensor_array[j,:,1]=area_vector_array[j,:,1]*area_vector_array[j,:,1]#yy
                     conform_tensor_array[j,:,2]=area_vector_array[j,:,2]*area_vector_array[j,:,2]#zz
@@ -296,6 +308,7 @@ for i in range(erate.size):
 #%% check conform tesnor 
 # check this calculation is correct 
 viscoelastic_stress_tuple=()
+total_energy_tuple=()
 labels_stress=["$\sigma_{xx}$",
                "$\sigma_{yy}$",
                "$\sigma_{zz}$",
@@ -307,19 +320,26 @@ labels_stress=["$\sigma_{xx}$",
                  "$\sigma_{zy}$",]
 for i in range(erate.size):
     trace=np.sum(conform_tensor_tuple[i][:,0:3], axis=1)
+    total_energy=np.sum(area_vector_tuple[i]**2 ,axis=1)
     rows=conform_tensor_tuple[i].shape[0]
     trace_matrix=np.zeros((rows,9))
     trace_matrix[:,0:3]=np.tile(trace,(3,1)).T
     viscoelastic_stress= trace_matrix-conform_tensor_tuple[i]
+    
     viscoelastic_stress_tuple=viscoelastic_stress_tuple+(viscoelastic_stress,)
-    for j in range(9):
+    total_energy_tuple=total_energy_tuple+(total_energy,)
+    for j in range(2):
      plt.plot(viscoelastic_stress[:,j], label=labels_stress[j]+", $\dot{\gamma}="+str(erate[i])+"$")
      plt.legend()
-     plt.show()
+    plt.show()
+#%% plotting total energy 
 
+for i in range(erate.size):
+    plt.plot(K*total_energy_tuple[i]*0.5, label="$\dot{\gamma}="+str(erate[i])+"$")
+    plt.legend()
+plt.show()
 
-
-
+#%% plotting 
 
 #%%now do computes on mean files   
 
@@ -356,6 +376,8 @@ for i in range(erate.size):
         f_spring_3_dirn=pol_positions_tuple[i][j,2,:]-ph_positions_tuple[i][j,0,:]
         f_spring_3_mag=np.sqrt(np.sum((f_spring_3_dirn)**2))
         f_spring_3=K*(f_spring_3_dirn/f_spring_3_mag)*(f_spring_3_mag-eq_spring_length)
+
+        # could compute the damping force in this loop
 
         spring_force_positon_tensor_xx=f_spring_1[0]*f_spring_1_dirn[0] + f_spring_2[0]*f_spring_2_dirn[0] +f_spring_3[0]*f_spring_3_dirn[0] 
         spring_force_positon_tensor_yy=f_spring_1[1]*f_spring_1_dirn[1] + f_spring_2[1]*f_spring_2_dirn[1] +f_spring_3[1]*f_spring_3_dirn[1] 
@@ -416,7 +438,7 @@ COM_position_tuple_wa=()
 erate_velocity_tuple_wa=()
 viscoelastic_stress_tuple_wa=()
 nan_size=np.zeros((erate.size))
-window_size=5
+window_size=1  #50 made n2 look good
 
 for i in range(erate.size):
     array_size=spring_force_positon_tensor_tuple[i].shape[0]
@@ -533,6 +555,7 @@ for i in range(erate.size):
     plt.savefig("temp_vs_strain_damp_"+str(damp)+"_gdot_"+str(erate[i])+"_.pdf",dpi=1200,bbox_inches='tight')
     plt.show()
 
+
 #%%
 plt.scatter(erate,final_temp)
 plt.ylabel("$T$", rotation=0)
@@ -575,11 +598,15 @@ for i in range(erate.size):
       #plt.plot(strainplot_tuple[i][:-1],COM_velocity_tuple[i][:-1,0],label="COM",linestyle='--')
       #print(np.mean(COM_velocity_tuple[i][:,0]))
       plt.axhline(np.mean(COM_velocity_tuple[i][:-1,0]), label="COM mean",linestyle=':',color='blueviolet')
+
       #plt.plot(erate_velocity_tuple[i][:-1,0],label="erate prediction",linestyle='--')
       plt.axhline(np.mean(erate_velocity_tuple[i][:-1,0]), label="erate mean",linestyle='--',color='black')
       #print("error:",np.mean(erate_velocity_tuple[i][:,0])-np.mean(COM_velocity_tuple[i][:,0]))
       plt.legend()
 plt.show()
+
+
+#%% plotting damping force
 
 
 #%% look at internal stresses
@@ -595,19 +622,23 @@ labels_stress=["$\sigma_{xx}$",
 for i in range(erate.size):
     for j in range(3,6):
         #plt.plot(strainplot_tuple[i],spring_force_positon_tensor_tuple[i][:,j], label=labels_stress[j])
-        plt.plot(spring_force_positon_tensor_tuple_wa[i][:,j], label=labels_stress[j]+",$\dot{\gamma}="+str(erate[i])+"$")
+        #plt.plot(spring_force_positon_tensor_tuple_wa[i][:,j], label=labels_stress[j]+",$\dot{\gamma}="+str(erate[i])+"$")
+        plt.plot(viscoelastic_stress_tuple_wa[i][:,j], label=labels_stress[j]+",$\dot{\gamma}="+str(erate[i])+"$")
     plt.legend()
     plt.show()
 
+#%% normal stress
 for i in range(erate.size):
      for j in range(0,3):
         #plt.plot(strainplot_tuple[i],spring_force_positon_tensor_tuple[i][:,j], label=labels_stress[j])
-        plt.plot(spring_force_positon_tensor_tuple_wa[i][:,j], label=labels_stress[j]+",$\dot{\gamma}="+str(erate[i])+"$")
+        #plt.plot(spring_force_positon_tensor_tuple_wa[i][:,j], label=labels_stress[j]+",$\dot{\gamma}="+str(erate[i])+"$")
+        plt.plot(viscoelastic_stress_tuple_wa[i][:,j], label=labels_stress[j]+",$\dot{\gamma}="+str(erate[i])+"$")
+        #plt.ylim(-8000,10) 
         plt.legend()
      plt.show()
 
 #%%
-cutoff_ratio=0.8
+cutoff_ratio=0.7
 end_cutoff_ratio=1
 folder="N_1_plots"
 
@@ -618,7 +649,7 @@ for i in range(erate.size):
     end_cutoff=int(nan_size[i]) +int(np.ceil(end_cutoff_ratio*(viscoelastic_stress_tuple_wa[i][:-1,0].size-nan_size[i])))
     #cutoff=int(nan_size[i]) +int(np.ceil(cutoff_ratio*(spring_force_positon_tensor_tuple_wa[i][:-1,0].size-nan_size[i])))
 
-    #N_1=spring_force_positon_tensor_tuple_wa[i][cutoff:-1,0]-spring_force_positon_tensor_tuple_wa[i][cutoff:-1,2]
+    #N_1=spring_force_positon_tensor_tuple_wa[i][cutoff:-1,0]-spring_force_positon_tensor_tuple_wa[i][cutoff:end_cutoff,2]
     N_1=viscoelastic_stress_tuple_wa[i][cutoff:end_cutoff-1,0]-viscoelastic_stress_tuple_wa[i][cutoff:end_cutoff-1,2]
    
     N_1_mean[i]=np.mean(N_1[:])
@@ -628,31 +659,50 @@ for i in range(erate.size):
     #plt.plot(N_1, label="$\dot{\gamma}="+str(erate[i])+"$")
     plt.axhline(np.mean(N_1))
     plt.ylabel("$N_{1}$")
+    plt.xlabel("$\gamma$")
     plt.legend()
     plt.show()
+
+plt.scatter((erate[:]),N_1_mean[:])
+popt,pcov=curve_fit(quadfunc,erate[:],N_1_mean[:])
+plt.plot(erate[:],(popt[0]*(erate[:]**2)))
+plt.ylabel("$N_{1}$")
+plt.xlabel("$\dot{\gamma}$")
+plt.show()
  #%%
 folder="N_2_plots"
-
+# cutoff_ratio=0.5
+# end_cutoff_ratio=0.7
+cutoff_ratio=0.6
+end_cutoff_ratio=1
 N_2_mean=np.zeros((erate.size))
 for i in range(erate.size):
-    #cutoff=int(nan_size[i]) +int(np.ceil(cutoff_ratio*(spring_force_positon_tensor_tuple_wa[i][:-1,0].size-nan_size[i])))
-    #N_2= spring_force_positon_tensor_tuple_wa[i][cutoff:-1,2]-spring_force_positon_tensor_tuple_wa[i][cutoff:-1,1]
+   # cutoff=int(nan_size[i]) +int(np.ceil(cutoff_ratio*(spring_force_positon_tensor_tuple_wa[i][:-1,0].size-nan_size[i])))
+   
     cutoff=int(nan_size[i]) +int(np.ceil(cutoff_ratio*(viscoelastic_stress_tuple_wa[i][:-1,0].size-nan_size[i])))
     end_cutoff=int(nan_size[i]) +int(np.ceil(end_cutoff_ratio*(viscoelastic_stress_tuple_wa[i][:-1,0].size-nan_size[i])))
     N_2= viscoelastic_stress_tuple_wa[i][cutoff:end_cutoff,2]-viscoelastic_stress_tuple_wa[i][cutoff:end_cutoff,1]
-   
+    #N_2= spring_force_positon_tensor_tuple_wa[i][cutoff:-1,2]-spring_force_positon_tensor_tuple_wa[i][cutoff:end_cutoff,1]
     N_2_mean[i]=np.mean(N_2[:])
     print(N_2_mean)
     #plt.plot(strainplot_tuple[i][:-1],N_2)
     plt.plot(strainplot_tuple[i][cutoff:end_cutoff],N_2)
     plt.axhline(np.mean(N_2),label="$\dot{\gamma}="+str(erate[i])+"$")
     plt.ylabel("$N_{2}$")
+    plt.xlabel("$\gamma$")
     plt.legend()
     plt.show()
 
+plt.scatter((erate[:]),N_2_mean[:])
+popt,pcov=curve_fit(quadfunc,erate[:],N_2_mean[:])
+plt.plot(erate[:],(popt[0]*(erate[:]**2)))
+plt.ylabel("$N_{2}$")
+plt.xlabel("$\dot{\gamma}$")
+plt.show()
 #%%
 folder="shear_stress_plots"
-
+cutoff_ratio=0.2
+end_cutoff_ratio=1
 xz_shear_stress_mean=np.zeros((erate.size))
 for i in range(erate.size):
     # cutoff=int(nan_size[i]) +int(np.ceil(cutoff_ratio*(spring_force_positon_tensor_tuple_wa[i][:-1,0].size-nan_size[i])))
@@ -666,25 +716,22 @@ for i in range(erate.size):
     plt.plot(strainplot_tuple[i][cutoff:end_cutoff],xz_shear_stress, label=labels_stress[3]+",$\dot{\gamma}="+str(erate[i])+"$")
     plt.axhline(xz_shear_stress_mean[i])
     plt.ylabel("$\sigma_{xz}$")
+    plt.xlabel("$\gamma$")
     plt.legend()
     plt.show()
 
+plt.scatter(erate[:],xz_shear_stress_mean[:])
+plt.axhline(np.mean(xz_shear_stress_mean[:]))
+#plt.ylim(-5,2)
+plt.show()
 #%%
 # could add fittings to this run 
-from scipy.optimize import curve_fit
- 
-def quadfunc(x, a):
 
-    return a*(x**2)
     #return  a*np.exp(-x)
-plt.scatter((erate[:]),N_1_mean[:])
-popt,pcov=curve_fit(quadfunc,erate[:],N_1_mean[:])
-plt.plot(erate[:],(popt[0]*(erate[:]**2)))
 
-plt.show()
 
 #%%
-plt.scatter(erate[:],N_2_mean[:])
+plt.scatter((erate[:]),N_2_mean[:])
 popt,pcov=curve_fit(quadfunc,erate[:],N_2_mean[:])
 plt.plot(erate[:],(popt[0]*(erate[:]**2)))
 plt.show()
