@@ -41,8 +41,8 @@ import pickle as pck
 #         33.33333333,  30.       ])
 
 damp=np.array([0.01, 0.02, 0.04, 0.05, 0.06 ])
-K=np.array([300.        , 149.9999     ,  74.99999   ,
-        59.99999       ,  49.99999     ])
+K=np.array([300.0        , 149.999     ,  74.9999  ,
+        59.999       ,  49.999     ])
 
 #0.0435, 68.96551724
 strain_total=600
@@ -106,6 +106,9 @@ from scipy.optimize import curve_fit
 def quadfunc(x, a):
 
     return a*(x**2)
+
+def linearfunc(x,a,b):
+    return (a*x)+b 
 
 
      
@@ -297,8 +300,8 @@ labels_stress=["$\sigma_{xx}$",
 #%%
 cutoff_ratio=0
 end_cutoff_ratio=1
-j_point_1=3
-j_point_2=4
+j_point_1=0
+j_point_2=5
 folder="N_1_plots"
 
 N_1_mean=np.zeros((K.size,erate.size))
@@ -313,7 +316,7 @@ for j in range(j_point_1,j_point_2):
         N_1=viscoelastic_stress_batch_tuple[j][i][cutoff:end_cutoff-1,0]-viscoelastic_stress_batch_tuple[j][i][cutoff:end_cutoff-1,2]
     
         N_1_mean[j,i]=np.mean(N_1[:])
-        N_1[np.abs(N_1)>2000]=0
+        # N_1[np.abs(N_1)>2000]=0
         print(N_1_mean)
         
         plt.plot(strainplot_tuple[i][cutoff:end_cutoff-1],N_1,label="$\dot{\gamma}="+str(erate[i])+"$")
@@ -326,8 +329,8 @@ for j in range(j_point_1,j_point_2):
 
 for j in range(j_point_1,j_point_2):
     plt.scatter((erate[:]),N_1_mean[j,:],label="$\Gamma="+str(damp[j])+",K="+str(K[j])+"$" ,marker=marker[j])
-    popt,pcov=curve_fit(quadfunc,erate[:],N_1_mean[j,:])
-    plt.plot(erate[:],(popt[0]*(erate[:]**2)))
+    popt,pcov=curve_fit(linearfunc,erate[:],N_1_mean[j,:])
+    plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
     plt.ylabel("$N_{1}$")
     plt.xlabel("$\dot{\gamma}$")
     plt.legend()
@@ -345,7 +348,7 @@ for j in range(j_point_1,j_point_2):
 
         #N_1=spring_force_positon_tensor_tuple_wa[i][cutoff:-1,0]-spring_force_positon_tensor_tuple_wa[i][cutoff:end_cutoff,2]
         N_2=viscoelastic_stress_batch_tuple[j][i][cutoff:end_cutoff-1,2]-viscoelastic_stress_batch_tuple[j][i][cutoff:end_cutoff-1,1]
-        N_2[np.abs(N_2)>5000]=0
+        # N_2[np.abs(N_2)>5000]=0
         N_2_mean[j,i]=np.mean(N_2[:])
         print(N_2_mean)
         
@@ -359,8 +362,8 @@ for j in range(j_point_1,j_point_2):
 
 for j in range(j_point_1,j_point_2):
     plt.scatter((erate[:]),N_2_mean[j,:],label="$\Gamma="+str(damp[j])+",K="+str(K[j])+"$" ,marker=marker[j])
-    popt,pcov=curve_fit(quadfunc,erate[:],N_2_mean[j,:])
-    plt.plot(erate[:],(popt[0]*(erate[:]**2)))
+    popt,pcov=curve_fit(linearfunc,erate[:],N_2_mean[j,:])
+    plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
     plt.ylabel("$N_{2}$")
     plt.xlabel("$\dot{\gamma}$")
     plt.legend()
@@ -369,26 +372,27 @@ plt.show()
 folder="shear_stress_plots"
 cutoff_ratio=0.25
 end_cutoff_ratio=1
-xz_shear_stress_mean=np.zeros((erate.size))
-for i in range(erate.size):
-    # cutoff=int(nan_size[i]) +int(np.ceil(cutoff_ratio*(spring_force_positon_tensor_tuple_wa[i][:-1,0].size-nan_size[i])))
-    # xz_shear_stress= spring_force_positon_tensor_tuple_wa[i][cutoff:,3]
-    cutoff=int(nan_size[i]) +int(np.ceil(cutoff_ratio*(viscoelastic_stress_tuple_wa[i][:-1,0].size-nan_size[i])))
-    end_cutoff=int(nan_size[i]) +int(np.ceil(end_cutoff_ratio*(viscoelastic_stress_tuple_wa[i][:-1,0].size-nan_size[i])))
-    xz_shear_stress= viscoelastic_stress_tuple_wa[i][cutoff:end_cutoff,3]
-   
-    xz_shear_stress_mean[i]=np.mean(xz_shear_stress[:])
-    #plt.plot(strainplot_tuple[i][:],xz_shear_stress, label=labels_stress[3])
-    plt.plot(strainplot_tuple[i][cutoff:end_cutoff],xz_shear_stress, label=labels_stress[3]+",$\dot{\gamma}="+str(erate[i])+"$")
-    plt.axhline(xz_shear_stress_mean[i])
-    plt.ylabel("$\sigma_{xz}$")
-    plt.xlabel("$\gamma$")
-    plt.legend()
-    plt.show()
-
-plt.scatter(erate[:],xz_shear_stress_mean[:])
-plt.axhline(np.mean(xz_shear_stress_mean[:]))
-#plt.ylim(-5,2)
+xz_shear_stress_mean=np.zeros((K.size,erate.size))
+for j in range(j_point_1,j_point_2):
+    for i in range(erate.size):
+        # cutoff=int(nan_size[i]) +int(np.ceil(cutoff_ratio*(spring_force_positon_tensor_tuple_wa[i][:-1,0].size-nan_size[i])))
+        # xz_shear_stress= spring_force_positon_tensor_tuple_wa[i][cutoff:,3]
+    
+        xz_shear_stress=viscoelastic_stress_batch_tuple[j][i][cutoff:end_cutoff,3]
+    
+        xz_shear_stress_mean[j,i]=np.mean(xz_shear_stress[:])
+        #plt.plot(strainplot_tuple[i][:],xz_shear_stress, label=labels_stress[3])
+        plt.plot(strainplot_tuple[i][cutoff:end_cutoff],xz_shear_stress, label=labels_stress[3]+",$\dot{\gamma}="+str(erate[i])+"$")
+        #plt.axhline(xz_shear_stress_mean[i])
+        plt.ylabel("$\sigma_{xz}$")
+        plt.xlabel("$\gamma$")
+        plt.legend()
+        plt.show()
+#%%
+for j in range(j_point_1,j_point_2):
+    plt.scatter(erate[:],xz_shear_stress_mean[j,:],label="$\Gamma="+str(damp[j])+",K="+str(K[j])+"$" ,marker=marker[j])
+   # plt.axhline(np.mean(xz_shear_stress_mean[:]))
+    #plt.ylim(-5,2)
 plt.show()
 #%%
 # could add fittings to this run 

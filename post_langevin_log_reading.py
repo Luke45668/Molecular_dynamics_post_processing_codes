@@ -35,7 +35,7 @@ import pickle as pck
 #%% 
 # damp 0.1 seems to work well, need to add window averaging, figure out how to get imposed shear to match velocity of particle
 # neeed to then do a huge run 
-damp=0.05
+damp=0.06
 strain_total=600
 path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/Full_run_damp_'+str(damp)+'_temp_test_1'
 path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_60/Full_run_damp_0.01_dump_10000_strain_600'
@@ -63,7 +63,7 @@ dp_row_count=np.ceil((no_timesteps/dump_freq)).astype("int")
 
 thermo_vars='         KinEng         PotEng          Temp          c_bias         TotEng    '
 j_=10
-K=59.999
+K=49.999
 eq_spring_length=3*np.sqrt(3)/2
 mass_pol=5 
 damp_ratio=mass_pol/damp
@@ -228,7 +228,7 @@ area_vector_tuple=()
 conform_tensor_tuple=()
 count=0
 #need to fix this issue where the arrays are all slightly different sizes by one or two 
-for i in range(erate.size):
+for i in range(1):
      i_=(count*j_)
      print("i_",i_)
      with h5.File(realisation_name_h5_after_sorted_final_pol[i_],'r') as f_check:
@@ -246,8 +246,10 @@ for i in range(erate.size):
         ph_positions_array=np.zeros((j_,outputdim_hdf5,3,3))
         area_vector_array=np.zeros((j_,outputdim_hdf5,3))
         conform_tensor_array=np.zeros((j_,outputdim_hdf5,9))
+     
+        strain_array=np.linspace(0,strain_total,outputdim_hdf5)
 
-        for j in range(j_):
+        for j in range(1):
                 j_index=j+(j_*count)
 
                 # need to get rid of print statements in log2numpy 
@@ -270,12 +272,174 @@ for i in range(erate.size):
                     pol_velocities_array[j,:,:,:]=f_c['particles']['small']['velocity']['value'][:]
                     pol_positions_array[j,:,:,:]=f_c['particles']['small']['position']['value'][:]
                     ell_1=pol_positions_array[j,:,1,:]-pol_positions_array[j,:,0,:]
-                    # ell_1[ell_1>5]-=23
-                    # ell_1[ell_1<-5]+=23
                     ell_2=pol_positions_array[j,:,2,:]-pol_positions_array[j,:,0,:]
+                    # ell_1[ell_1[:,0]>10]-=23
+                    # ell_1[ell_1[:,0]<-10]+=23
+                    # ell_2[ell_2[:,0]>10]-=23
+                    # ell_2[ell_2[:,0]<-10]+=23
+
+                    for l in range(outputdim_hdf5):
+                        # z correction for ell_1
+                        if ell_1[l,2]>10:
+                            strain= strain_array[l]-np.floor(strain_array[l])
+                            print("strain:",strain)
+                            original_top_left=np.array([0,0,23])
+                            original_bottom_left=np.array([0,0,0])
+                            if strain <= 0.5:
+                                tilt= strain*23
+                            else: 
+                                tilt=-(1-strain)*23
+                            
+                            new_top_left= original_top_left+np.array([tilt,0,0])
+                            box_tilt_vector=new_top_left
+                            print("tilt",tilt)
+
+
+
+                            if np.any(pol_positions_array[j,l,2,2]) and np.any(pol_positions_array[j,l,0,2]) > 10:
+
+                                ell_1[l,:]+=box_tilt_vector
+                            else:
+                                ell_1[l,:]-=box_tilt_vector
+
+
+                        elif ell_1[l,2]<-10:
+                            strain= strain_array[l]-np.floor(strain_array[l])
+                            print("strain:",strain)
+                            original_top_left=np.array([0,0,23])
+                            original_bottom_left=np.array([0,0,0])
+                            if strain <= 0.5:
+                                tilt= strain*23
+                            else: 
+                                tilt=-(1-strain)*23
+                            
+                            new_top_left= original_top_left+np.array([tilt,0,0])
+                            box_tilt_vector=new_top_left
+                            print("tilt",tilt)
+
+
+
+                            if np.any(pol_positions_array[j,l,2,2]) and np.any(pol_positions_array[j,l,0,2]) < 10:
+
+                                ell_1[l,:]+=box_tilt_vector
+                            else:
+                                ell_1[l,:]-=box_tilt_vector
+
+                                
+
+
+                        if  ell_2[l,2]>10:
+                            strain= strain_array[l]-np.floor(strain_array[l])
+                            print("strain",strain)
+                            original_top_left=np.array([0,0,23])
+                            original_bottom_left=np.array([0,0,0])
+                            if strain <= 0.5:
+                                tilt= strain*23
+                            else: 
+                                tilt=-(1-strain)*23
+                            
+                            new_top_left= original_top_left+np.array([tilt,0,0])
+                            box_tilt_vector=new_top_left
+                            print("tilt",tilt)
+
+                            if np.any(pol_positions_array[j,l,1,2]) and np.any(pol_positions_array[j,l,0,2]) > 10:
+
+                                ell_2[l,:]+=box_tilt_vector
+                            else:
+                                ell_2[l,:]-=box_tilt_vector
+
+
+                        elif ell_2[l,2]<-10:
+                            strain= strain_array[l]-np.floor(strain_array[l])
+                            print("strain:",strain)
+                            original_top_left=np.array([0,0,23])
+                            original_bottom_left=np.array([0,0,0])
+                            if strain <= 0.5:
+                                tilt= strain*23
+                            else: 
+                                tilt=-(1-strain)*23
+                            
+                            new_top_left= original_top_left+np.array([tilt,0,0])
+                            box_tilt_vector=new_top_left
+                            print("tilt",tilt)
+
+                            if np.any(pol_positions_array[j,l,1,2]) and np.any(pol_positions_array[j,l,0,2]) < 10:
+
+                                ell_2[l,:]+=box_tilt_vector
+                            else:
+                                ell_2[l,:]-=box_tilt_vector
+                        else:
+                            ell_1[l,2]=ell_1[l,2]
+                            ell_2[l,2]=ell_2[l,2]
+                    
+                    # #x correction
+                    # ell_1[ell_1[:,0]>10]-=23
+                    # ell_1[ell_1[:,0]<-10]+=23
+                    # ell_2[ell_2[:,0]>10]-=23
+                    # ell_2[ell_2[:,0]<-10]+=23
+                    # ell_1[ell_1[:,1]>10]-=23
+                    # ell_1[ell_1[:,1]<-10]+=23
+                    # ell_2[ell_2[:,1]>10]-=23
+                    # ell_2[ell_2[:,1]<-10]+=23
+           
+           
+                   
+                   
+
+
+                        
+
+                        
+
+
+
+                    # need to compute the box size 
+                    # z coord 
+                    #ell_1[ell_1[:,2]>5]-=
+                    # ell_1[ell_1<-5]+=23
+                
+                    # ell_1[ell_1>5]=0
+                    # ell_1[ell_1<-5]=0
+                    # ell_2=pol_positions_array[j,:,2,:]-pol_positions_array[j,:,0,:]
                     # ell_2[ell_2>5]-=23
                     # ell_2[ell_2<-5]+=23
-                    
+                   
+                    # ell_2[ell_2>5]=0
+                    # ell_2[ell_2<-5]=0
+                    # inspecting plots
+
+                    plt.plot(ell_1[:,0])
+                    plt.title("$|\ell_{1}|,x$")
+                    plt.xlabel("output count")
+                    plt.show()
+
+                    plt.plot(ell_2[:,0])
+                    plt.title("$|\ell_{2}|,x$")
+                    plt.xlabel("output count")
+                    plt.show()
+
+                    # plt.plot(ell_1[:,1])
+                    # plt.title("$|\ell_{1}|,y$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+                    # plt.plot(ell_2[:,1])
+                    # plt.title("$|\ell_{2}|,y$")
+                    # plt.xlabel("output count")
+                    # plt.show
+
+                    plt.plot(ell_1[:,2])
+                    plt.title("$|\ell_{1}|,z$")
+                    plt.xlabel("output count")
+                    plt.show()
+
+                    plt.plot(ell_2[:,2])
+                    plt.title("$|\ell_{2}|,z$")
+                    plt.xlabel("output count")
+                    plt.show()
+
+
+
 
 
                     # need to check magnitude of ell_1 and ell_2 if its huge particle is split over the boundary 
@@ -340,7 +504,7 @@ for i in range(erate.size):
     
     viscoelastic_stress_tuple=viscoelastic_stress_tuple+(viscoelastic_stress,)
     total_energy_tuple=total_energy_tuple+(total_energy,)
-    for j in range(2):
+    for j in range(2,3):
      plt.plot(viscoelastic_stress[:,j], label=labels_stress[j]+", $\dot{\gamma}="+str(erate[i])+"$")
      plt.legend()
     plt.show()
@@ -504,7 +668,7 @@ label='damp_'+str(damp)+'_K_'+str(K)+'_'
 
 os.chdir(path_2_log_files)
 #os.mkdir("tuple_results")
-# os.chdir("tuple_results")
+os.chdir("tuple_results")
 
 with open(label+'spring_force_positon_tensor_tuple.pickle', 'wb') as f:
     pck.dump(spring_force_positon_tensor_tuple, f)
@@ -660,8 +824,8 @@ for i in range(erate.size):
      plt.show()
 
 #%%
-cutoff_ratio=0.7
-end_cutoff_ratio=1
+cutoff_ratio=0
+end_cutoff_ratio=.33
 folder="N_1_plots"
 
 N_1_mean=np.zeros((erate.size))
@@ -723,7 +887,7 @@ plt.xlabel("$\dot{\gamma}$")
 plt.show()
 #%%
 folder="shear_stress_plots"
-cutoff_ratio=0.25
+cutoff_ratio=0
 end_cutoff_ratio=1
 xz_shear_stress_mean=np.zeros((erate.size))
 for i in range(erate.size):
