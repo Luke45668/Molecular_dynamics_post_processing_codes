@@ -35,24 +35,27 @@ import pickle as pck
 #%% 
 # damp 0.1 seems to work well, need to add window averaging, figure out how to get imposed shear to match velocity of particle
 # neeed to then do a huge run 
-damp=0.06
-strain_total=600
+damp=0.01
+strain_total=200
 path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/Full_run_damp_'+str(damp)+'_temp_test_1'
 path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_60/Full_run_damp_0.01_dump_10000_strain_600'
 #path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_60/run_10_reals_damp_0.05_dump_10000_strain_600'
 #path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/'
 #path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_40/Full_run_damp_0.01_dump_10000_strain_600'
 path_2_log_files='/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs'
-path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/kdamp_prod_3_init_test_10_reals'
+path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/kdamp_prod_3_init_test_10_reals_200_strain'
 erate= np.array([0.2,0.1,0.05,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01]) 
-erate= np.array([0.03,0.0275,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01,0.0075])
-erate= np.array([0.0075, 0.01  , 0.0125, 0.015 , 0.0175, 0.02  , 0.0225, 0.025 ,
-       0.0275, 0.03])
+erate= np.array([0.03,0.0275,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01,0.0075,0.005,0.0025,0.001,0.00075,0.0005])
+#erate= np.array([0.0075, 0.01  , 0.0125, 0.015 , 0.0175, 0.02  , 0.0225, 0.025 ,
+      # 0.0275, 0.03])
 
 
-# #300 strain 
-no_timesteps=np.flip(np.array([7887000,  15774000,  31548000,  63096000,  70107000,  78870000,
-        90137000, 105160000, 126192000, 157740000]))
+# #600 strain 
+# no_timesteps=np.flip(np.array([7887000,  15774000,  31548000,  63096000,  70107000,  78870000,
+#         90137000, 105160000, 126192000, 157740000]))
+#200 strain 
+no_timesteps=np.array([26290000,  28680000,  31548000,  35053000,  39435000,  45069000,
+        52580000,  63096000,  78870000, 105160000,157740000,  315481000,  788702000, 1051603000, 1577404000])
 
 # no_timesteps=np.array([52580000,  57360000,  63096000,  70107000,  78870000,  90137000,
 #        105160000, 126192000, 157740000, 210321000])
@@ -63,7 +66,7 @@ dp_row_count=np.ceil((no_timesteps/dump_freq)).astype("int")
 
 thermo_vars='         KinEng         PotEng          Temp          c_bias         TotEng    '
 j_=10
-K=49.999
+K=300.0
 eq_spring_length=3*np.sqrt(3)/2
 mass_pol=5 
 damp_ratio=mass_pol/damp
@@ -164,6 +167,9 @@ def quadfunc(x, a):
 
     return a*(x**2)
 
+def linearfunc(x,a,b):
+    return (a*x)+b 
+
 realisations_for_sorting_after_pol=[]
 realisation_name_h5_after_sorted_final_pol=org_names(realisations_for_sorting_after_pol,
                                                      realisation_name_pol,
@@ -228,7 +234,7 @@ area_vector_tuple=()
 conform_tensor_tuple=()
 count=0
 #need to fix this issue where the arrays are all slightly different sizes by one or two 
-for i in range(1):
+for i in range(erate.size):
      i_=(count*j_)
      print("i_",i_)
      with h5.File(realisation_name_h5_after_sorted_final_pol[i_],'r') as f_check:
@@ -249,7 +255,7 @@ for i in range(1):
      
         strain_array=np.linspace(0,strain_total,outputdim_hdf5)
 
-        for j in range(1):
+        for j in range(j_):
                 j_index=j+(j_*count)
 
                 # need to get rid of print statements in log2numpy 
@@ -277,12 +283,13 @@ for i in range(1):
                     # ell_1[ell_1[:,0]<-10]+=23
                     # ell_2[ell_2[:,0]>10]-=23
                     # ell_2[ell_2[:,0]<-10]+=23
+                   
 
                     for l in range(outputdim_hdf5):
                         # z correction for ell_1
                         if ell_1[l,2]>10:
                             strain= strain_array[l]-np.floor(strain_array[l])
-                            print("strain:",strain)
+                            #print("strain:",strain)
                             original_top_left=np.array([0,0,23])
                             original_bottom_left=np.array([0,0,0])
                             if strain <= 0.5:
@@ -292,7 +299,7 @@ for i in range(1):
                             
                             new_top_left= original_top_left+np.array([tilt,0,0])
                             box_tilt_vector=new_top_left
-                            print("tilt",tilt)
+                            #print("tilt",tilt)
 
 
 
@@ -305,7 +312,7 @@ for i in range(1):
 
                         elif ell_1[l,2]<-10:
                             strain= strain_array[l]-np.floor(strain_array[l])
-                            print("strain:",strain)
+                            #print("strain:",strain)
                             original_top_left=np.array([0,0,23])
                             original_bottom_left=np.array([0,0,0])
                             if strain <= 0.5:
@@ -315,7 +322,7 @@ for i in range(1):
                             
                             new_top_left= original_top_left+np.array([tilt,0,0])
                             box_tilt_vector=new_top_left
-                            print("tilt",tilt)
+                            #print("tilt",tilt)
 
 
 
@@ -327,10 +334,10 @@ for i in range(1):
 
                                 
 
-
+                        #z correction ell_2
                         if  ell_2[l,2]>10:
                             strain= strain_array[l]-np.floor(strain_array[l])
-                            print("strain",strain)
+                            #print("strain",strain)
                             original_top_left=np.array([0,0,23])
                             original_bottom_left=np.array([0,0,0])
                             if strain <= 0.5:
@@ -340,7 +347,7 @@ for i in range(1):
                             
                             new_top_left= original_top_left+np.array([tilt,0,0])
                             box_tilt_vector=new_top_left
-                            print("tilt",tilt)
+                            #print("tilt",tilt)
 
                             if np.any(pol_positions_array[j,l,1,2]) and np.any(pol_positions_array[j,l,0,2]) > 10:
 
@@ -351,7 +358,7 @@ for i in range(1):
 
                         elif ell_2[l,2]<-10:
                             strain= strain_array[l]-np.floor(strain_array[l])
-                            print("strain:",strain)
+                            #print("strain:",strain)
                             original_top_left=np.array([0,0,23])
                             original_bottom_left=np.array([0,0,0])
                             if strain <= 0.5:
@@ -361,7 +368,7 @@ for i in range(1):
                             
                             new_top_left= original_top_left+np.array([tilt,0,0])
                             box_tilt_vector=new_top_left
-                            print("tilt",tilt)
+                            #print("tilt",tilt)
 
                             if np.any(pol_positions_array[j,l,1,2]) and np.any(pol_positions_array[j,l,0,2]) < 10:
 
@@ -372,15 +379,23 @@ for i in range(1):
                             ell_1[l,2]=ell_1[l,2]
                             ell_2[l,2]=ell_2[l,2]
                     
-                    # #x correction
-                    # ell_1[ell_1[:,0]>10]-=23
-                    # ell_1[ell_1[:,0]<-10]+=23
-                    # ell_2[ell_2[:,0]>10]-=23
-                    # ell_2[ell_2[:,0]<-10]+=23
+                # x and y correction
+                    ell_1[ell_1[:,:]>10]-=23
+                    ell_1[ell_1[:,:]<-10]+=23
+                    ell_2[ell_2[:,:]>10]-=23
+                    ell_2[ell_2[:,:]<-10]+=23
+                # #y correction
+                #     ell_1[ell_1[:,1]>10]-=23
+                #     ell_1[ell_1[:,1]<-10]+=23
+                #     ell_2[ell_2[:,1]>10]-=23
+                #     ell_2[ell_2[:,1]<-10]+=23
+                        
                     # ell_1[ell_1[:,1]>10]-=23
                     # ell_1[ell_1[:,1]<-10]+=23
                     # ell_2[ell_2[:,1]>10]-=23
                     # ell_2[ell_2[:,1]<-10]+=23
+                     # #x correction
+                    
            
            
                    
@@ -408,15 +423,15 @@ for i in range(1):
                     # ell_2[ell_2<-5]=0
                     # inspecting plots
 
-                    plt.plot(ell_1[:,0])
-                    plt.title("$|\ell_{1}|,x$")
-                    plt.xlabel("output count")
-                    plt.show()
+                    # plt.plot(ell_1[:,0])
+                    # plt.title("$|\ell_{1}|,x$")
+                    # plt.xlabel("output count")
+                    # plt.show()
 
-                    plt.plot(ell_2[:,0])
-                    plt.title("$|\ell_{2}|,x$")
-                    plt.xlabel("output count")
-                    plt.show()
+                    # plt.plot(ell_2[:,0])
+                    # plt.title("$|\ell_{2}|,x$")
+                    # plt.xlabel("output count")
+                    # plt.show()
 
                     # plt.plot(ell_1[:,1])
                     # plt.title("$|\ell_{1}|,y$")
@@ -428,15 +443,15 @@ for i in range(1):
                     # plt.xlabel("output count")
                     # plt.show
 
-                    plt.plot(ell_1[:,2])
-                    plt.title("$|\ell_{1}|,z$")
-                    plt.xlabel("output count")
-                    plt.show()
+                    # plt.plot(ell_1[:,2])
+                    # plt.title("$|\ell_{1}|,z$")
+                    # plt.xlabel("output count")
+                    # plt.show()
 
-                    plt.plot(ell_2[:,2])
-                    plt.title("$|\ell_{2}|,z$")
-                    plt.xlabel("output count")
-                    plt.show()
+                    # plt.plot(ell_2[:,2])
+                    # plt.title("$|\ell_{2}|,z$")
+                    # plt.xlabel("output count")
+                    # plt.show()
 
 
 
@@ -788,7 +803,7 @@ for i in range(erate.size):
       #plt.plot(erate_velocity_tuple[i][:-1,0],label="erate prediction",linestyle='--')
       plt.axhline(np.mean(erate_velocity_tuple[i][:-1,0]), label="erate mean",linestyle='--',color='black')
       #print("error:",np.mean(erate_velocity_tuple[i][:,0])-np.mean(COM_velocity_tuple[i][:,0]))
-      plt.legend()
+      #plt.legend()
 plt.show()
 
 
@@ -824,8 +839,8 @@ for i in range(erate.size):
      plt.show()
 
 #%%
-cutoff_ratio=0
-end_cutoff_ratio=.33
+cutoff_ratio=0.5
+end_cutoff_ratio=1
 folder="N_1_plots"
 
 N_1_mean=np.zeros((erate.size))
@@ -850,8 +865,8 @@ for i in range(erate.size):
     plt.show()
 
 plt.scatter((erate[:]),N_1_mean[:])
-popt,pcov=curve_fit(quadfunc,erate[:],N_1_mean[:])
-plt.plot(erate[:],(popt[0]*(erate[:]**2)))
+popt,pcov=curve_fit(linearfunc,erate[:],N_1_mean[:])
+plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
 plt.ylabel("$N_{1}$")
 plt.xlabel("$\dot{\gamma}$")
 plt.show()
@@ -859,7 +874,7 @@ plt.show()
 folder="N_2_plots"
 # cutoff_ratio=0.5
 # end_cutoff_ratio=0.7
-cutoff_ratio=0
+cutoff_ratio=0.5
 end_cutoff_ratio=1
 N_2_mean=np.zeros((erate.size))
 for i in range(erate.size):
@@ -879,15 +894,15 @@ for i in range(erate.size):
     plt.legend()
     plt.show()
 
-plt.scatter((erate[:]),N_2_mean[:])
-popt,pcov=curve_fit(quadfunc,erate[:],N_2_mean[:])
-plt.plot(erate[:],(popt[0]*(erate[:]**2)))
+plt.plot((erate[:]),N_2_mean[:])
+popt,pcov=curve_fit(linearfunc,erate[:],N_2_mean[:])
+plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
 plt.ylabel("$N_{2}$")
 plt.xlabel("$\dot{\gamma}$")
 plt.show()
 #%%
 folder="shear_stress_plots"
-cutoff_ratio=0
+cutoff_ratio=0.2
 end_cutoff_ratio=1
 xz_shear_stress_mean=np.zeros((erate.size))
 for i in range(erate.size):

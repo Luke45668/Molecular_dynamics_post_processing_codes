@@ -43,19 +43,27 @@ import pickle as pck
 damp=np.array([0.01, 0.02, 0.04, 0.05, 0.06 ])
 K=np.array([300.0        , 149.999     ,  74.9999  ,
         59.999       ,  49.999     ])
-
+damp=np.array([0.01, 0.04 ])
+K=np.array([300.0        ,  74.9999      ])
 #0.0435, 68.96551724
-strain_total=600
+strain_total=200
 
-path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/kdamp_prod_3_init_test_10_reals/tuple_results'
+path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/kdamp_prod_3_init_test_10_reals_200_strain/tuple_results'
 
-erate= np.array([0.0075, 0.01  , 0.0125, 0.015 , 0.0175, 0.02  , 0.0225, 0.025 ,
-      0.0275, 0.03])
+# erate= np.array([0.0075, 0.01  , 0.0125, 0.015 , 0.0175, 0.02  , 0.0225, 0.025 ,
+#       0.0275, 0.03])
 
 
-# #300 strain 
-no_timesteps=np.flip(np.array([7887000,  15774000,  31548000,  63096000,  70107000,  78870000,
-        90137000, 105160000, 126192000, 157740000]))
+# # #300 strain 
+# no_timesteps=np.flip(np.array([7887000,  15774000,  31548000,  63096000,  70107000,  78870000,
+#         90137000, 105160000, 126192000, 157740000]))
+
+
+erate= np.flip(np.array([0.03,0.0275,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01,0.0075,0.005,0.0025,0.001,0.00075,0.0005]))
+
+#200 strain 
+no_timesteps=np.flip(np.array([26290000,  28680000,  31548000,  35053000,  39435000,  45069000,
+        52580000,  63096000,  78870000, 105160000,157740000,  315481000,  788702000, 1051603000, 1577404000]))
 
 thermo_freq=10000
 dump_freq=10000
@@ -298,10 +306,10 @@ labels_stress=["$\sigma_{xx}$",
 #      plt.show()
 
 #%%
-cutoff_ratio=0
+cutoff_ratio=0.1
 end_cutoff_ratio=1
 j_point_1=0
-j_point_2=5
+j_point_2=2
 folder="N_1_plots"
 
 N_1_mean=np.zeros((K.size,erate.size))
@@ -316,7 +324,7 @@ for j in range(j_point_1,j_point_2):
         N_1=viscoelastic_stress_batch_tuple[j][i][cutoff:end_cutoff-1,0]-viscoelastic_stress_batch_tuple[j][i][cutoff:end_cutoff-1,2]
     
         N_1_mean[j,i]=np.mean(N_1[:])
-        # N_1[np.abs(N_1)>2000]=0
+        N_1[np.abs(N_1)>100]=0
         print(N_1_mean)
         
         plt.plot(strainplot_tuple[i][cutoff:end_cutoff-1],N_1,label="$\dot{\gamma}="+str(erate[i])+"$")
@@ -329,13 +337,15 @@ for j in range(j_point_1,j_point_2):
 
 for j in range(j_point_1,j_point_2):
     plt.scatter((erate[:]),N_1_mean[j,:],label="$\Gamma="+str(damp[j])+",K="+str(K[j])+"$" ,marker=marker[j])
-    popt,pcov=curve_fit(linearfunc,erate[:],N_1_mean[j,:])
-    plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
+    #popt,pcov=curve_fit(linearfunc,erate[:],N_1_mean[j,:])
+    #plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
     plt.ylabel("$N_{1}$")
     plt.xlabel("$\dot{\gamma}$")
     plt.legend()
 plt.show()
  #%%
+cutoff_ratio=0.1
+end_cutoff_ratio=1
 folder="N_2_plots"
 
 N_2_mean=np.zeros((K.size,erate.size))
@@ -348,7 +358,7 @@ for j in range(j_point_1,j_point_2):
 
         #N_1=spring_force_positon_tensor_tuple_wa[i][cutoff:-1,0]-spring_force_positon_tensor_tuple_wa[i][cutoff:end_cutoff,2]
         N_2=viscoelastic_stress_batch_tuple[j][i][cutoff:end_cutoff-1,2]-viscoelastic_stress_batch_tuple[j][i][cutoff:end_cutoff-1,1]
-        # N_2[np.abs(N_2)>5000]=0
+        N_2[np.abs(N_2)>100]=0
         N_2_mean[j,i]=np.mean(N_2[:])
         print(N_2_mean)
         
@@ -362,22 +372,25 @@ for j in range(j_point_1,j_point_2):
 
 for j in range(j_point_1,j_point_2):
     plt.scatter((erate[:]),N_2_mean[j,:],label="$\Gamma="+str(damp[j])+",K="+str(K[j])+"$" ,marker=marker[j])
-    popt,pcov=curve_fit(linearfunc,erate[:],N_2_mean[j,:])
-    plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
+   # popt,pcov=curve_fit(linearfunc,erate[:],N_2_mean[j,:])
+    #plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
+    # popt,pcov=curve_fit(quadfunc,erate[:],N_2_mean[j,:])
+    # plt.plot(erate[:],(popt[0]*(erate[:]**2)))  
     plt.ylabel("$N_{2}$")
     plt.xlabel("$\dot{\gamma}$")
     plt.legend()
 plt.show()
 #%%
 folder="shear_stress_plots"
-cutoff_ratio=0.25
+cutoff_ratio=0
 end_cutoff_ratio=1
 xz_shear_stress_mean=np.zeros((K.size,erate.size))
 for j in range(j_point_1,j_point_2):
     for i in range(erate.size):
         # cutoff=int(nan_size[i]) +int(np.ceil(cutoff_ratio*(spring_force_positon_tensor_tuple_wa[i][:-1,0].size-nan_size[i])))
         # xz_shear_stress= spring_force_positon_tensor_tuple_wa[i][cutoff:,3]
-    
+        cutoff= int(np.ceil(cutoff_ratio*(viscoelastic_stress_batch_tuple[j][i][:-1,0].size)))
+        end_cutoff=int(np.ceil(end_cutoff_ratio*(viscoelastic_stress_batch_tuple[j][i][:-1,0].size)))
         xz_shear_stress=viscoelastic_stress_batch_tuple[j][i][cutoff:end_cutoff,3]
     
         xz_shear_stress_mean[j,i]=np.mean(xz_shear_stress[:])
@@ -390,7 +403,10 @@ for j in range(j_point_1,j_point_2):
         plt.show()
 #%%
 for j in range(j_point_1,j_point_2):
-    plt.scatter(erate[:],xz_shear_stress_mean[j,:],label="$\Gamma="+str(damp[j])+",K="+str(K[j])+"$" ,marker=marker[j])
+    plt.plot(erate[:],xz_shear_stress_mean[j,:],label="$\Gamma="+str(damp[j])+",K="+str(K[j])+"$" ,marker=marker[j])
+    plt.ylabel("$\sigma_{xz}$")
+    plt.xlabel("$\dot{\gamma}$")
+    plt.legend()
    # plt.axhline(np.mean(xz_shear_stress_mean[:]))
     #plt.ylim(-5,2)
 plt.show()
