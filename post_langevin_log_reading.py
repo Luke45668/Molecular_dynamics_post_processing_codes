@@ -35,27 +35,28 @@ import pickle as pck
 #%% 
 # damp 0.1 seems to work well, need to add window averaging, figure out how to get imposed shear to match velocity of particle
 # neeed to then do a huge run 
-damp=0.01
-strain_total=200
+damp=0.09
+strain_total=600
 path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/Full_run_damp_'+str(damp)+'_temp_test_1'
 path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_60/Full_run_damp_0.01_dump_10000_strain_600'
 #path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_60/run_10_reals_damp_0.05_dump_10000_strain_600'
 #path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/'
 #path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_40/Full_run_damp_0.01_dump_10000_strain_600'
-path_2_log_files='/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs'
-path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/kdamp_prod_3_init_test_10_reals_200_strain'
-erate= np.array([0.2,0.1,0.05,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01]) 
-erate= np.array([0.03,0.0275,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01,0.0075,0.005,0.0025,0.001,0.00075,0.0005])
+path_2_log_files='/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/run_343194'
+# path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/kdamp_prod_3_init_test_10_reals_200_strain'
+# erate= np.array([0.2,0.1,0.05,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01]) 
+erate= np.flip(np.array([0.03,0.0275,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01,0.0075,0.005,0.0025,0.001,0.00075,0.0005]))
 #erate= np.array([0.0075, 0.01  , 0.0125, 0.015 , 0.0175, 0.02  , 0.0225, 0.025 ,
       # 0.0275, 0.03])
 
 
 # #600 strain 
-# no_timesteps=np.flip(np.array([7887000,  15774000,  31548000,  63096000,  70107000,  78870000,
-#         90137000, 105160000, 126192000, 157740000]))
+no_timesteps=np.flip(np.array([19718000,   21510000,   23661000,   26290000,   29576000,
+         33802000,   39435000,   47322000,   59153000,   78870000,
+        118305000,  236611000,  591526000,  788702000, 1183053000]))
 #200 strain 
-no_timesteps=np.array([26290000,  28680000,  31548000,  35053000,  39435000,  45069000,
-        52580000,  63096000,  78870000, 105160000,157740000,  315481000,  788702000, 1051603000, 1577404000])
+# no_timesteps=np.flip(np.array([26290000,  28680000,  31548000,  35053000,  39435000,  45069000,
+#         52580000,  63096000,  78870000, 105160000,157740000,  315481000,  788702000, 1051603000, 1577404000]))
 
 # no_timesteps=np.array([52580000,  57360000,  63096000,  70107000,  78870000,  90137000,
 #        105160000, 126192000, 157740000, 210321000])
@@ -66,7 +67,7 @@ dp_row_count=np.ceil((no_timesteps/dump_freq)).astype("int")
 
 thermo_vars='         KinEng         PotEng          Temp          c_bias         TotEng    '
 j_=10
-K=300.0
+K=33.333
 eq_spring_length=3*np.sqrt(3)/2
 mass_pol=5 
 damp_ratio=mass_pol/damp
@@ -630,7 +631,7 @@ COM_position_tuple_wa=()
 erate_velocity_tuple_wa=()
 viscoelastic_stress_tuple_wa=()
 nan_size=np.zeros((erate.size))
-window_size=10  #50 made n2 look good
+window_size=5  #50 made n2 look good
 
 for i in range(erate.size):
     array_size=spring_force_positon_tensor_tuple[i].shape[0]
@@ -678,45 +679,6 @@ for i in range(erate.size):
 
 
 
-#%% save tuples
-label='damp_'+str(damp)+'_K_'+str(K)+'_'
-
-os.chdir(path_2_log_files)
-#os.mkdir("tuple_results")
-os.chdir("tuple_results")
-
-with open(label+'spring_force_positon_tensor_tuple.pickle', 'wb') as f:
-    pck.dump(spring_force_positon_tensor_tuple, f)
-
-with open(label+'conform_tensor_tuple.pickle', 'wb') as f:
-    pck.dump(conform_tensor_tuple, f)
-
-with open(label+'viscoelastic_stress_tuple.pickle', 'wb') as f:
-    pck.dump(viscoelastic_stress_tuple, f)
-
-with open(label+'COM_velocity_tuple.pickle', 'wb') as f:
-    pck.dump(COM_velocity_tuple, f)
-
-with open(label+'COM_position_tuple.pickle', 'wb') as f:
-    pck.dump(COM_position_tuple, f)
-
-with open(label+'erate_velocity_tuple.pickle', 'wb') as f:
-    pck.dump(erate_velocity_tuple, f)
-
-with open(label+'log_file_tuple.pickle', 'wb') as f:
-    pck.dump(log_file_tuple, f)
-
-with open(label+'pol_velocities_tuple.pickle', 'wb') as f:
-    pck.dump( pol_velocities_tuple, f)
-
-with open(label+'pol_positions_tuple.pickle', 'wb') as f:
-    pck.dump(  pol_positions_tuple, f)
-
-with open(label+'ph_velocities_tuple.pickle', 'wb') as f:
-    pck.dump( ph_velocities_tuple, f)
-
-with open(label+'ph_positions_tuple.pickle', 'wb') as f:
-    pck.dump(  ph_positions_tuple, f)
 
 
      
@@ -839,7 +801,7 @@ for i in range(erate.size):
      plt.show()
 
 #%%
-cutoff_ratio=0.5
+cutoff_ratio=0.1
 end_cutoff_ratio=1
 folder="N_1_plots"
 
@@ -894,7 +856,8 @@ for i in range(erate.size):
     plt.legend()
     plt.show()
 
-plt.plot((erate[:]),N_2_mean[:])
+plt.scatter((erate[:]),N_2_mean[:])
+
 popt,pcov=curve_fit(linearfunc,erate[:],N_2_mean[:])
 plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
 plt.ylabel("$N_{2}$")
@@ -926,32 +889,117 @@ plt.axhline(np.mean(xz_shear_stress_mean[:]))
 #plt.ylim(-5,2)
 plt.show()
 #%%
-# could add fittings to this run 
-
-    #return  a*np.exp(-x)
+bin_count = int(np.ceil(np.log2((j_))) + 1)# sturges rule
 
 
-#%%
-plt.scatter((erate[:]),N_2_mean[:])
-popt,pcov=curve_fit(quadfunc,erate[:],N_2_mean[:])
-plt.plot(erate[:],(popt[0]*(erate[:]**2)))
-plt.show()
-#%%
-plt.scatter(erate[:],xz_shear_stress_mean[:])
-plt.axhline(np.mean(xz_shear_stress_mean[:]))
-#plt.ylim(-5,2)
-plt.show()
-# %% plot
-column=3
+# I think this is only looking at one shear rate at a time 
+# folder="theta_and_phi_histograms"
+# folder_check_or_create(filepath,folder)  
+area_vector_spherical_tuple=()
 for i in range(erate.size):
-    plt.plot(log_file_tuple[i][:,column])
-    mean_temp=np.mean(log_file_tuple[i][:,column])
-    plt.axhline(np.mean(log_file_tuple[i][:,column]))
-    print(mean_temp)
-    
-    plt.show()
+     
+        spherical_coordinates_area_vector=np.zeros((area_vector_tuple[i].shape[0],3))
+        x=area_vector_tuple[i][:,0]
+        y=area_vector_tuple[i][:,1]
+        z=area_vector_tuple[i][:,2]
+        # for l in range(internal_stiffness.size):
+        for j in range(z.shape[0]):
+            if z[j]<0:
+                z[j]=-1*z[j]
+                y[j]=-1*y[j]
+                x[j]=-1*x[j]
+
+            else:
+                continue
+
+        # x[z<0]=-1*x
+        # y[z<0]=-1*y
+        # z[z<0]=-1*z
+
+        # radial coord
+        spherical_coordinates_area_vector[:,0]=np.sqrt((x**2)+(y**2)+(z**2))
+        # theta coord 
+        spherical_coordinates_area_vector[:,1]=np.sign(y)*np.arccos(x/(np.sqrt((x**2)+(y**2))))
+        # phi coord
+        spherical_coordinates_area_vector[:,2]=np.arccos(z/spherical_coordinates_area_vector[:,0])
 
 
+   
+        # for k in range(internal_stiffness.size):
+                # plot theta histogram
+        pi_theta_ticks=[ -np.pi, -np.pi/2, 0, np.pi/2,np.pi]
+        pi_theta_tick_labels=['-π','-π/2','0', 'π/2', 'π'] 
+        plt.hist((spherical_coordinates_area_vector[:,1]))
+        plt.xticks(pi_theta_ticks, pi_theta_tick_labels)
+        plt.title("Azimuthal angle $\Theta$ histogram,$\dot{\gamma}="\
+            +str(erate[i])+"$ and $K="+str(K)+"$")
+        plt.xlabel('$\\theta$')
+       # plt.tight_layout()
+        #plt.savefig("theta_histogram_"+str(j_)+"_points_erate_"+str(erate[i])+"_K_"+str(internal_stiffness[k])+".pdf",dpi=1200)
+        plt.show()
+
+
+        pi_phi_ticks=[ 0,np.pi/4, np.pi/2,3*np.pi/4,np.pi]
+        pi_phi_tick_labels=[ '0','π/4', 'π/2','3π/4' ,'π']
+        frequencies_phi= np.histogram(spherical_coordinates_area_vector[:,2],bins=bin_count)[0]
+
+
+                # plot phi hist
+
+        plt.hist(spherical_coordinates_area_vector[:,2])
+        plt.xticks(pi_phi_ticks,pi_phi_tick_labels)
+        plt.xlabel('$\phi$')
+        plt.title("Inclination angle $\phi$ histogram,$\dot{\gamma}="\
+            +str(erate[i])+"$ and $K="+str(K)+"$")
+       # plt.tight_layout()
+        #plt.savefig("phi_histogram_"+str(j_)+"_points_erate_"+str(erate[i])+"_K_"+str(internal_stiffness[k])+".pdf",dpi=1200)
+        plt.show()
+
+
+        area_vector_spherical_tuple=area_vector_spherical_tuple+(spherical_coordinates_area_vector,)
+
+
+#%% save tuples
+label='damp_'+str(damp)+'_K_'+str(K)+'_'
+
+os.chdir(path_2_log_files)
+#os.mkdir("tuple_results")
+os.chdir("tuple_results")
+
+with open(label+'spring_force_positon_tensor_tuple.pickle', 'wb') as f:
+    pck.dump(spring_force_positon_tensor_tuple, f)
+
+with open(label+'conform_tensor_tuple.pickle', 'wb') as f:
+    pck.dump(conform_tensor_tuple, f)
+
+with open(label+'viscoelastic_stress_tuple.pickle', 'wb') as f:
+    pck.dump(viscoelastic_stress_tuple, f)
+
+with open(label+'COM_velocity_tuple.pickle', 'wb') as f:
+    pck.dump(COM_velocity_tuple, f)
+
+with open(label+'COM_position_tuple.pickle', 'wb') as f:
+    pck.dump(COM_position_tuple, f)
+
+with open(label+'erate_velocity_tuple.pickle', 'wb') as f:
+    pck.dump(erate_velocity_tuple, f)
+
+with open(label+'log_file_tuple.pickle', 'wb') as f:
+    pck.dump(log_file_tuple, f)
+
+with open(label+'pol_velocities_tuple.pickle', 'wb') as f:
+    pck.dump( pol_velocities_tuple, f)
+
+with open(label+'pol_positions_tuple.pickle', 'wb') as f:
+    pck.dump(  pol_positions_tuple, f)
+
+with open(label+'ph_velocities_tuple.pickle', 'wb') as f:
+    pck.dump( ph_velocities_tuple, f)
+
+with open(label+'ph_positions_tuple.pickle', 'wb') as f:
+    pck.dump(  ph_positions_tuple, f)
+
+
+with open(label+"area_vector_spherical_tuple.pickle", 'wb') as f:
+    pck.dump(area_vector_spherical_tuple,f)
 # %%
-# compute a tensor product a 
-# compute stress tensor after average aswell

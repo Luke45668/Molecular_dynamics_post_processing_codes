@@ -40,16 +40,14 @@ import pickle as pck
 #         59.999       ,  49.9999      ,  42.85714286,  37.5       ,
 #         33.33333333,  30.       ])
 
-damp=np.array([0.01, 0.02, 0.04, 0.05, 0.06 ])
-K=np.array([300.0        , 149.999     ,  74.9999  ,
-        59.999       ,  49.999     ])
-damp=np.array([0.01, 0.04 ])
-K=np.array([300.0        ,  74.9999      ])
-#0.0435, 68.96551724
-strain_total=200
+damp=np.array([0.01, 0.02, 0.03,0.04, 0.05 ])
+K=np.array([300.0        , 149.999     ,99.999,  74.999  ,
+        59.999     ])
+
+strain_total=600
 
 path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/kdamp_prod_3_init_test_10_reals_200_strain/tuple_results'
-
+path_2_log_files='/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/run_343194/tuple_results'
 # erate= np.array([0.0075, 0.01  , 0.0125, 0.015 , 0.0175, 0.02  , 0.0225, 0.025 ,
 #       0.0275, 0.03])
 
@@ -64,6 +62,16 @@ erate= np.flip(np.array([0.03,0.0275,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01,
 #200 strain 
 no_timesteps=np.flip(np.array([26290000,  28680000,  31548000,  35053000,  39435000,  45069000,
         52580000,  63096000,  78870000, 105160000,157740000,  315481000,  788702000, 1051603000, 1577404000]))
+
+erate= np.flip(np.array([0.03,0.0275,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01,0.0075,0.005,0.0025,0.001,0.00075,0.0005]))
+#erate= np.array([0.0075, 0.01  , 0.0125, 0.015 , 0.0175, 0.02  , 0.0225, 0.025 ,
+      # 0.0275, 0.03])
+
+
+# #600 strain 
+no_timesteps=np.flip(np.array([19718000,   21510000,   23661000,   26290000,   29576000,
+         33802000,   39435000,   47322000,   59153000,   78870000,
+        118305000,  236611000,  591526000,  788702000, 1183053000]))
 
 thermo_freq=10000
 dump_freq=10000
@@ -174,6 +182,7 @@ viscoelastic_stress_batch_tuple=()
 COM_velocity_batch_tuple=()
 conform_tensor_batch_tuple=()
 log_file_batch_tuple=()
+area_vector_spherical_batch_tuple=()
 
 # loading all data into one 
 for i in range(K.size):
@@ -189,6 +198,8 @@ for i in range(K.size):
                                                             "conform_tensor_tuple.pickle"),)
     log_file_batch_tuple=log_file_batch_tuple+(batch_load_tuples(label,
                                                             "log_file_tuple.pickle"),)
+    area_vector_spherical_batch_tuple=area_vector_spherical_batch_tuple+(batch_load_tuples(label,"area_vector_spherical_tuple.pickle"),)
+    
 
     
 
@@ -242,7 +253,8 @@ for j in range(K.size):
     plt.xlabel('$\dot{\gamma}$')
     plt.axhline(np.mean(mean_temp_array[j,:]))
     plt.legend()
-#plt.savefig("temp_vs_gdot_damp_"+str(damp)+"_tstrain_"+str(strain_total)+"_.pdf",dpi=1200,bbox_inches='tight')
+plt.tight_layout()
+plt.savefig("temp_vs_erate.pdf",dpi=1200,bbox_inches='tight')
 
 
 plt.show()
@@ -269,9 +281,12 @@ for j in range(K.size):
 
         #plt.plot(erate_velocity_tuple[i][:-1,0],label="erate prediction",linestyle='--')
         plt.axhline(np.mean(erate_velocity_batch_tuple[j][i][:-1,0]), label="erate mean",linestyle='--',color='black')
+
+       # plt.plot(np.mean(COM_velocity_batch_tuple[j][i][:-1,0])/np.mean(erate_velocity_batch_tuple[j][i][:-1,0]))
+
         #print("error:",np.mean(erate_velocity_tuple[i][:,0])-np.mean(COM_velocity_tuple[i][:,0]))
         #plt.legend()
-plt.show()
+    plt.show()
 
 
 
@@ -309,7 +324,7 @@ labels_stress=["$\sigma_{xx}$",
 cutoff_ratio=0.1
 end_cutoff_ratio=1
 j_point_1=0
-j_point_2=2
+j_point_2=5
 folder="N_1_plots"
 
 N_1_mean=np.zeros((K.size,erate.size))
@@ -335,13 +350,19 @@ for j in range(j_point_1,j_point_2):
         plt.legend()
         plt.show()
 
+#%% 
 for j in range(j_point_1,j_point_2):
     plt.scatter((erate[:]),N_1_mean[j,:],label="$\Gamma="+str(damp[j])+",K="+str(K[j])+"$" ,marker=marker[j])
     #popt,pcov=curve_fit(linearfunc,erate[:],N_1_mean[j,:])
     #plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
     plt.ylabel("$N_{1}$")
     plt.xlabel("$\dot{\gamma}$")
-    plt.legend()
+    plt.xscale('log')
+    # plt.yscale('log')
+plt.tight_layout()
+plt.legend()
+plt.savefig(path_2_log_files+"/plots/N1_vs_logscale_erate.pdf",dpi=1200)
+#plt.savefig(path_2_log_files+"/plots/N1_vs_erate.pdf",dpi=1200)
 plt.show()
  #%%
 cutoff_ratio=0.1
@@ -370,19 +391,25 @@ for j in range(j_point_1,j_point_2):
         plt.legend()
         plt.show()
 
+#%%
 for j in range(j_point_1,j_point_2):
-    plt.scatter((erate[:]),N_2_mean[j,:],label="$\Gamma="+str(damp[j])+",K="+str(K[j])+"$" ,marker=marker[j])
+    plt.scatter((erate[:]),(N_2_mean[j,:]),label="$\Gamma="+str(damp[j])+",K="+str(K[j])+"$" ,marker=marker[j])
    # popt,pcov=curve_fit(linearfunc,erate[:],N_2_mean[j,:])
     #plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
     # popt,pcov=curve_fit(quadfunc,erate[:],N_2_mean[j,:])
     # plt.plot(erate[:],(popt[0]*(erate[:]**2)))  
     plt.ylabel("$N_{2}$")
     plt.xlabel("$\dot{\gamma}$")
-    plt.legend()
+   # plt.xscale('log')
+    #plt.yscale('log')
+plt.tight_layout()
+plt.legend()
+plt.savefig(path_2_log_files+"/plots/N2_vs_erate.pdf",dpi=1200)
+#plt.savefig(path_2_log_files+"/plots/N2_vs_logscale_erate.pdf",dpi=1200)
 plt.show()
 #%%
 folder="shear_stress_plots"
-cutoff_ratio=0
+cutoff_ratio=0.1
 end_cutoff_ratio=1
 xz_shear_stress_mean=np.zeros((K.size,erate.size))
 for j in range(j_point_1,j_point_2):
@@ -392,6 +419,7 @@ for j in range(j_point_1,j_point_2):
         cutoff= int(np.ceil(cutoff_ratio*(viscoelastic_stress_batch_tuple[j][i][:-1,0].size)))
         end_cutoff=int(np.ceil(end_cutoff_ratio*(viscoelastic_stress_batch_tuple[j][i][:-1,0].size)))
         xz_shear_stress=viscoelastic_stress_batch_tuple[j][i][cutoff:end_cutoff,3]
+        xz_shear_stress[np.abs( xz_shear_stress)>100]=0
     
         xz_shear_stress_mean[j,i]=np.mean(xz_shear_stress[:])
         #plt.plot(strainplot_tuple[i][:],xz_shear_stress, label=labels_stress[3])
@@ -400,41 +428,113 @@ for j in range(j_point_1,j_point_2):
         plt.ylabel("$\sigma_{xz}$")
         plt.xlabel("$\gamma$")
         plt.legend()
-        plt.show()
+    plt.show()
 #%%
 for j in range(j_point_1,j_point_2):
     plt.plot(erate[:],xz_shear_stress_mean[j,:],label="$\Gamma="+str(damp[j])+",K="+str(K[j])+"$" ,marker=marker[j])
-    plt.ylabel("$\sigma_{xz}$")
+    plt.ylabel("$\sigma_{xz}$",rotation=0)
     plt.xlabel("$\dot{\gamma}$")
-    plt.legend()
-   # plt.axhline(np.mean(xz_shear_stress_mean[:]))
-    #plt.ylim(-5,2)
+    plt.ylim(0,10)
+    
+    
+
+plt.tight_layout()
+plt.legend()
+plt.savefig(path_2_log_files+"/plots/sigma_xz_vs_erate.pdf",dpi=1200)
 plt.show()
+   
+
+#%% plot N_1 and N_2 together
+
+for j in range(j_point_1,j_point_2):
+    plt.scatter((erate[:]),N_1_mean[j,:],label="$N_{1}, \Gamma="+str(damp[j])+",K="+str(K[j])+"$" ,marker=marker[j])
+    plt.scatter((erate[:]),(N_2_mean[j,:]),label="$N_{2}, \Gamma="+str(damp[j])+",K="+str(K[j])+"$" ,marker=marker[j])
+   # popt,pcov=curve_fit(linearfunc,erate[:],N_2_mean[j,:])
+    #plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
+    # popt,pcov=curve_fit(quadfunc,erate[:],N_2_mean[j,:])
+    # plt.plot(erate[:],(popt[0]*(erate[:]**2)))  
+    #plt.ylabel("$N_{2}$")
+    plt.xlabel("$\dot{\gamma}$")
+    plt.xscale('log')
+    #plt.yscale('log')
+    #plt.legend()
+plt.show()
+#%%
+for j in range(j_point_1,j_point_2):
+    plt.scatter((erate[:]),np.abs(N_1_mean[j,:]/N_2_mean[j,:]),label="$\Gamma="+str(damp[j])+",K="+str(K[j])+"$" ,marker=marker[j])
+   
+   # popt,pcov=curve_fit(linearfunc,erate[:],N_2_mean[j,:])
+    #plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
+    # popt,pcov=curve_fit(quadfunc,erate[:],N_2_mean[j,:])
+    # plt.plot(erate[:],(popt[0]*(erate[:]**2)))  
+    plt.ylabel("$|N_{1}/N_{2}|$", rotation=0)
+  
+    plt.xlabel("$\dot{\gamma}$")
+    plt.xscale('log')
+    plt.yscale('log')
+    
+plt.axhline(1,label="$|N_{1}/N_{2}|=1$",linestyle='--')
+plt.tight_layout()
+plt.legend()
+plt.savefig(path_2_log_files+"/plots/n1_div_n2_vs_erate.pdf",dpi=1200)
+plt.show()
+
 #%%
 # could add fittings to this run 
+bin_count = int(np.ceil(np.log2((j_))) + 1)# sturges rule
 
     #return  a*np.exp(-x)
+for j in range(j_point_1,j_point_2):
+    for i in range(erate.size):
+           
+            spherical_coordinates_area_vector=np.zeros((area_vector_spherical_batch_tuple[j][i].shape[0],3))
+           
+            x=area_vector_spherical_batch_tuple[j][i][:,0]
+            y=area_vector_spherical_batch_tuple[j][i][:,1]
+            z=area_vector_spherical_batch_tuple[j][i][:,2]
+           
+
+            # radial coord
+            spherical_coordinates_area_vector[:,0]=np.sqrt((x**2)+(y**2)+(z**2))
+            # theta coord 
+            spherical_coordinates_area_vector[:,1]=np.sign(y)*np.arccos(x/(np.sqrt((x**2)+(y**2))))
+            # phi coord
+            spherical_coordinates_area_vector[:,2]=np.arccos(z/spherical_coordinates_area_vector[:,0])
 
 
-#%%
-plt.scatter((erate[:]),N_2_mean[:])
-popt,pcov=curve_fit(quadfunc,erate[:],N_2_mean[:])
-plt.plot(erate[:],(popt[0]*(erate[:]**2)))
-plt.show()
-#%%
-plt.scatter(erate[:],xz_shear_stress_mean[:])
-plt.axhline(np.mean(xz_shear_stress_mean[:]))
-#plt.ylim(-5,2)
-plt.show()
-# %% plot
-column=3
-for i in range(erate.size):
-    plt.plot(log_file_tuple[i][:,column])
-    mean_temp=np.mean(log_file_tuple[i][:,column])
-    plt.axhline(np.mean(log_file_tuple[i][:,column]))
-    print(mean_temp)
     
-    plt.show()
+            # for k in range(internal_stiffness.size):
+                    # plot theta histogram
+            pi_theta_ticks=[ -np.pi, -np.pi/2, 0, np.pi/2,np.pi]
+            pi_theta_tick_labels=['-π','-π/2','0', 'π/2', 'π'] 
+            plt.hist((spherical_coordinates_area_vector[:,1]))
+            plt.xticks(pi_theta_ticks, pi_theta_tick_labels)
+            plt.title("Azimuthal angle $\Theta$ histogram,$\dot{\gamma}="\
+                +str(erate[i])+"$ and $K="+str(K[j])+"$")
+            plt.xlabel('$\\theta$')
+        # plt.tight_layout()
+            #plt.savefig("theta_histogram_"+str(j_)+"_points_erate_"+str(erate[i])+"_K_"+str(internal_stiffness[k])+".pdf",dpi=1200)
+            plt.show()
+
+
+            pi_phi_ticks=[ 0,np.pi/4, np.pi/2,3*np.pi/4,np.pi]
+            pi_phi_tick_labels=[ '0','π/4', 'π/2','3π/4' ,'π']
+            frequencies_phi= np.histogram(spherical_coordinates_area_vector[:,2],bins=bin_count)[0]
+
+
+                    # plot phi hist
+
+            plt.hist(spherical_coordinates_area_vector[:,2])
+            plt.xticks(pi_phi_ticks,pi_phi_tick_labels)
+            plt.xlabel('$\phi$')
+            plt.title("Inclination angle $\phi$ histogram,$\dot{\gamma}="\
+                +str(erate[i])+"$ and $K="+str(K[j])+"$")
+        # plt.tight_layout()
+            #plt.savefig("phi_histogram_"+str(j_)+"_points_erate_"+str(erate[i])+"_K_"+str(internal_stiffness[k])+".pdf",dpi=1200)
+            plt.show()
+
+
+
 
 
 # %%
