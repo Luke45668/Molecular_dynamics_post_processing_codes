@@ -20,7 +20,7 @@ import scipy.stats
 from datetime import datetime
 import h5py as h5 
 import multiprocessing as mp
-
+from scipy.optimize import curve_fit
 import math 
 path_2_post_proc_module= '/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/LAMMPS python run and analysis scripts/Analysis codes'
 #os.chdir(path_2_post_proc_module)
@@ -226,7 +226,7 @@ for i in range(erate.size):
     #     (np.mean\
     #     (np.reshape(ke_tensor_summed_1d_tuple[i],(internal_stiffness.size,j_,array_size[i],6)),\
     #     axis=1),)
-    area_vector_tuple_shaped=stress_tensor_summed_tuple_shaped+\
+    area_vector_tuple_shaped=area_vector_tuple_shaped+\
         (np.mean\
         (np.reshape(area_vector_1d_tuple[i],(internal_stiffness.size,j_,array_size[i],3)),axis=1),)
 
@@ -239,6 +239,44 @@ labels_gdot=["$\dot{\gamma}= "]
 
 no_data_sets=internal_stiffness.size
 
+#%% quick computation of viscoelastic stress
+# neee
+conformation_tensor=()
+viscoelastic_stress_tuple=()
+labels_stress=["$\sigma_{xx}$",
+               "$\sigma_{yy}$",
+               "$\sigma_{zz}$",
+               "$\sigma_{xz}$",
+               "$\sigma_{xy}$",
+               "$\sigma_{zx}$",
+               "$\sigma_{yx}$",
+                "$\sigma_{yz}$",
+                 "$\sigma_{zy}$",]
+
+for i in range(erate.size):
+    area_vector_array=np.zeros()
+    ell_1=area_vector_tuple_shaped[i][:,:,0]-area_vector_tuple_shaped[i][:,:,1]
+    ell_2=area_vector_tuple_shaped[i][:,:,0]-area_vector_tuple_shaped[i][:,:,2]
+    area_vector_array[j,:,:]=np.cross(ell_1,ell_2)
+    conform_tensor_array[j,:,0]=area_vector_array[j,:,0]*area_vector_array[j,:,0]#xx
+    conform_tensor_array[j,:,1]=area_vector_array[j,:,1]*area_vector_array[j,:,1]#yy
+    conform_tensor_array[j,:,2]=area_vector_array[j,:,2]*area_vector_array[j,:,2]#zz
+    conform_tensor_array[j,:,3]=area_vector_array[j,:,0]*area_vector_array[j,:,2]#xz
+    conform_tensor_array[j,:,4]=area_vector_array[j,:,0]*area_vector_array[j,:,1]#xy
+    conform_tensor_array[j,:,5]=area_vector_array[j,:,2]*area_vector_array[j,:,0]#zx
+    conform_tensor_array[j,:,6]=area_vector_array[j,:,1]*area_vector_array[j,:,0]#yx
+    conform_tensor_array[j,:,7]=area_vector_array[j,:,1]*area_vector_array[j,:,2]#yz
+    conform_tensor_array[j,:,8]=area_vector_array[j,:,2]*area_vector_array[j,:,1]#zy
+    trace=np.sum(conform_tensor_tuple[i][:,0:3], axis=1)
+    rows=conform_tensor_tuple[i].shape[0]
+    trace_matrix=np.zeros((rows,9))
+    trace_matrix[:,0:3]=np.tile(trace,(3,1)).T
+    viscoelastic_stress= trace_matrix-conform_tensor_tuple[i]
+    viscoelastic_stress_tuple=viscoelastic_stress_tuple+(viscoelastic_stress,)
+    for j in range(9):
+    plt.plot(viscoelastic_stress[:,j], label=labels_stress[j]+", $\dot{\gamma}="+str(erate[i])+"$")
+    plt.legend()
+    plt.show()
 
         
         
@@ -268,6 +306,17 @@ for i in range(0,erate.shape[0]):
     
     strainplot_tuple=strainplot_tuple+(strainplot,)
 
+# compute index to remove first 5 units of strain
+transient_cutoff_index=np.zeros((erate.size))
+for i in range(erate.size):
+     transient_cutoff_index[i]=int(np.ceil(strainplot_tuple[i].size/6))
+
+    
+
+
+    
+     
+
 
 def folder_check_or_create(filepath,folder):
      os.chdir(filepath)
@@ -293,6 +342,9 @@ def use_whittaker_smoother(data_vector,lbda,ord):
     return smoothed_data
 
 
+def quadfunc(x, a, b, c):
+
+    return a*(x**2)
  
 #%% plotting rolling average diagonal against strain 
 folder_normal="normal_stress_plots"
@@ -310,12 +362,17 @@ for k in range(0,erate.size):
     
 
         for j in range(0,3):
+            
             start=int(stress_tensor_summed_tuple_rfp[k][i,:,j].size-strainplot_tuple[k].size)
+            
+
+            grad=np.polyfit(strainplot_tuple[k],stress_tensor_summed_tuple_rfp[k][i,start:,j],1)[0]
             plt.plot(strainplot_tuple[k], stress_tensor_summed_tuple_rfp[k][i,start:,j],label=labels_stress[j],color=colour[j])
           #  smoothed_data=use_whittaker_smoother(stress_tensor_summed_tuple_shaped[k][i,:,j],20000000000000,2)
           #  plt.plot(strainplot_tuple[k][:],smoothed_data,colour[i+3],label="$K="+str(internal_stiffness[i])+"$, smoothed")
             plt.ylabel('$\sigma_{\\alpha \\alpha}$', rotation=0, labelpad=labelpady)
             plt.xlabel("$\gamma$")
+            print(grad)
             #plt.ylim((10.5,11))
 
         #plt.axhline(stress_tensor_summed_realisation_mean_rolling_hline,0,1000, label="$\\bar{\sigma_{\\alpha \\alpha}}="+str(sigfig.round(stress_tensor_summed_realisation_mean_rolling_hline,sigfigs=3))+"$",linestyle='dashed',color=colour[6])
@@ -325,6 +382,7 @@ for k in range(0,erate.size):
         #plt.tight_layout()
         plt.savefig("rolling_ave_normal_stress_vs_strain_gdot_"+str(erate[k])+"_K_"+str(internal_stiffness[i])+"_M_"+str(rho)+"_L_"+str(box_size)+".pdf",dpi=1200,bbox_inches='tight')
         plt.show()
+
 
 #%%first normal stress difference rolling vs strain 
 
@@ -337,29 +395,40 @@ labelpady=15
 fontsize=15
 plt.rcParams.update({'font.size': 12})
 for k in range(0,erate.size):
-    for i in range(0,internal_stiffness.size):
+    #for i in range(0,internal_stiffness.size):
+    for i in range(0,1):
         #for j in range(0,3):
-            start=int(stress_tensor_summed_tuple_rfp[k][i,:,j].size-strainplot_tuple[k].size)
-            N_1=stress_tensor_summed_tuple_rfp[k][i,start:,0]-stress_tensor_summed_tuple_rfp[k][i,start:,2]
+           
+            start=int(stress_tensor_summed_tuple_rfp[k][i,:,j].size-strainplot_tuple[k].size) 
+            transient_cutoff_index=int(np.ceil(stress_tensor_summed_tuple_rfp[k][i,start:,0].size/6))
+            data_start=start+transient_cutoff_index
+            
+
+            print(start)
+            print(transient_cutoff_index)
+            N_1=stress_tensor_summed_tuple_rfp[k][i,data_start:,0]-stress_tensor_summed_tuple_rfp[k][i,data_start:,2]
             N_1_mean=np.mean(N_1)
             N_1_std_dev=np.std(N_1)
             N_1_median=np.median(N_1)
-            plt.plot(strainplot_tuple[k][:],N_1[:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i])#, \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
+            plt.plot(strainplot_tuple[k][transient_cutoff_index:],N_1[:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i])#, \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
             plt.ylabel('$N_{1}$', rotation=0, labelpad=labelpady)
             plt.xlabel("$\gamma$")
             plt.axhline(N_1_mean,label="$\\bar{N}_{1}="+str(sigfig.round(N_1_mean,sigfigs=3))\
-                            +",\Sigma="+str(sigfig.round(N_1_std_dev,sigfigs=3))+",x\sim="+str(sigfig.round(N_1_median,sigfigs=3))+",K="+str(internal_stiffness[i])+"$",linestyle='--',color=colour[i+3])
+                            +",\Sigma="+str(sigfig.round(N_1_std_dev,sigfigs=3))+\
+                                ",x\sim="+str(sigfig.round(N_1_median,sigfigs=3))+\
+                                    ",K="+str(internal_stiffness[i])+"$",linestyle='--',color='blueviolet')
+            plt.ylim(-15000,27500)
             # s
-            #smoothed_data=use_whittaker_smoother(N_1,10000000000000,2)
-            #plt.plot(strainplot_tuple[k][:],smoothed_data,colour[i+3],label="$K="+str(internal_stiffness[i])+"$, smoothed")
-            #plt.ylim((-0.1,5))
+            smoothed_data=use_whittaker_smoother(N_1,10000000000000,2)
+            plt.plot(strainplot_tuple[k][transient_cutoff_index::],smoothed_data,'cornflowerblue',label="smoothed trend")
+            #lt.ylim((-0.1,5))
             mean_N_1[i,k]=N_1_mean
 
-    plt.legend(loc='best',bbox_to_anchor=(1,1))
+    plt.legend(loc='best')
     plt.title("Normal stress difference $N_{1}$ against strain $\gamma$, $\dot{\gamma}="\
                   +str(erate[k])+"$")
         #plt.tight_layout()
-    plt.savefig("N_1_vs_strain_gdot_"+str(erate[k])+"_M_"+str(rho)+\
+    plt.savefig("N_1_vs_strain_gdot_"+str(erate[k])+"K_"+str(internal_stiffness[i])+"_M_"+str(rho)+\
                 "_L_"+str(box_size)+".pdf",dpi=1200,bbox_inches='tight')
     plt.show()
 
@@ -374,31 +443,37 @@ residuals=np.zeros((internal_stiffness.size,erate.size))
 for k in range(0,erate.size):
     for i in range(0,internal_stiffness.size):
           start=int(stress_tensor_summed_tuple_rfp[k][i,:,0].size-strainplot_tuple[k].size)
-          N_1_final[i,k]=np.mean(stress_tensor_summed_tuple_rfp[k][i,start:,0])-np.mean(stress_tensor_summed_tuple_rfp[k][i,start:,2])
+          transient_cutoff_index=int(np.ceil(stress_tensor_summed_tuple_rfp[k][i,start:,0].size/6))
+          data_start=start+transient_cutoff_index
+            
+          N_1_final[i,k]=np.mean(stress_tensor_summed_tuple_rfp[k][i,data_start:,0])-np.mean(stress_tensor_summed_tuple_rfp[k][i,data_start:,2])
            
 
 labelpady=15
 fontsize=15
 plt.rcParams.update({'font.size': 12})
 
-for i in range(0,1):#internal_stiffness.size):
+for i in range(0,2):#internal_stiffness.size):
         #for j in range(0,3):
-    fit=np.polyfit(erate,N_1_final[i,:],2)
-    residuals[i,:]=np.abs(N_1_final[i,:]-((fit[0]*(erate**2)) + erate*fit[1] +fit[2]))
+    #fit=np.polyfit(erate,N_1_final[i,:],2)
+    popt,pcov=curve_fit(quadfunc,erate,N_1_final[i,:])
+    perr = np.sqrt(np.diag(pcov))
+
+    #residuals[i,:]=np.abs(N_1_final[i,:]-((fit[0]*(erate**2)) + erate*fit[1] +fit[2]))
     
-    plt.plot(erate,(fit[0]*(erate**2)) + erate*fit[1] +fit[2], label="$K="+str(internal_stiffness[i])+"$")
-    plt.scatter(erate[:], N_1_final[i,:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i],marker="x")#, \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
-    plt.errorbar(erate[:], N_1_final[i,:], yerr=residuals[i,:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i],marker="x",ls='none')
+    plt.plot(erate,(popt[0]*(erate**2)), label='fit$: ax^{2}, a='+str(sigfig.round(popt[0],sigfigs=3))+'$' ,color='black')
+    plt.scatter(erate[:], N_1_final[i,:],label="$K="+str(internal_stiffness[i])+"$",color='blueviolet',marker="x")#, \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
+    #plt.errorbar(erate[:], N_1_final[i,:], yerr=residuals[i,:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i],marker="x",ls='none')
 
     plt.ylabel('$N_{1}$', rotation=0, labelpad=labelpady)
     plt.xlabel("$\dot{\gamma}$")
         
         #plt.ylim((-0.1,5))
 
-    plt.legend(loc='best',bbox_to_anchor=(1,1))
+    plt.legend(loc='best')
     plt.title("Normal stress difference $N_{1}$ against shear rate $\dot{\gamma}$")
         #plt.tight_layout()
-    plt.savefig("N_1_vs_shearrate_M_"+str(rho)+\
+    plt.savefig("N_1_vs_shearrate_K_"+str(internal_stiffness[i])+"_M_"+str(rho)+\
                 "_L_"+str(box_size)+".pdf",dpi=1200,bbox_inches='tight')
     plt.show()
     
@@ -411,10 +486,14 @@ labelpady=15
 fontsize=15
 plt.rcParams.update({'font.size': 12})
 for k in range(0,erate.size):
-    for i in range(0,internal_stiffness.size):
+    #for i in range(0,internal_stiffness.size):
+    for i in range(0,1):
+    #for i in range(1,2):
     #for j in range(0,3):
         start=int(stress_tensor_summed_tuple_rfp[k][i,:,0].size-strainplot_tuple[k].size)
-        N_2=stress_tensor_summed_tuple_rfp[k][i,start:,2]-stress_tensor_summed_tuple_rfp[k][i,start:,1]
+        transient_cutoff_index=int(np.ceil(stress_tensor_summed_tuple_rfp[k][i,start:,2].size/6))
+        data_start=start+transient_cutoff_index
+        N_2=stress_tensor_summed_tuple_rfp[k][i,data_start:,2]-stress_tensor_summed_tuple_rfp[k][i,data_start:,1]
         N_2_std_dev=np.std(N_2)
         N_2_mean=np.mean(N_2)
         N_2_median=np.median(N_2)
@@ -425,18 +504,20 @@ for k in range(0,erate.size):
         #print(np.mean( N_2))
         #plt.axhline(np.mean( N_2))
         #N_2_mean=np.mean(N_2[mean_step[0]:])
-        plt.plot(strainplot_tuple[k][:],N_2[:],label="$K="+str(internal_stiffness[i])+"$")#, \\bar{N_{2}}="+str(sigfig.round(N_2_mean,sigfigs=3))+"$",color=colour[i])
+        plt.plot(strainplot_tuple[k][data_start:],N_2,label="$K="+str(internal_stiffness[i])+"$",color='black')#, \\bar{N_{2}}="+str(sigfig.round(N_2_mean,sigfigs=3))+"$",color=colour[i])
         plt.axhline(np.mean(N_2),\
                         label="$\\bar{N}_{2}="+str(sigfig.round(N_2_mean,sigfigs=3))\
-                            +", \Sigma="+str(sigfig.round(N_2_std_dev,sigfigs=3))+",x\sim ="+str(sigfig.round(N_2_median,sigfigs=3))+",K="+str(internal_stiffness[i])+"$",linestyle='--',color=colour[i+3])
-        #smoothed_data=use_whittaker_smoother(N_2,2000000000000,2)
-        #plt.plot(strainplot_tuple[k][:],smoothed_data,colour[i+5],label="$K="+str(internal_stiffness[i])+"$, smoothed")
-       
+                            +", \Sigma="+str(sigfig.round(N_2_std_dev,sigfigs=3))+\
+                                ",x\sim ="+str(sigfig.round(N_2_median,sigfigs=3))+
+                                ",K="+str(internal_stiffness[i])+"$",linestyle='--',color='blueviolet')
+        smoothed_data=use_whittaker_smoother(N_2,2000000000000,2)
+        plt.plot(strainplot_tuple[k][data_start:],smoothed_data,'cornflowerblue',label="smoothed trend")
+        plt.ylim(-20000,20000)
         plt.ylabel('$N_{2}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$\gamma$")
         #plt.ylim((-0.1,0.1))
 
-    plt.legend(loc='best',bbox_to_anchor=(1,1))
+    plt.legend(loc='best')
     plt.title("Normal stress difference $N_{2}$ against strain $\gamma$, $\dot{\gamma}="\
                   +str(erate[k])+"$")
     #plt.tight_layout()
@@ -460,24 +541,25 @@ labelpady=15
 fontsize=15
 plt.rcParams.update({'font.size': 12})
 
-for i in range(0,1):#internal_stiffness.size):
+for i in range(0,2):#internal_stiffness.size):
         #for j in range(0,3):
-    fit=np.polyfit(erate,N_2_final[i,:],2)
-    residuals[i,:]=np.abs(N_2_final[i,:]-((fit[0]*(erate**2)) + erate*fit[1] +fit[2]))
+    popt,pcov=curve_fit(quadfunc,erate,N_2_final[i,:])
+    perr = np.sqrt(np.diag(pcov))
+    residuals[i,:]=np.abs(N_2_final[i,:]-((popt[0]*(erate**2)) + erate*popt[1] +popt[2]))
     
-    plt.plot(erate,(fit[0]*(erate**2)) + erate*fit[1] +fit[2], label="$K="+str(internal_stiffness[i])+"$")# & $\\frac{d \sigma_{xz}}{d \dot{\gamma}}="+str(sigfig.round(fit[0],sigfigs=3))+"$")
-    plt.scatter(erate[:],N_2_final[i,:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i])#, \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
-    plt.errorbar(erate[:], N_2_final[i,:], yerr=residuals[i,:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i],marker="x",ls='none')
+    plt.plot(erate,(popt[0]*(erate**2)) + erate*popt[1] +popt[2], label='fit$: ax^{2}, a='+str(sigfig.round(popt[0],sigfigs=3))+'$' ,color='black')# & $\\frac{d \sigma_{xz}}{d \dot{\gamma}}="+str(sigfig.round(fit[0],sigfigs=3))+"$")
+    plt.scatter(erate[:],N_2_final[i,:],label="$K="+str(internal_stiffness[i])+"$",color='blueviolet',marker='x')#, \\bar{N_{1}}="+str(sigfig.round(N_1_mean,sigfigs=3))+"$",color=colour[i])
+    #plt.errorbar(erate[:], N_2_final[i,:], yerr=perr[:],label="$K="+str(internal_stiffness[i])+"$",color=colour[i],marker="x",ls='none')
 
     plt.ylabel('$N_{2}$', rotation=0, labelpad=labelpady)
     plt.xlabel("$\dot{\gamma}$")
         
         #plt.ylim((-0.1,5))
 
-    plt.legend(loc='best',bbox_to_anchor=(1,1))
+    plt.legend(loc='best')
     plt.title("Normal stress difference $N_{2}$ against shear rate $\dot{\gamma}$")
         #plt.tight_layout()
-    plt.savefig("N_2_vs_shearrate_M_"+str(rho)+\
+    plt.savefig("N_2_vs_shearrate_K_"+str(internal_stiffness[i])+"_M_"+str(rho)+\
                 "_L_"+str(box_size)+".pdf",dpi=1200,bbox_inches='tight')
     plt.show()
 
@@ -500,7 +582,7 @@ for k in range(0,erate.size):
             sigmaxz_median=np.median(stress_tensor_summed_tuple_rfp[k][i,start:,j])
             print(sigmaxz_median)
             plt.axhline(sigmaxz_mean,label="$\\bar{\sigma}_{xz}="+str(sigfig.round(sigmaxz_mean,sigfigs=3))\
-                            +",\Sigma="+str(sigfig.round(sigmaxz_std_dev,sigfigs=3))+",x\sim="+str(sigfig.round(sigmaxz_median,sigfigs=3))+",K="+str(internal_stiffness[i])+"$",linestyle='--',color=colour[i+3])
+                            +",\Sigma="+str(sigfig.round(sigmaxz_std_dev,sigfigs=3))+",x\sim="+str(sigfig.round(sigmaxz_median,sigfigs=3))+",K="+str(internal_stiffness[i])+"$",linestyle='--',color='blueviolet')
             # smoothed_data=use_whittaker_smoother(stress_tensor_summed_tuple_shaped[k][i,:,j],5000000000000,2)
             # plt.plot(strainplot_tuple[k][:],smoothed_data,colour[i+5],label="$K="+str(internal_stiffness[i])+"$, smoothed")
        
@@ -521,19 +603,23 @@ for k in range(0,erate.size):
     plt.show()
 
 #%% shear stress mean vs erate 
-
+marker=['x','o']
 for i in range(0,1):
-        fit=np.polyfit(erate,mean_shear_stress[i,:],1)
-        plt.plot(erate,fit[0]*erate +fit[1])#, label= "$\\frac{d \sigma_{xz}}{d \dot{\gamma}}="+str(sigfig.round(fit[0],sigfigs=3))+"$")
+        # fit=np.polyfit(erate,mean_shear_stress[i,:],1)
+        # plt.plot(erate,fit[0]*erate +fit[1])#, label= "$\\frac{d \sigma_{xz}}{d \dot{\gamma}}="+str(sigfig.round(fit[0],sigfigs=3))+"$")
 
-        plt.scatter(erate,mean_shear_stress[i,:],label="$K="+str(internal_stiffness[i])+"$")
+        plt.scatter(erate,mean_shear_stress[i,:],label="$K="+str(internal_stiffness[i])+"$",marker=marker[i], color=colour[i])
+        plt.title("Mean shear stress $\\bar{\sigma}_{xz}$ against shear rate $\dot{\gamma}$")
         plt.ylabel('$\\bar{\sigma}_{xz}$', rotation=0, labelpad=labelpady)
         plt.xlabel("$\dot{\gamma}$")
         plt.legend()
-        plt.ylim(-1000,1000)
+        plt.ylim(-200,0)
+plt.savefig("shear_stress_vs_gdot_K_"+str(internal_stiffness[i])+\
+                "_M_"+str(rho)+"_L_"+str(box_size)+".pdf",dpi=1200,bbox_inches='tight')
+
+
 
 plt.show()
-
 #%% plotting whole off diagonal of stress tensor apart from shearing plane
 folder="shear_stress_non_shear_plane_plots"
 folder_check_or_create(filepath,folder)    

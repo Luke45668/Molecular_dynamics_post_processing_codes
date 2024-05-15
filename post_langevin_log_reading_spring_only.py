@@ -22,6 +22,7 @@ import scipy.stats
 from datetime import datetime
 import mmap
 import h5py as h5
+import math as m 
 
 path_2_post_proc_module= '/Users/luke_dev/Documents/MPCD_post_processing_codes/'
 os.chdir(path_2_post_proc_module)
@@ -36,7 +37,7 @@ import pickle as pck
 # damp 0.1 seems to work well, need to add window averaging, figure out how to get imposed shear to match velocity of particle
 # neeed to then do a huge run 
 damp=0.01
-strain_total=600
+strain_total=400
 path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/Full_run_damp_'+str(damp)+'_temp_test_1'
 path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_60/Full_run_damp_0.01_dump_10000_strain_600'
 #path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_60/run_10_reals_damp_0.05_dump_10000_strain_600'
@@ -67,7 +68,7 @@ dp_row_count=np.ceil((no_timesteps/dump_freq)).astype("int")
 
 thermo_vars='         KinEng         PotEng          Temp          c_bias         TotEng    '
 j_=10
-K=1500
+K=500
 eq_spring_length=3*np.sqrt(3)/2
 mass_pol=5 
 damp_ratio=mass_pol/damp
@@ -171,6 +172,9 @@ def quadfunc(x, a):
 def linearfunc(x,a,b):
     return (a*x)+b 
 
+def round_down_to_even(f):
+    return m.floor(f / 2.) * 2
+
 realisations_for_sorting_after_pol=[]
 realisation_name_h5_after_sorted_final_pol=org_names(realisations_for_sorting_after_pol,
                                                      realisation_name_pol,
@@ -236,7 +240,7 @@ conform_tensor_tuple=()
 spring_force_positon_tensor_tuple=()
 count=0
 #need to fix this issue where the arrays are all slightly different sizes by one or two 
-for i in range(1):
+for i in range(erate.size):
      i_=(count*j_)
      print("i_",i_)
      with h5.File(realisation_name_h5_after_sorted_final_pol[i_],'r') as f_check:
@@ -259,9 +263,10 @@ for i in range(1):
         erate_velocity_array=np.zeros(((j_,outputdim_hdf5,1)))
      
         strain_array=np.linspace(0,strain_total,outputdim_hdf5)
+        #NOTE check you have the correct total strain or these corrections dont work
         spring_force_positon_array=np.zeros((j_,outputdim_hdf5,6))
 
-        for j in range(1):
+        for j in range(j_):
                 j_index=j+(j_*count)
 
                 # need to get rid of print statements in log2numpy 
@@ -299,257 +304,132 @@ for i in range(1):
                     # ell_2[ell_2[:,0]>10]-=23
                     # ell_2[ell_2[:,0]<-10]+=23
                    
+                    #outputdim_hdf5
+                    r1=17251
+                    r2=17252
+                    r1=52544
+                    r2=52545
 
-                    for l in range(outputdim_hdf5):
+                    r1=0
+                    r2=outputdim_hdf5
+                   
+                    for l in range(r1,r2):
                         # z correction for ell_1
-                        if ell_1[l,2]>10:
+                        particle_array=np.array([pol_positions_array[j,l,0,:],pol_positions_array[j,l,1,:],pol_positions_array[j,l,2,:],
+                                                ph_positions_array[j,l,0,:],ph_positions_array[j,l,1,:],ph_positions_array[j,l,2,:]])
+                        
+                        interest_vectors=np.array([ell_1[l,:],ell_2[l,:],phant_1[l,:],phant_2[l,:],phant_3[l,:]])
+                        
+                        #print(particle_array)
+
+                        if np.any(np.abs(interest_vectors)>23/2):
+                            #print("periodic anomalies detected")
                             strain= strain_array[l]-np.floor(strain_array[l])
-                            #print("strain:",strain)
-                            original_top_left=np.array([0,0,23])
-                            original_bottom_left=np.array([0,0,0])
-                            if strain <= 0.5:
-                                tilt= strain*23
-                            else: 
-                                tilt=-(1-strain)*23
-                            
-                            new_top_left= original_top_left+np.array([tilt,0,0])
-                            box_tilt_vector=new_top_left
-                            #print("tilt",tilt)
-
-
-
-                            if np.any(pol_positions_array[j,l,2,2]) and np.any(pol_positions_array[j,l,0,2]) > 10:
-
-                                ell_1[l,:]+=box_tilt_vector
+                            if strain==0.0:
+                                tilt=0
+                            elif strain <= 0.5:
+                                tilt= (23/2)*(strain)
                             else:
-                                ell_1[l,:]-=box_tilt_vector
-
-
-                        elif ell_1[l,2]<-10:
-                            strain= strain_array[l]-np.floor(strain_array[l])
-                            #print("strain:",strain)
-                            original_top_left=np.array([0,0,23])
-                            original_bottom_left=np.array([0,0,0])
-                            if strain <= 0.5:
-                                tilt= strain*23
-                            else: 
-                                tilt=-(1-strain)*23
-                            
-                            new_top_left= original_top_left+np.array([tilt,0,0])
-                            box_tilt_vector=new_top_left
-                            #print("tilt",tilt)
-
-
-
-                            if np.any(pol_positions_array[j,l,2,2]) and np.any(pol_positions_array[j,l,0,2]) < 10:
-
-                                ell_1[l,:]+=box_tilt_vector
-                            else:
-                                ell_1[l,:]-=box_tilt_vector
-
-                                
-
-                        #z correction ell_2
-                        if  ell_2[l,2]>10:
-                            strain= strain_array[l]-np.floor(strain_array[l])
-                            #print("strain",strain)
-                            original_top_left=np.array([0,0,23])
-                            original_bottom_left=np.array([0,0,0])
-                            if strain <= 0.5:
-                                tilt= strain*23
-                            else: 
-                                tilt=-(1-strain)*23
-                            
-                            new_top_left= original_top_left+np.array([tilt,0,0])
-                            box_tilt_vector=new_top_left
-                            #print("tilt",tilt)
-
-                            if np.any(pol_positions_array[j,l,1,2]) and np.any(pol_positions_array[j,l,0,2]) > 10:
-
-                                ell_2[l,:]+=box_tilt_vector
-                            else:
-                                ell_2[l,:]-=box_tilt_vector
-
-
-                        elif ell_2[l,2]<-10:
-                            strain= strain_array[l]-np.floor(strain_array[l])
-                            #print("strain:",strain)
-                            original_top_left=np.array([0,0,23])
-                            original_bottom_left=np.array([0,0,0])
-                            if strain <= 0.5:
-                                tilt= strain*23
-                            else: 
-                                tilt=-(1-strain)*23
-                            
-                            new_top_left= original_top_left+np.array([tilt,0,0])
-                            box_tilt_vector=new_top_left
-                            #print("tilt",tilt)
-
-                            if np.any(pol_positions_array[j,l,1,2]) and np.any(pol_positions_array[j,l,0,2]) < 10:
-
-                                ell_2[l,:]+=box_tilt_vector
-                            else:
-                                ell_2[l,:]-=box_tilt_vector
+                                  
+                                tilt=-(1-strain)*23/2
                         else:
-                            ell_1[l,2]=ell_1[l,2]
-                            ell_2[l,2]=ell_2[l,2]
+                            continue
+                        #y shift 
+                        # convention shift y coordinate to positive side 
+                        y_coords=particle_array[:,1]
+                        y_coords[y_coords<23/2]+=23
+                        particle_array[:,1]=y_coords
 
 
-                        # #z correction for phant 1 
-                        if  phant_1[l,2]>10:
-                            strain= strain_array[l]-np.floor(strain_array[l])
-                            #print("strain",strain)
-                            original_top_left=np.array([0,0,23])
-                            original_bottom_left=np.array([0,0,0])
-                            if strain <= 0.5:
-                                tilt= strain*23
-                            else: 
-                                tilt=-(1-strain)*23
+                        # z shift 
+                        # convention shift down to lower boundary 
+                        if tilt<=0:
+                            for r in range(6):
+                                if particle_array[r,2]>23/2:
+                                    particle_array[r,:]+=np.array([np.abs(tilt),0,-23])
                             
-                            new_top_left= original_top_left+np.array([tilt,0,0])
-                            box_tilt_vector=new_top_left
-                            #print("tilt",tilt)
-
-                            if np.any(pol_positions_array[j,l,1,2]) and np.any(pol_positions_array[j,l,2,2]) > 10:
-
-                                phant_1[l,:]+=box_tilt_vector
-                            else:
-                                phant_1[l,:]-=box_tilt_vector
+                        if tilt>0:
+                            for r in range(6):
+                                if particle_array[r,2]>23/2:
+                                    particle_array[r,:]+=np.array([-np.abs(tilt),0,-23])
 
 
-                        elif phant_1[l,2]<-10:
-                            strain= strain_array[l]-np.floor(strain_array[l])
-                            #print("strain:",strain)
-                            original_top_left=np.array([0,0,23])
-                            original_bottom_left=np.array([0,0,0])
-                            if strain <= 0.5:
-                                tilt= strain*23
-                            else: 
-                                tilt=-(1-strain)*23
-                            
-                            new_top_left= original_top_left+np.array([tilt,0,0])
-                            box_tilt_vector=new_top_left
-                            #print("tilt",tilt)
+                         # x shift convention shift to smaller side
+                        x_coords=particle_array[:,0]
+                        x_coords[x_coords<23/2]+=23
+                        particle_array[:,0]=y_coords
 
-                            if np.any(pol_positions_array[j,l,1,2]) and np.any(pol_positions_array[j,l,2,2]) < 10:
+                        # #particle_array[particle_array[:,0]>23/2]-=23
 
-                                phant_1[l,:]+=box_tilt_vector
-                            else:
-                                phant_1[l,:]-=box_tilt_vector
-                        else:
-                            phant_1[l,2]=phant_1[l,2]
+                        #print(particle_array)
+                        #recompute interest vectors
+                        ell_1_c=particle_array[1,:]-particle_array[0,:]
+                        ell_2_c=particle_array[2,:]-particle_array[0,:]
+                        phant_1_c=particle_array[0,:]-particle_array[4,:]
+                        phant_2_c=particle_array[1,:]-particle_array[5,:]
+                        phant_3_c=particle_array[2,:]-particle_array[3,:]
 
-                        # #z correction for phant 2
-                        if  phant_2[l,2]>10:
-                            strain= strain_array[l]-np.floor(strain_array[l])
-                            #print("strain",strain)
-                            original_top_left=np.array([0,0,23])
-                            original_bottom_left=np.array([0,0,0])
-                            if strain <= 0.5:
-                                tilt= strain*23
-                            else: 
-                                tilt=-(1-strain)*23
-                            
-                            new_top_left= original_top_left+np.array([tilt,0,0])
-                            box_tilt_vector=new_top_left
-                            #print("tilt",tilt)
-
-                            if np.any(pol_positions_array[j,l,0,2]) and np.any(pol_positions_array[j,l,2,2]) > 10:
-
-                                phant_2[l,:]+=box_tilt_vector
-                            else:
-                                phant_2[l,:]-=box_tilt_vector
+                        interest_vectors=np.array([ell_1_c,ell_2_c,phant_1_c,phant_2_c,phant_3_c])
+                        # print(interest_vectors)
 
 
-                        elif phant_2[l,2]<-10:
-                            strain= strain_array[l]-np.floor(strain_array[l])
-                            #print("strain:",strain)
-                            original_top_left=np.array([0,0,23])
-                            original_bottom_left=np.array([0,0,0])
-                            if strain <= 0.5:
-                                tilt= strain*23
-                            else: 
-                                tilt=-(1-strain)*23
-                            
-                            new_top_left= original_top_left+np.array([tilt,0,0])
-                            box_tilt_vector=new_top_left
-                            #print("tilt",tilt)
 
-                            if np.any(pol_positions_array[j,l,0,2]) and np.any(pol_positions_array[j,l,2,2]) < 10:
+                        # if np.any(np.abs(interest_vectors)>23/2):
+                        #     interest_vectors[interest_vectors>23/2]-=23
+                        #     interest_vectors[interest_vectors<-23/2]+=23
 
-                                phant_2[l,:]+=box_tilt_vector
-                            else:
-                                phant_2[l,:]-=box_tilt_vector
-                        else:
-                            phant_2[l,2]=phant_2[l,2]
+                        ell_1[l,:]=interest_vectors[0,:]
+                        ell_2[l,:]=interest_vectors[1,:]
+                        phant_1[l,:]=interest_vectors[2,:]
+                        phant_2[l,:]=interest_vectors[3,:]
+                        phant_3[l,:]=interest_vectors[4,:]
+                                                    
 
 
                         
-                        #  #z correction for phant 3
-                        if phant_3[l,2]>10:
-                            strain= strain_array[l]-np.floor(strain_array[l])
-                            #print("strain",strain)
-                            original_top_left=np.array([0,0,23])
-                            original_bottom_left=np.array([0,0,0])
-                            if strain <= 0.5:
-                                tilt= strain*23
-                            else: 
-                                tilt=-(1-strain)*23
-                            
-                            new_top_left= original_top_left+np.array([tilt,0,0])
-                            box_tilt_vector=new_top_left
-                            #print("tilt",tilt)
-
-                            if np.any(pol_positions_array[j,l,1,2]) and np.any(pol_positions_array[j,l,2,2]) > 10:
-
-                               phant_3[l,:]+=box_tilt_vector
-                            else:
-                               phant_3[l,:]-=box_tilt_vector
-
-
-                        elif phant_3[l,2]<-10:
-                            strain= strain_array[l]-np.floor(strain_array[l])
-                            #print("strain:",strain)
-                            original_top_left=np.array([0,0,23])
-                            original_bottom_left=np.array([0,0,0])
-                            if strain <= 0.5:
-                                tilt= strain*23
-                            else: 
-                                tilt=-(1-strain)*23
-                            
-                            new_top_left= original_top_left+np.array([tilt,0,0])
-                            box_tilt_vector=new_top_left
-                            #print("tilt",tilt)
-
-                            if np.any(pol_positions_array[j,l,1,2]) and np.any(pol_positions_array[j,l,2,2]) < 10:
-
-                               phant_3[l,:]+=box_tilt_vector
-                            else:
-                               phant_3[l,:]-=box_tilt_vector
-                        else:
-                            phant_3[l,2]=phant_3[l,2]
-
-
-                        
-
 
                         
 
 
 
+                        
+                        
 
+
+
+
+                        # y shift 
+
+
+                        
+                        
+
+
+                        
                     
-                # x and y correction
+                # x and y correction if no z error 
                     ell_1[ell_1[:,:]>10]-=23
                     ell_1[ell_1[:,:]<-10]+=23
                     ell_2[ell_2[:,:]>10]-=23
                     ell_2[ell_2[:,:]<-10]+=23
+                    # ell_1[ell_1[:,1]>10]-=23
+                    # ell_1[ell_1[:,1]<-10]+=23
+                    # ell_2[ell_2[:,1]>10]-=23
+                    # ell_2[ell_2[:,1]<-10]+=23
                     phant_1[phant_1[:,:]>10]-=23
                     phant_1[phant_1[:,:]<-10]+=23
+                    # phant_1[phant_1[:,1]>10]-=23
+                    # phant_1[phant_1[:,1]<-10]+=23
+                  
                     phant_2[phant_2[:,:]>10]-=23
                     phant_2[phant_2[:,:]<-10]+=23
+                    # phant_2[phant_2[:,1]>10]-=23
+                    # phant_2[phant_2[:,1]<-10]+=23
+
                     phant_3[phant_3[:,:]>10]-=23
                     phant_3[phant_3[:,:]<-10]+=23
+                    # phant_3[phant_3[:,1]>10]-=23
+                    # phant_3[phant_3[:,1]<-10]+=23
 
 
                 # #y correction
@@ -580,18 +460,18 @@ for i in range(1):
                     # ell_2[ell_2<-5]=0
                     # inspecting plots
 
-                    # plt.plot(ell_1[:,0])
+                    # plt.plot(ell_1[r1:r2,0])
                     # plt.title("$|\ell_{1}|,x$")
                     # plt.xlabel("output count")
                     # plt.show()
 
-                    # plt.plot(ell_2[:,0])
+                    # plt.plot(ell_2[r1:r2,0])
                     # plt.title("$|\ell_{2}|,x$")
                     # plt.xlabel("output count")
                     # plt.show()
 
-                    # plt.plot(ell_1[:,1])
-                    # plt.title("$|\ell_{1}|,y$")
+                    # # plt.plot(ell_1[:,1])
+                    # # plt.title("$|\ell_{1}|,y$")
                     # plt.xlabel("output count")
                     # plt.show()
 
@@ -611,21 +491,21 @@ for i in range(1):
                     # plt.show()
 
 
-                    plt.plot(phant_1[:,0])
-                    plt.title("$|ph_{1}|,x$")
-                    plt.xlabel("output count")
-                    plt.show()
+                    # plt.plot(phant_1[r1:r2,0])
+                    # plt.title("$|ph_{1}|,x$")
+                    # plt.xlabel("output count")
+                    # plt.show()
 
-                    plt.plot(phant_2[:,0])
-                    plt.title("$|ph_{2}|,x$")
-                    plt.xlabel("output count")
-                    plt.show()
+                    # plt.plot(phant_2[r1:r2,0])
+                    # plt.title("$|ph_{2}|,x$")
+                    # plt.xlabel("output count")
+                    # plt.show()
 
 
-                    plt.plot(phant_3[:,0])
-                    plt.title("$|ph_{3}|,x$")
-                    plt.xlabel("output count")
-                    plt.show()
+                    # plt.plot(phant_3[r1:r2,0])
+                    # plt.title("$|ph_{3}|,x$")
+                    # plt.xlabel("output count")
+                    # plt.show()
 
 
                     # plt.plot(phant_1[:,1])
@@ -644,20 +524,25 @@ for i in range(1):
                     # plt.xlabel("output count")
                     # plt.show()
 
-                    # plt.plot(phant_1[:,2])
+                    # plt.plot(phant_1[r1:r2,2])
                     # plt.title("$|ph_{1}|,z$")
                     # plt.xlabel("output count")
                     # plt.show()
 
-                    # plt.plot(phant_2[:,2])
+                    # plt.plot(phant_2[r1:r2,2])
                     # plt.title("$|ph_{2}|,z$")
                     # plt.xlabel("output count")
                     # plt.show()
 
 
-                    # plt.plot(phant_3[:,2])
+                    # plt.plot(phant_3[r1:r2,2])
                     # plt.title("$|ph_{3}|,z$")
                     # plt.xlabel("output count")
+                    # plt.show()
+
+                    # fig = plt.figure()
+                    # ax = fig.add_subplot(projection='3d')
+                    # ax.scatter(particle_array[:,0], particle_array[:,1], particle_array[:,2])
                     # plt.show()
 
 
@@ -1095,7 +980,7 @@ for i in range(erate.size):
      plt.show()
 
 #%%
-cutoff_ratio=0.1
+cutoff_ratio=0.5
 end_cutoff_ratio=1
 folder="N_1_plots"
 
@@ -1195,6 +1080,7 @@ plt.axhline(np.mean(xz_shear_stress_mean[:]))
 #plt.ylim(-5,2)
 plt.show()
 
+#%%
 plt.scatter(erate[:],xz_shear_stress_mean[:]/erate[:])
 plt.axhline(np.mean(xz_shear_stress_mean[:]))
 #plt.ylim(-5,2)

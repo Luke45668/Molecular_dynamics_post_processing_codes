@@ -35,14 +35,14 @@ import pickle as pck
 #%% 
 # damp 0.1 seems to work well, need to add window averaging, figure out how to get imposed shear to match velocity of particle
 # neeed to then do a huge run 
-damp=0.09
+damp=0.05
 strain_total=600
 path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/Full_run_damp_'+str(damp)+'_temp_test_1'
 path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_60/Full_run_damp_0.01_dump_10000_strain_600'
 #path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_60/run_10_reals_damp_0.05_dump_10000_strain_600'
 #path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/'
 #path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_40/Full_run_damp_0.01_dump_10000_strain_600'
-path_2_log_files='/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/run_343194'
+path_2_log_files='/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/run_483049'
 # path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/kdamp_prod_3_init_test_10_reals_200_strain'
 # erate= np.array([0.2,0.1,0.05,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01]) 
 erate= np.flip(np.array([0.03,0.0275,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01,0.0075,0.005,0.0025,0.001,0.00075,0.0005]))
@@ -67,7 +67,7 @@ dp_row_count=np.ceil((no_timesteps/dump_freq)).astype("int")
 
 thermo_vars='         KinEng         PotEng          Temp          c_bias         TotEng    '
 j_=10
-K=33.333
+K=400
 eq_spring_length=3*np.sqrt(3)/2
 mass_pol=5 
 damp_ratio=mass_pol/damp
@@ -599,6 +599,7 @@ for i in range(erate.size):
 
         spring_force_positon_array[j,:]=np_array_spring_pos_tensor
     
+    
     spring_force_positon_tensor_tuple=spring_force_positon_tensor_tuple+(spring_force_positon_array,)
     COM_velocity_tuple=COM_velocity_tuple+(COM_velocity_array,)
     COM_position_tuple=COM_position_tuple+(COM_position_array,)
@@ -787,8 +788,8 @@ for i in range(erate.size):
         #plt.plot(strainplot_tuple[i],spring_force_positon_tensor_tuple[i][:,j], label=labels_stress[j])
         #plt.plot(spring_force_positon_tensor_tuple_wa[i][:,j], label=labels_stress[j]+",$\dot{\gamma}="+str(erate[i])+"$")
         plt.plot(viscoelastic_stress_tuple_wa[i][:,j], label=labels_stress[j]+",$\dot{\gamma}="+str(erate[i])+"$")
-    plt.legend()
-    plt.show()
+        plt.legend()
+        plt.show()
 
 #%% normal stress
 for i in range(erate.size):
@@ -963,7 +964,7 @@ for i in range(erate.size):
 label='damp_'+str(damp)+'_K_'+str(K)+'_'
 
 os.chdir(path_2_log_files)
-#os.mkdir("tuple_results")
+os.mkdir("tuple_results")
 os.chdir("tuple_results")
 
 with open(label+'spring_force_positon_tensor_tuple.pickle', 'wb') as f:
