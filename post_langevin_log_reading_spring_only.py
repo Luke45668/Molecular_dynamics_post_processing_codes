@@ -24,6 +24,8 @@ import mmap
 import h5py as h5
 import math as m 
 
+
+
 path_2_post_proc_module= '/Users/luke_dev/Documents/MPCD_post_processing_codes/'
 os.chdir(path_2_post_proc_module)
 
@@ -193,36 +195,6 @@ realisation_name_log_sorted_final=org_names(realisations_for_sorting_after_log,
                                                      erate_index)
 
      
-#%%load in tuples 
-
-# os.chdir(path_2_log_files)
-
-# with open('spring_force_positon_tensor_tuple.pickle', 'rb') as f:
-#     spring_force_positon_tensor_tuple=pck.load(f)
-
-# with open('COM_velocity_tuple.pickle', 'rb') as f:
-#     COM_velocity_tuple=pck.load(f)
-
-# with open('COM_position_tuple.pickle', 'rb') as f:
-#     COM_position_tuple=pck.load(f)
-
-# with open('erate_velocity_tuple.pickle', 'rb') as f:
-#     erate_velocity_tuple=pck.load(f)
-
-# with open('log_file_tuple.pickle', 'rb') as f:
-#     log_file_tuple=pck.load(f)
-
-# with open('pol_velocities_tuple.pickle', 'rb') as f:
-#     pol_velocities_tuple=pck.load(f)
-
-# with open('pol_positions_tuple.pickle', 'rb') as f:
-#     pol_positions_tuple=pck.load(f)
-
-# with open('ph_velocities_tuple.pickle', 'rb') as f:
-#     ph_velocities_tuple=pck.load(f)
-
-# with open('ph_positions_tuple.pickle', 'rb') as f:
-#     ph_positions_tuple= pck.load(f)
 
 
 
@@ -239,6 +211,8 @@ area_vector_tuple=()
 conform_tensor_tuple=()
 spring_force_positon_tensor_tuple=()
 count=0
+interest_vectors_tuple=()
+compare_vel_to_profile_tuple=()
 #need to fix this issue where the arrays are all slightly different sizes by one or two 
 for i in range(erate.size):
      i_=(count*j_)
@@ -265,13 +239,16 @@ for i in range(erate.size):
         strain_array=np.linspace(0,strain_total,outputdim_hdf5)
         #NOTE check you have the correct total strain or these corrections dont work
         spring_force_positon_array=np.zeros((j_,outputdim_hdf5,6))
+        interest_vectors_array=np.zeros((j_,outputdim_hdf5,5,3))
+        compare_vel_to_profile=np.zeros((j_,outputdim_hdf5,3))
+
 
         for j in range(j_):
                 j_index=j+(j_*count)
 
                 # need to get rid of print statements in log2numpy 
-                print(realisation_name_log_sorted_final[j_index])
-                print(j_index)
+                # print(realisation_name_log_sorted_final[j_index])
+                # print(j_index)
                 log_file_array[j,:,:]=log2numpy_reader(realisation_name_log_sorted_final[j_index],
                                                             path_2_log_files,
                                                             thermo_vars)
@@ -291,6 +268,15 @@ for i in range(erate.size):
                     ph_velocities_array[j,:,:,:]=f_ph['particles']['phantom']['velocity']['value'][:]
                     ph_positions_array[j,:,:,:]=f_ph['particles']['phantom']['position']['value'][:]
                     
+
+
+
+                    
+
+
+                    
+                    # erate_velocity_array[j,:,:,:]=COM_position_array[j,2]*erate[i] 
+                    
                     ell_1=pol_positions_array[j,:,1,:]-pol_positions_array[j,:,0,:]
                     ell_2=pol_positions_array[j,:,2,:]-pol_positions_array[j,:,0,:]
                     phant_1=pol_positions_array[j,:,0,:]-ph_positions_array[j,:,1,:]
@@ -305,63 +291,129 @@ for i in range(erate.size):
                     # ell_2[ell_2[:,0]<-10]+=23
                    
                     #outputdim_hdf5
-                    r1=17251
-                    r2=17252
-                    r1=52544
-                    r2=52545
+                    # r1=17251
+                    # r2=17252
+                    # r1=52544
+                    # r2=52545
 
+                    r1=11760
+                    r2=11770
+            
                     r1=0
                     r2=outputdim_hdf5
+                    
                    
                     for l in range(r1,r2):
                         # z correction for ell_1
-                        particle_array=np.array([pol_positions_array[j,l,0,:],pol_positions_array[j,l,1,:],pol_positions_array[j,l,2,:],
-                                                ph_positions_array[j,l,0,:],ph_positions_array[j,l,1,:],ph_positions_array[j,l,2,:]])
+                        particle_array=np.array([pol_positions_array[j,l,0,:],
+                                                 pol_positions_array[j,l,1,:],
+                                                 pol_positions_array[j,l,2,:],
+                                                ph_positions_array[j,l,0,:],
+                                                ph_positions_array[j,l,1,:],
+                                                ph_positions_array[j,l,2,:]])
+                        particle_COM=np.mean(particle_array,axis=0)
+                       
+                        particle_vel_array=np.array([pol_velocities_array[j,l,0,:],
+                                                 pol_velocities_array[j,l,1,:],
+                                                 pol_velocities_array[j,l,2,:],
+                                                ph_velocities_array[j,l,0,:],
+                                                ph_velocities_array[j,l,1,:],
+                                                ph_velocities_array[j,l,2,:]])
+                        
+                        particle_COM_vel=np.mean(particle_vel_array,axis=0)
+                        pred_velocity_profile=particle_array[:3,2]*erate[i]
+
+
+                        compare_vel_to_profile[j,l,:]= particle_vel_array[:3,0]/pred_velocity_profile
+
+                    
+                       
                         
                         interest_vectors=np.array([ell_1[l,:],ell_2[l,:],phant_1[l,:],phant_2[l,:],phant_3[l,:]])
                         
-                        #print(particle_array)
+                        #print("unmodified particle array ",particle_array)
+                        #print("interest vectors", interest_vectors)
 
-                        if np.any(np.abs(interest_vectors)>23/2):
-                            #print("periodic anomalies detected")
-                            strain= strain_array[l]-np.floor(strain_array[l])
-                            if strain==0.0:
-                                tilt=0
-                            elif strain <= 0.5:
-                                tilt= (23/2)*(strain)
-                            else:
-                                  
-                                tilt=-(1-strain)*23/2
+                        
+                        strain= strain_array[l]-np.floor(strain_array[l])
+                        #print("strain",strain)
+                        
+                        
+                        if strain <= 0.5:
+                            tilt= (23)*(strain)
                         else:
-                            continue
-                        #y shift 
-                        # convention shift y coordinate to positive side 
-                        y_coords=particle_array[:,1]
-                        y_coords[y_coords<23/2]+=23
-                        particle_array[:,1]=y_coords
-
+                                
+                            tilt=-(1-strain)*23
+                       # print("tilt",tilt)
 
                         # z shift 
                         # convention shift down to lower boundary 
-                        if tilt<=0:
-                            for r in range(6):
-                                if particle_array[r,2]>23/2:
-                                    particle_array[r,:]+=np.array([np.abs(tilt),0,-23])
+
+                        if np.any(np.abs(interest_vectors[:,2])>23/2):
+                            #print("periodic anomalies detected")
                             
-                        if tilt>0:
+                           
+
                             for r in range(6):
                                 if particle_array[r,2]>23/2:
-                                    particle_array[r,:]+=np.array([-np.abs(tilt),0,-23])
+                                    particle_array[r,:]+=np.array([-tilt,0,-23])
 
 
-                         # x shift convention shift to smaller side
-                        x_coords=particle_array[:,0]
-                        x_coords[x_coords<23/2]+=23
-                        particle_array[:,0]=y_coords
+
+                        #print("post z mod particle array",particle_array)
+
+
+                        ell_1_c=particle_array[1,:]-particle_array[0,:]
+                        ell_2_c=particle_array[2,:]-particle_array[0,:]
+                        phant_1_c=particle_array[0,:]-particle_array[4,:]
+                        phant_2_c=particle_array[1,:]-particle_array[5,:]
+                        phant_3_c=particle_array[2,:]-particle_array[3,:]
+
+                        interest_vectors=np.array([ell_1_c,ell_2_c,phant_1_c,phant_2_c,phant_3_c])
+                        
+                      
+
+                        # y shift 
+                       
+
+                        if np.any(np.abs(interest_vectors[:,1])>23/2):
+                            #print("periodic anomalies detected")
+                            y_coords=particle_array[:,1]
+                            y_coords[y_coords<23/2]+=23
+                            particle_array[:,1]=y_coords
+
+                       # print("post y shift mod particle array",particle_array)
+                        
+                        # x shift 
+
+                        ell_1_c=particle_array[1,:]-particle_array[0,:]
+                        ell_2_c=particle_array[2,:]-particle_array[0,:]
+                        phant_1_c=particle_array[0,:]-particle_array[4,:]
+                        phant_2_c=particle_array[1,:]-particle_array[5,:]
+                        phant_3_c=particle_array[2,:]-particle_array[3,:]
+
+                        interest_vectors=np.array([ell_1_c,ell_2_c,phant_1_c,phant_2_c,phant_3_c])
+                       
+
+                        if np.any(np.abs(interest_vectors[:,0])>23/2):
+                            #print("periodic anomalies detected")
+                            # x shift convention shift to smaller side
+                            
+                            x_coords=particle_array[:,0]
+                            z_coords=particle_array[:,2]
+                            box_position_x= x_coords -(z_coords/23)*tilt
+                            x_coords[box_position_x<23/2]+=23
+                            particle_array[:,0]=x_coords
+
+                       # print("post x shift mod particle array",particle_array)
+
+
+                       
+   
 
                         # #particle_array[particle_array[:,0]>23/2]-=23
 
-                        #print(particle_array)
+                       # print("mod particle array",particle_array)
                         #recompute interest vectors
                         ell_1_c=particle_array[1,:]-particle_array[0,:]
                         ell_2_c=particle_array[2,:]-particle_array[0,:]
@@ -370,7 +422,10 @@ for i in range(erate.size):
                         phant_3_c=particle_array[2,:]-particle_array[3,:]
 
                         interest_vectors=np.array([ell_1_c,ell_2_c,phant_1_c,phant_2_c,phant_3_c])
-                        # print(interest_vectors)
+                        #interest_vectors[np.abs(interest_vectors)>23/2]=float('nan')
+                        
+
+                        #print(interest_vectors)
 
 
 
@@ -383,82 +438,57 @@ for i in range(erate.size):
                         phant_1[l,:]=interest_vectors[2,:]
                         phant_2[l,:]=interest_vectors[3,:]
                         phant_3[l,:]=interest_vectors[4,:]
-                                                    
-
-
-                        
-
-                        
+                        interest_vectors_array[j,l,:,:]=interest_vectors
 
 
 
-                        
-                        
+                       
 
 
-
-
-                        # y shift 
-
-
-                        
-                        
-
-
-                        
                     
-                # x and y correction if no z error 
-                    ell_1[ell_1[:,:]>10]-=23
-                    ell_1[ell_1[:,:]<-10]+=23
-                    ell_2[ell_2[:,:]>10]-=23
-                    ell_2[ell_2[:,:]<-10]+=23
+                        # now we can nan the 
+
+
+
+                        #NOTE write in test here 
+
+                        if np.any(np.abs(interest_vectors)>23/2):
+                            # print(interest_vectors)
+                            print("anomalies still present")
+
+                    
+                            breakpoint
+                                
+                    # print(realisation_name_h5_after_sorted_final_pol[j_index])
+                    # data=compare_vel_to_profile[j,r1:r2,:]
+                    # data[np.abs(data)>1000]=0
+                    # plt.plot(data ) 
+                    # plt.show()
+
+                    ell_1[ell_1[:,:]>23/2]-=23
+                    ell_1[ell_1[:,:]<-23/2]+=23
+                    ell_2[ell_2[:,:]>23/2]-=23
+                    ell_2[ell_2[:,:]<-23/2]+=23
                     # ell_1[ell_1[:,1]>10]-=23
                     # ell_1[ell_1[:,1]<-10]+=23
                     # ell_2[ell_2[:,1]>10]-=23
                     # ell_2[ell_2[:,1]<-10]+=23
-                    phant_1[phant_1[:,:]>10]-=23
-                    phant_1[phant_1[:,:]<-10]+=23
+                    phant_1[phant_1[:,:]>23/2]-=23
+                    phant_1[phant_1[:,:]<-23/2]+=23
                     # phant_1[phant_1[:,1]>10]-=23
                     # phant_1[phant_1[:,1]<-10]+=23
                   
-                    phant_2[phant_2[:,:]>10]-=23
-                    phant_2[phant_2[:,:]<-10]+=23
+                    phant_2[phant_2[:,:]>23/2]-=23
+                    phant_2[phant_2[:,:]<-23/2]+=23
                     # phant_2[phant_2[:,1]>10]-=23
                     # phant_2[phant_2[:,1]<-10]+=23
 
-                    phant_3[phant_3[:,:]>10]-=23
-                    phant_3[phant_3[:,:]<-10]+=23
-                    # phant_3[phant_3[:,1]>10]-=23
-                    # phant_3[phant_3[:,1]<-10]+=23
+                    phant_3[phant_3[:,:]>23/2]-=23
+                    phant_3[phant_3[:,:]<-23/2]+=23
 
 
-                # #y correction
-                #     ell_1[ell_1[:,1]>10]-=23
-                #     ell_1[ell_1[:,1]<-10]+=23
-                #     ell_2[ell_2[:,1]>10]-=23
-                #     ell_2[ell_2[:,1]<-10]+=23
-                        
-                    # ell_1[ell_1[:,1]>10]-=23
-                    # ell_1[ell_1[:,1]<-10]+=23
-                    # ell_2[ell_2[:,1]>10]-=23
-                    # ell_2[ell_2[:,1]<-10]+=23
-                     # #x correction
-                
-
-                    # need to compute the box size 
-                    # z coord 
-                    #ell_1[ell_1[:,2]>5]-=
-                    # ell_1[ell_1<-5]+=23
-                
-                    # ell_1[ell_1>5]=0
-                    # ell_1[ell_1<-5]=0
-                    # ell_2=pol_positions_array[j,:,2,:]-pol_positions_array[j,:,0,:]
-                    # ell_2[ell_2>5]-=23
-                    # ell_2[ell_2<-5]+=23
-                   
-                    # ell_2[ell_2>5]=0
-                    # ell_2[ell_2<-5]=0
-                    # inspecting plots
+                    phant_3[phant_3[:,1]>10]-=23
+                    phant_3[phant_3[:,1]<-10]+=23
 
                     # plt.plot(ell_1[r1:r2,0])
                     # plt.title("$|\ell_{1}|,x$")
@@ -467,6 +497,42 @@ for i in range(erate.size):
 
                     # plt.plot(ell_2[r1:r2,0])
                     # plt.title("$|\ell_{2}|,x$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+                    # plt.plot(phant_1[r1:r2,0])
+                    # plt.title("$|ph_{1}|,x$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+                    # plt.plot(phant_2[r1:r2,0])
+                    # plt.title("$|ph_{2}|,x$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+
+                    # plt.plot(phant_3[r1:r2,0])
+                    # plt.title("$|ph_{3}|,x$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+                    # plt.plot(ell_1[r1:r2,1])
+                    # plt.title("$|\ell_{1}|,y$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+                    # plt.plot(ell_2[r1:r2,1])
+                    # plt.title("$|\ell_{2}|,y$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+                    # plt.plot(ell_1[r1:r2,2])
+                    # plt.title("$|\ell_{1}|,z$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+                    # plt.plot(ell_2[r1:r2,2])
+                    # plt.title("$|\ell_{2}|,z$")
                     # plt.xlabel("output count")
                     # plt.show()
 
@@ -545,6 +611,7 @@ for i in range(erate.size):
                     # ax.scatter(particle_array[:,0], particle_array[:,1], particle_array[:,2])
                     # plt.show()
 
+                
 
 
 
@@ -554,6 +621,7 @@ for i in range(erate.size):
 
 
 
+                    
                     # need to check magnitude of ell_1 and ell_2 if its huge particle is split over the boundary 
                     # need to add 23 if component is negative or subtract 23 if component is pos
                     f_spring_1_dirn=phant_1
@@ -616,6 +684,8 @@ for i in range(erate.size):
         area_vector_mean=np.mean(area_vector_array,axis=0)
         conform_tensor_mean=np.mean( conform_tensor_array,axis=0)
         spring_force_positon_mean=np.mean(spring_force_positon_array,axis=0)
+        compare_vel_to_profile_mean=np.mean(compare_vel_to_profile,axis=0)
+        
 
 
 
@@ -629,8 +699,16 @@ for i in range(erate.size):
         area_vector_tuple=area_vector_tuple+(area_vector_mean,)
         conform_tensor_tuple=conform_tensor_tuple+(conform_tensor_mean,)
         spring_force_positon_tensor_tuple=spring_force_positon_tensor_tuple+(spring_force_positon_mean,)
+        compare_vel_to_profile_tuple=compare_vel_to_profile_tuple+(compare_vel_to_profile_mean,)
         
         count+=1
+
+#%% checking velocity profile matches
+
+for i in range(erate.size):
+    plt.plot( compare_vel_to_profile_tuple[i][:,0]) 
+    plt.show()
+
 #%% check conform tesnor 
 # check this calculation is correct 
 viscoelastic_stress_tuple=()
@@ -670,11 +748,15 @@ plt.show()
 
 #%%now do computes on mean files   
 
+# COM compute 
+particle_velocity_tuple=()
 COM_velocity_tuple=()
 COM_position_tuple=()
 erate_velocity_tuple=()
+particle_position_tuple=()
+erate_velocity_tuple=()
 averaged_z_tuple=()
-spring_force_positon_tensor_tuple=()
+
 count=0
 box_error_count=0
 for i in range(erate.size):
@@ -684,106 +766,51 @@ for i in range(erate.size):
     COM_position_array=np.zeros((row_count,3))
     erate_velocity_array=np.zeros(((row_count,1))) # only need x component
     #averaged_z_array=np.zeros(((row_count,1)))
-    spring_force_positon_array=np.zeros((row_count,6))
-    spring_dirn_array=np.zeros((row_count,3,3))
-    spring_f_array=np.zeros((row_count,3,3))
-    spring_mag_array=np.zeros((row_count,3,1))
-
+   
+    # change this to each particle instead of com 
 
     for j in range(row_count):
        
         COM_velocity_array[j,:]=np.mean(pol_velocities_tuple[i][j,:,:], axis=0)
         COM_position_array[j,:]=np.mean(pol_positions_tuple[i][j,:,:], axis=0)
         erate_velocity_array[j,0]=COM_position_array[j,2]*erate[i] # only need x component
-        #averaged_z_array=np.zeros(((lgf_row_count[i],1)))
-        
-        f_spring_1_dirn=pol_positions_tuple[i][j,0,:]-ph_positions_tuple[i][j,1,:]
-        spring_dirn_array[j,0,:]=f_spring_1_dirn
-        f_spring_1_mag=np.sqrt(np.sum((f_spring_1_dirn)**2))
-        spring_mag_array[j,0,0]=f_spring_1_mag
-        if np.any(f_spring_1_dirn)>10:
-            box_error_count=+1
-        f_spring_1=K*(f_spring_1_dirn/f_spring_1_mag)*(f_spring_1_mag-eq_spring_length)
-        spring_f_array[j,0,:]=f_spring_1
-        # spring 2
-        f_spring_2_dirn=pol_positions_tuple[i][j,1,:]-ph_positions_tuple[i][j,2,:]
-        spring_dirn_array[j,1,:]=f_spring_2_dirn
-        f_spring_2_mag=np.sqrt(np.sum((f_spring_2_dirn)**2))
-        spring_mag_array[j,1,0]=f_spring_2_mag
-
-        if np.any(f_spring_2_dirn)>10:
-            box_error_count=+1
-        f_spring_2=K*(f_spring_2_dirn/f_spring_2_mag)*(f_spring_2_mag-eq_spring_length)
-        spring_f_array[j,1,:]=f_spring_2
-        # spring 3
-
-        f_spring_3_dirn=pol_positions_tuple[i][j,2,:]-ph_positions_tuple[i][j,0,:]
-        spring_dirn_array[j,2,:]=f_spring_3_dirn
-        f_spring_3_mag=np.sqrt(np.sum((f_spring_3_dirn)**2))
-        spring_mag_array[j,2,0]=f_spring_3_mag
-        if np.any(f_spring_3_dirn)>10:
-            box_error_count=+1
-        f_spring_3=K*(f_spring_3_dirn/f_spring_3_mag)*(f_spring_3_mag-eq_spring_length)
-        spring_f_array[j,2,:]=f_spring_3
-
-        # could compute the damping force in this loop
 
 
-        spring_force_positon_tensor_xx=f_spring_1[0]*f_spring_1_dirn[0] + f_spring_2[0]*f_spring_2_dirn[0] +f_spring_3[0]*f_spring_3_dirn[0] 
-        spring_force_positon_tensor_yy=f_spring_1[1]*f_spring_1_dirn[1] + f_spring_2[1]*f_spring_2_dirn[1] +f_spring_3[1]*f_spring_3_dirn[1] 
-        spring_force_positon_tensor_zz=f_spring_1[2]*f_spring_1_dirn[2] + f_spring_2[2]*f_spring_2_dirn[2] +f_spring_3[2]*f_spring_3_dirn[2] 
-        spring_force_positon_tensor_xz=f_spring_1[0]*f_spring_1_dirn[2] + f_spring_2[0]*f_spring_2_dirn[2] +f_spring_3[0]*f_spring_3_dirn[2] 
-        spring_force_positon_tensor_xy=f_spring_1[0]*f_spring_1_dirn[1] + f_spring_2[0]*f_spring_2_dirn[1] +f_spring_3[0]*f_spring_3_dirn[1] 
-        spring_force_positon_tensor_yz=f_spring_1[1]*f_spring_1_dirn[2] + f_spring_2[1]*f_spring_2_dirn[2] +f_spring_3[1]*f_spring_3_dirn[2] 
-        
-                
-        np_array_spring_pos_tensor=np.array([spring_force_positon_tensor_xx,
-                                            spring_force_positon_tensor_yy,
-                                            spring_force_positon_tensor_zz,
-                                            spring_force_positon_tensor_xz,
-                                            spring_force_positon_tensor_xy,
-                                            spring_force_positon_tensor_yz, 
-                                                ])
-        spring_force_positon_array[j,:]= np_array_spring_pos_tensor
-
-
-
-
-
-
-
-
-
-        spring_force_positon_array[j,:]=np_array_spring_pos_tensor
-    
-    # plt.plot(spring_dirn_array[:,:,0])
-    # plt.title("x component, erate"+str(erate[i]))
-    # plt.show()
-    
-    # plt.plot(spring_dirn_array[:,:,1])
-    # plt.title("y component, erate"+str(erate[i]))
-    # plt.show()
-
-    # plt.plot(spring_dirn_array[:,:,2])
-    # plt.title("z component, erate"+str(erate[i]))
-    # plt.show()
-    plt.plot(spring_mag_array[:,0,0])
-    plt.title("spring 1, erate"+str(erate[i]))
-    plt.show()
-    
-    plt.plot(spring_mag_array[:,1,0])
-    plt.title("spring 2, erate"+str(erate[i]))
-    plt.show()
-
-    plt.plot(spring_mag_array[:,2,0])
-    plt.title("spring 3, erate"+str(erate[i]))
-    plt.show()
-    spring_force_positon_tensor_tuple=spring_force_positon_tensor_tuple+(spring_force_positon_array,)
+   
     COM_velocity_tuple=COM_velocity_tuple+(COM_velocity_array,)
     COM_position_tuple=COM_position_tuple+(COM_position_array,)
     erate_velocity_tuple=erate_velocity_tuple+(erate_velocity_array,)
     count+=1
     
+#%% Checking centre of mass matches 
+
+
+
+COM_mean_vel=np.zeros((erate.size))
+erate_mean_vel=np.zeros((erate.size))
+for i in range(erate.size):
+    COM_mean_vel[i]=np.mean(COM_velocity_tuple[i][:,0])
+    erate_mean_vel[i]=np.mean(erate_velocity_tuple[i][:,0])
+
+
+popt,pcov=curve_fit(linearfunc,COM_mean_vel,erate_mean_vel)
+plt.plot(COM_mean_vel,(popt[0]*(COM_mean_vel)+popt[1]))
+plt.scatter(COM_mean_vel,erate_mean_vel,label="gradient="+str(sigfig.round(popt[0],sigfigs=3))+",intercept="+str(sigfig.round(popt[1],sigfigs=3)))
+plt.xlabel("$v_{x,COM}$")
+plt.ylabel("$v_{x,\dot{\gamma}}$")
+plt.legend()
+print("gradient=",sigfig.round(popt[0],sigfigs=3))
+print("intercept=",sigfig.round(popt[1]))
+  #  plt.axhline(np.mean(COM_velocity_tuple[i][:,0]/erate_velocity_tuple[i][:,0]))
+    
+plt.show()
+
+
+
+
+
+
+
 #%% apply window averaging 
   
 
@@ -838,12 +865,12 @@ for i in range(erate.size):
                                                                 erate_velocity_tuple,
                                                                 array_size,
                                                                 1)[0],)
-    array_size=viscoelastic_stress_tuple[i].shape[0]
-    viscoelastic_stress_tuple_wa=viscoelastic_stress_tuple_wa+( window_averaging_pre_av(i,
-                                                                window_size,
-                                                                viscoelastic_stress_tuple,
-                                                                array_size,
-                                                                9)[0],)
+    # array_size=viscoelastic_stress_tuple[i].shape[0]
+    # viscoelastic_stress_tuple_wa=viscoelastic_stress_tuple_wa+( window_averaging_pre_av(i,
+    #                                                             window_size,
+    #                                                             viscoelastic_stress_tuple,
+    #                                                             array_size,
+    #                                                             9)[0],)
     
     nan_size[i]=array_size- window_averaging_pre_av(i,
                                                 window_size,
@@ -934,15 +961,17 @@ for i in range(erate.size):
 #       #print("error:",np.mean(erate_velocity_tuple[i][:,0])-np.mean(COM_velocity_tuple[i][:,0]))
 #       plt.legend()
 #       plt.show()
-
+COM_mean_vel=np.zeros(())
 for i in range(erate.size):
+      COM_mean_vel
       
       #plt.plot(strainplot_tuple[i][:-1],COM_velocity_tuple[i][:-1,0],label="COM",linestyle='--')
       #print(np.mean(COM_velocity_tuple[i][:,0]))
-      plt.axhline(np.mean(COM_velocity_tuple[i][:-1,0]), label="COM mean",linestyle=':',color='blueviolet')
 
+      plt.axhline(np.mean(COM_velocity_tuple[i][:-1,0])/np.mean(erate_velocity_tuple[i][:-1,0]), label="COM mean",linestyle=':',color='blueviolet')
+      plt.plot(erate[:])
       #plt.plot(erate_velocity_tuple[i][:-1,0],label="erate prediction",linestyle='--')
-      plt.axhline(np.mean(erate_velocity_tuple[i][:-1,0]), label="erate mean",linestyle='--',color='black')
+      #plt.axhline(np.mean(erate_velocity_tuple[i][:-1,0]), label="erate mean",linestyle='--',color='black')
       #print("error:",np.mean(erate_velocity_tuple[i][:,0])-np.mean(COM_velocity_tuple[i][:,0]))
       #plt.legend()
 plt.show()
@@ -966,8 +995,10 @@ for i in range(erate.size):
         plt.plot(strainplot_tuple[i],spring_force_positon_tensor_tuple[i][:,j], label=labels_stress[j])
         #plt.plot(spring_force_positon_tensor_tuple_wa[i][:,j], label=labels_stress[j]+",$\dot{\gamma}="+str(erate[i])+"$")
         #plt.plot(viscoelastic_stress_tuple_wa[i][:,j], label=labels_stress[j]+",$\dot{\gamma}="+str(erate[i])+"$")
+        plt.xlabel("$\gamma$")
+
         plt.legend()
-        plt.show()
+    plt.show()
 
 #%% normal stress
 for i in range(erate.size):
@@ -977,10 +1008,11 @@ for i in range(erate.size):
         #plt.plot(viscoelastic_stress_tuple_wa[i][:,j], label=labels_stress[j]+",$\dot{\gamma}="+str(erate[i])+"$")
         #plt.ylim(-8000,10) 
         plt.legend()
+        plt.xlabel("$\gamma$")
      plt.show()
 
 #%%
-cutoff_ratio=0.5
+cutoff_ratio=0.4
 end_cutoff_ratio=1
 folder="N_1_plots"
 
@@ -993,7 +1025,7 @@ for i in range(erate.size):
 
     N_1=spring_force_positon_tensor_tuple[i][:,0]-spring_force_positon_tensor_tuple[i][:,2]
     #N_1=viscoelastic_stress_tuple_wa[i][cutoff:end_cutoff-1,0]-viscoelastic_stress_tuple_wa[i][cutoff:end_cutoff-1,2]
-    N_1[np.abs(N_1)>2000]=0
+    #N_1[np.abs(N_1)>400]=0
     N_1_mean[i]=np.mean(N_1[:])
     print(N_1_mean)
     
@@ -1006,8 +1038,13 @@ for i in range(erate.size):
     plt.show()
 
 plt.scatter((erate[:]),N_1_mean[:])
-popt,pcov=curve_fit(linearfunc,erate[:],N_1_mean[:])
-plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
+# popt,pcov=curve_fit(linearfunc,erate[:],N_1_mean[:])
+
+# plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
+
+popt,pcov=curve_fit(quadfunc,erate[:],N_1_mean[:])
+plt.plot(erate[:],(popt[0]*(erate[:]**2)))  
+
 plt.ylabel("$N_{1}$")
 plt.xlabel("$\dot{\gamma}$")
 plt.show()
@@ -1039,8 +1076,10 @@ for i in range(erate.size):
 
 plt.scatter((erate[:]),N_2_mean[:])
 
-popt,pcov=curve_fit(linearfunc,erate[:],N_2_mean[:])
-plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
+# popt,pcov=curve_fit(linearfunc,erate[:],N_2_mean[:])
+
+# plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
+
 plt.ylabel("$N_{2}$")
 plt.xlabel("$\dot{\gamma}$")
 plt.show()
@@ -1085,12 +1124,14 @@ plt.scatter(erate[:],xz_shear_stress_mean[:]/erate[:])
 plt.axhline(np.mean(xz_shear_stress_mean[:]))
 #plt.ylim(-5,2)
 plt.show()
-
+#%%
 plt.scatter(erate[:],yz_shear_stress_mean[:])
 plt.axhline(np.mean(yz_shear_stress_mean[:]))
 #plt.ylim(-5,2)
 plt.show()
 
+
+#%%
 plt.scatter(erate[:],xy_shear_stress_mean[:])
 plt.axhline(np.mean(xy_shear_stress_mean[:]))
 #plt.ylim(-5,2)
@@ -1174,7 +1215,7 @@ for i in range(erate.size):
 label='damp_'+str(damp)+'_K_'+str(K)+'_'
 
 os.chdir(path_2_log_files)
-os.mkdir("tuple_results")
+#os.mkdir("tuple_results")
 os.chdir("tuple_results")
 
 with open(label+'spring_force_positon_tensor_tuple.pickle', 'wb') as f:
@@ -1183,14 +1224,14 @@ with open(label+'spring_force_positon_tensor_tuple.pickle', 'wb') as f:
 with open(label+'conform_tensor_tuple.pickle', 'wb') as f:
     pck.dump(conform_tensor_tuple, f)
 
-with open(label+'viscoelastic_stress_tuple.pickle', 'wb') as f:
-    pck.dump(viscoelastic_stress_tuple, f)
+# with open(label+'viscoelastic_stress_tuple.pickle', 'wb') as f:
+#     pck.dump(viscoelastic_stress_tuple, f)
 
 with open(label+'COM_velocity_tuple.pickle', 'wb') as f:
     pck.dump(COM_velocity_tuple, f)
 
-with open(label+'COM_position_tuple.pickle', 'wb') as f:
-    pck.dump(COM_position_tuple, f)
+#with open(label+'COM_position_tuple.pickle', 'wb') as f:
+    #pck.dump(COM_position_tuple, f)
 
 with open(label+'erate_velocity_tuple.pickle', 'wb') as f:
     pck.dump(erate_velocity_tuple, f)
