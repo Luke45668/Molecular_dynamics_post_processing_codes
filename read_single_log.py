@@ -42,30 +42,51 @@ colour = [
 from scipy.optimize import curve_fit
 def linearfunc(x,a):
     return (a*x)
-steps=1000000000 
+steps=1000000000
+steps=1315000 
 filepath="/Users/luke_dev/Documents/simulation_test_folder/langevin_test"
+filepath="/Users/luke_dev/Documents/simulation_test_folder/low_damp_test"
 os.chdir(filepath)
 log_name_list=glob.glob("log.lang*")
 log_files =()
 
 thermo_vars='         KinEng          Temp          TotEng        c_msd[3]      c_vacf[3]   '
+thermo_vars='         KinEng         PotEng        c_myTemp        c_bias         TotEng    '
 for log_name in log_name_list:
         log_files=log_files+(log2numpy_reader(log_name,
                             filepath,
                             thermo_vars),)
-log_array=np.zeros((11,1000001,6))
+log_array=np.zeros((10,133,6))
+col=4
 
-
-for i in range(11):
+for i in range(4):
 
         time=steps*0.00101432490424207
         log_array[i,:,:]=log_files[i]
 
-        # timepoints=np.linspace(0,time,log_files[i].shape[0])
-        # plt.plot(timepoints,log_files[i][:,4])
+        timepoints=np.linspace(0,time,log_files[i].shape[0])
+        plt.plot(timepoints[1:],log_files[i][1:,col])
+        plt.axhline(np.mean(log_files[i][1:,col]))
+        print(np.mean(log_files[i][1:,col]))
         # popt,pcov=curve_fit(linearfunc,timepoints,log_files[i][:,4])
         # plt.plot(timepoints,(popt[0]*(timepoints)))
-#plt.show()
+plt.show()
+
+#%%
+col=3
+
+for i in range(5):
+
+        time=steps*0.00101432490424207
+        log_array[i,:,:]=log_files[i]
+
+        timepoints=np.linspace(0,time,log_files[i].shape[0])
+        plt.plot(timepoints[1:],log_files[i][1:,col])
+        plt.axhline(np.mean(log_files[i][1:,col]))
+        print(np.mean(log_files[i][1:,col]))
+        # popt,pcov=curve_fit(linearfunc,timepoints,log_files[i][:,4])
+        # plt.plot(timepoints,(popt[0]*(timepoints)))
+plt.show()
 #%%
 log_mean=np.mean(log_array,axis=0)
 timepoints=np.linspace(0,time,log_mean.shape[0])
@@ -87,8 +108,8 @@ print("mean VACF",np.mean(log_mean[:,5]))
 plt.show()
 # %% temp plot
 
-plt.plot(timepoints,log_mean[:,2])
-print("temp",np.mean(log_mean[:,2]))
+plt.plot(timepoints,log_mean[:,4])
+print("temp",np.mean(log_mean[:,4]))
 
 plt.ylabel("T")
 
