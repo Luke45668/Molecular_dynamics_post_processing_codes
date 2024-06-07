@@ -38,25 +38,55 @@ import pickle as pck
 #%% 
 # damp 0.1 seems to work well, need to add window averaging, figure out how to get imposed shear to match velocity of particle
 # neeed to then do a huge run 
-damp=0.01
-strain_total=400
-path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/Full_run_damp_'+str(damp)+'_temp_test_1'
-path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_60/Full_run_damp_0.01_dump_10000_strain_600'
-#path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_60/run_10_reals_damp_0.05_dump_10000_strain_600'
-#path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/'
-#path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/K_40/Full_run_damp_0.01_dump_10000_strain_600'
-path_2_log_files='/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/run_664859'
-# path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/kdamp_prod_3_init_test_10_reals_200_strain'
-# erate= np.array([0.2,0.1,0.05,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01]) 
-erate= np.flip(np.array([0.03,0.0275,0.025,0.0225,0.02,0.0175,0.015,0.0125,0.01,0.0075,0.005,0.0025,0.001,0.00075,0.0005]))
-#erate= np.array([0.0075, 0.01  , 0.0125, 0.015 , 0.0175, 0.02  , 0.0225, 0.025 ,
-      # 0.0275, 0.03])
+damp=0.03633
 
+strain_total=400
+
+path_2_log_files='/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/run_868387_high_T_iteration_moreoutputs'
+
+
+erate=np.flip(np.array([100,50,25,10,5,1,0.9,0.7,0.5,0.2,0.1,0.09,0.08,
+                0.07,0.06,0.05,0.04,
+                0.03,0.0275,0.025,0.0225,
+                0.02,0.0175,0.015,0.0125,
+                0.01,0.0075,0.005,0.0025,
+                0.001,0.00075,0.0005]))
+
+no_timesteps=np.flip(np.array([       4000,      8000,     16000,     39000,     79000,    394000,
+          438000,    563000,    789000,   1972000,   3944000,   4382000,
+         4929000,   5634000,   6573000,   7887000,   9859000,  13145000,
+        14340000,  15774000,  17527000,  19718000,  22534000,  26290000,
+        31548000,  39435000,  52580000,  78870000, 157740000, 394351000,
+       525801000, 788702000]))
+
+erate=np.flip(np.array([1,0.9,0.7,0.5,0.35,0.2,0.1,0.09,0.08,
+                0.07,0.06,0.05,0.04,
+                0.03,0.0275,0.025,0.0225,
+                0.02,0.0175,0.015,0.0125,
+                0.01,0.0075,0.005,0.0025,
+                0.001,0.00075,0.0005]))
 
 # #600 strain 
-no_timesteps=np.flip(np.array([19718000,   21510000,   23661000,   26290000,   29576000,
-         33802000,   39435000,   47322000,   59153000,   78870000,
-        118305000,  236611000,  591526000,  788702000, 1183053000]))
+
+
+no_timesteps=np.flip(np.array([   394000,
+          438000,    563000,    789000, 1127000,  1972000,   3944000,   4382000,
+         4929000,   5634000,   6573000,   7887000,   9859000,  13145000,
+        14340000,  15774000,  17527000,  19718000,  22534000,  26290000,
+        31548000,  39435000,  52580000,  78870000, 157740000, 394351000,
+       525801000, 788702000]))
+
+
+# erate=np.flip(np.array([1,0.9,0.7,0.5]))
+
+# # #600 strain 
+
+
+# no_timesteps=np.flip(np.array([   394000,
+#           438000,    563000,    789000]))
+
+
+#no_timesteps=np.flip(np.array([       4000,      8000,     16000,     39000,     79000,    394000]))
 #200 strain 
 # no_timesteps=np.flip(np.array([26290000,  28680000,  31548000,  35053000,  39435000,  45069000,
 #         52580000,  63096000,  78870000, 105160000,157740000,  315481000,  788702000, 1051603000, 1577404000]))
@@ -68,7 +98,7 @@ dump_freq=10000
 lgf_row_count=np.ceil((no_timesteps/thermo_freq )).astype("int")
 dp_row_count=np.ceil((no_timesteps/dump_freq)).astype("int")
 
-thermo_vars='         KinEng         PotEng          Temp          c_bias         TotEng    '
+thermo_vars='         KinEng         PotEng        c_myTemp        c_bias         TotEng    '
 j_=10
 K=500
 eq_spring_length=3*np.sqrt(3)/2
@@ -177,6 +207,9 @@ def linearfunc(x,a,b):
 def round_down_to_even(f):
     return m.floor(f / 2.) * 2
 
+def sinusoidfit(a,b,c,x):
+    return a*np.sin(b*x)+c 
+
 realisations_for_sorting_after_pol=[]
 realisation_name_h5_after_sorted_final_pol=org_names(realisations_for_sorting_after_pol,
                                                      realisation_name_pol,
@@ -201,7 +234,10 @@ realisation_name_log_sorted_final=org_names(realisations_for_sorting_after_log,
 #%%read the  log files 
 #no_timesteps=np.array([ 2958000,  5915000, 11831000, 23661000, 26290000, 29576000,
  #      33802000, 39435000, 47322000, 59153000])
-
+strain_total=np.flip(np.array([400,400,400,400,400,400,400,400,400,800,800,800,800,800,800,
+              800,800,800,800,800,800,400,400,400,400,400,400,400]))
+md_step=0.00101432490424207
+strain_total=np.repeat(400,erate.size)
 log_file_tuple=()
 pol_velocities_tuple=()
 pol_positions_tuple=()
@@ -213,6 +249,7 @@ spring_force_positon_tensor_tuple=()
 count=0
 interest_vectors_tuple=()
 compare_vel_to_profile_tuple=()
+tilt_test=[]
 #need to fix this issue where the arrays are all slightly different sizes by one or two 
 for i in range(erate.size):
      i_=(count*j_)
@@ -224,6 +261,7 @@ for i in range(erate.size):
         outputdim_log=log2numpy_reader(realisation_name_log_sorted_final[i_],
                                                             path_2_log_files,
                                                             thermo_vars).shape[0]
+        dump_freq=int(realisation_name_h5_after_sorted_final_pol[i_].split('_')[10])
         
         log_file_array=np.zeros((j_,outputdim_log,6))
         pol_velocities_array=np.zeros((j_,outputdim_hdf5,3,3))
@@ -235,10 +273,15 @@ for i in range(erate.size):
         COM_velocity_array=np.zeros((j_,outputdim_hdf5,3))
         COM_position_array=np.zeros((j_,outputdim_hdf5,3))
         erate_velocity_array=np.zeros(((j_,outputdim_hdf5,1)))
+
+        # need to compute the total strain based on the number of outputs, not 
+        # just assume it reaches 400
      
-        strain_array=np.linspace(0,strain_total,outputdim_hdf5)
+     
+       
         #NOTE check you have the correct total strain or these corrections dont work
         spring_force_positon_array=np.zeros((j_,outputdim_hdf5,6))
+       
         interest_vectors_array=np.zeros((j_,outputdim_hdf5,5,3))
         compare_vel_to_profile=np.zeros((j_,outputdim_hdf5,3))
 
@@ -248,7 +291,7 @@ for i in range(erate.size):
 
                 # need to get rid of print statements in log2numpy 
                 # print(realisation_name_log_sorted_final[j_index])
-                # print(j_index)
+                print(j_index)
                 log_file_array[j,:,:]=log2numpy_reader(realisation_name_log_sorted_final[j_index],
                                                             path_2_log_files,
                                                             thermo_vars)
@@ -296,9 +339,9 @@ for i in range(erate.size):
                     # r1=52544
                     # r2=52545
 
-                    r1=11760
-                    r2=11770
-            
+                    # r1=1851
+                    # r2=1852
+                   
                     r1=0
                     r2=outputdim_hdf5
                     
@@ -331,26 +374,30 @@ for i in range(erate.size):
                         
                         interest_vectors=np.array([ell_1[l,:],ell_2[l,:],phant_1[l,:],phant_2[l,:],phant_3[l,:]])
                         
-                        #print("unmodified particle array ",particle_array)
-                        #print("interest vectors", interest_vectors)
+                        # print("unmodified particle array ",particle_array)
+                        # print("unmodified interest vectors", interest_vectors)
 
                         
-                        strain= strain_array[l]-np.floor(strain_array[l])
-                        #print("strain",strain)
+                        
+                        strain=l*dump_freq*md_step*erate[i] -\
+                              np.floor(l*dump_freq*md_step*erate[i])
                         
                         
                         if strain <= 0.5:
                             tilt= (23)*(strain)
+                            #tilt_test.append(tilt)
                         else:
                                 
                             tilt=-(1-strain)*23
-                       # print("tilt",tilt)
+                           # tilt_test.append(tilt)
+                        #print("tilt",tilt)
 
                         # z shift 
                         # convention shift down to lower boundary 
 
                         if np.any(np.abs(interest_vectors[:,2])>23/2):
                             #print("periodic anomalies detected")
+                           # print("z shift performed")
                             
                            
 
@@ -381,6 +428,7 @@ for i in range(erate.size):
                             y_coords=particle_array[:,1]
                             y_coords[y_coords<23/2]+=23
                             particle_array[:,1]=y_coords
+                           # print("y shift performed")
 
                        # print("post y shift mod particle array",particle_array)
                         
@@ -404,6 +452,7 @@ for i in range(erate.size):
                             box_position_x= x_coords -(z_coords/23)*tilt
                             x_coords[box_position_x<23/2]+=23
                             particle_array[:,0]=x_coords
+                           # print("x shift performed")
 
                        # print("post x shift mod particle array",particle_array)
 
@@ -413,7 +462,7 @@ for i in range(erate.size):
 
                         # #particle_array[particle_array[:,0]>23/2]-=23
 
-                       # print("mod particle array",particle_array)
+                        #print("mod particle array",particle_array)
                         #recompute interest vectors
                         ell_1_c=particle_array[1,:]-particle_array[0,:]
                         ell_2_c=particle_array[2,:]-particle_array[0,:]
@@ -425,7 +474,7 @@ for i in range(erate.size):
                         #interest_vectors[np.abs(interest_vectors)>23/2]=float('nan')
                         
 
-                        #print(interest_vectors)
+                        #print("interest vectors",interest_vectors)
 
 
 
@@ -454,7 +503,7 @@ for i in range(erate.size):
 
                         if np.any(np.abs(interest_vectors)>23/2):
                             # print(interest_vectors)
-                            print("anomalies still present")
+                            # print("anomalies still present")
 
                     
                             breakpoint
@@ -489,6 +538,10 @@ for i in range(erate.size):
 
                     phant_3[phant_3[:,1]>10]-=23
                     phant_3[phant_3[:,1]<-10]+=23
+
+                    
+                    interest_vectors=np.array([ell_1,ell_2,phant_1,phant_2,phant_3])
+                    # interest_vectors_array[j,:,:,:]=interest_vectors
 
                     # plt.plot(ell_1[r1:r2,0])
                     # plt.title("$|\ell_{1}|,x$")
@@ -574,18 +627,18 @@ for i in range(erate.size):
                     # plt.show()
 
 
-                    # plt.plot(phant_1[:,1])
+                    # plt.plot(phant_1[r1:r2,1])
                     # plt.title("$|ph_{1}|,y$")
                     # plt.xlabel("output count")
                     # plt.show()
 
-                    # plt.plot(phant_2[:,1])
+                    # plt.plot(phant_2[r1:r2,1])
                     # plt.title("$|ph_{2}|,y$")
                     # plt.xlabel("output count")
                     # plt.show()
 
 
-                    # plt.plot(phant_3[:,1])
+                    # plt.plot(phant_3[r1:r2,1])
                     # plt.title("$|ph_{3}|,y$")
                     # plt.xlabel("output count")
                     # plt.show()
@@ -606,10 +659,11 @@ for i in range(erate.size):
                     # plt.xlabel("output count")
                     # plt.show()
 
-                    # fig = plt.figure()
-                    # ax = fig.add_subplot(projection='3d')
-                    # ax.scatter(particle_array[:,0], particle_array[:,1], particle_array[:,2])
-                    # plt.show()
+                #     fig = plt.figure()
+                #     ax = fig.add_subplot(projection='3d')
+                #     ax.plot(particle_array[0,:], particle_array[1,:], particle_array[2,:])
+                #    # ax.scatter(particle_array[3,:], particle_array[4,:], particle_array[5,:])
+                #     plt.show()
 
                 
 
@@ -660,9 +714,12 @@ for i in range(erate.size):
                                                         spring_force_positon_tensor_xy,
                                                         spring_force_positon_tensor_yz, 
                                                             ])
-                    
+                   
 
                     spring_force_positon_array[j,:,:]= np_array_spring_pos_tensor.T
+                    
+
+
                     area_vector_array[j,:,:]=np.cross(ell_1,ell_2,axisa=1,axisb=1)
                     conform_tensor_array[j,:,0]=area_vector_array[j,:,0]*area_vector_array[j,:,0]#xx
                     conform_tensor_array[j,:,1]=area_vector_array[j,:,1]*area_vector_array[j,:,1]#yy
@@ -675,7 +732,7 @@ for i in range(erate.size):
                     conform_tensor_array[j,:,8]=area_vector_array[j,:,2]*area_vector_array[j,:,1]#zy
                     
                     
-                                
+        interest_vectors_mean=np.mean(interest_vectors_array,axis=0)                        
         lgf_mean=np.mean(log_file_array,axis=0)    
         pol_velocities_mean=np.mean(pol_velocities_array,axis=0)
         pol_positions_mean=np.mean(pol_positions_array,axis=0)
@@ -684,6 +741,7 @@ for i in range(erate.size):
         area_vector_mean=np.mean(area_vector_array,axis=0)
         conform_tensor_mean=np.mean( conform_tensor_array,axis=0)
         spring_force_positon_mean=np.mean(spring_force_positon_array,axis=0)
+        
         compare_vel_to_profile_mean=np.mean(compare_vel_to_profile,axis=0)
         
 
@@ -700,6 +758,7 @@ for i in range(erate.size):
         conform_tensor_tuple=conform_tensor_tuple+(conform_tensor_mean,)
         spring_force_positon_tensor_tuple=spring_force_positon_tensor_tuple+(spring_force_positon_mean,)
         compare_vel_to_profile_tuple=compare_vel_to_profile_tuple+(compare_vel_to_profile_mean,)
+        interest_vectors_tuple=interest_vectors_tuple+(interest_vectors_mean,)
         
         count+=1
 
@@ -837,7 +896,7 @@ COM_position_tuple_wa=()
 erate_velocity_tuple_wa=()
 viscoelastic_stress_tuple_wa=()
 nan_size=np.zeros((erate.size))
-window_size=5  #50 made n2 look good
+window_size=1  #50 made n2 look good
 
 for i in range(erate.size):
     array_size=spring_force_positon_tensor_tuple[i].shape[0]
@@ -890,10 +949,18 @@ for i in range(erate.size):
      
 
  #%% plots   
+erate=np.flip(np.array([1,0.9,0.7,0.5,0.2,0.1,0.09,0.08,
+                0.07,0.06,0.05,0.04,
+                0.03,0.0275,0.025,0.0225,
+                0.02,0.0175,0.015,0.0125,
+                0.01,0.0075,0.005,0.0025,
+                0.001,0.00075,0.0005]))
+# strain_total=np.flip(np.array([400,400,400,400,400,400,400,400,400,800,800,800,800,800,800,
+#               800,800,800,800,800,800,400,400,400,400,400,400])) #NOTE finish this so there can be different amounts of strain 
 strainplot_tuple=()
 for i in range(erate.size):
      strain_unit=strain_total/lgf_row_count[i]
-     strain_plotting_points= np.linspace(0,strain_total,log_file_tuple[i].shape[0])
+     strain_plotting_points= np.linspace(0,strain_total[i],log_file_tuple[i].shape[0])
    
      strainplot_tuple=strainplot_tuple+(strain_plotting_points,)  
      print(strainplot_tuple[i].size)
@@ -905,15 +972,16 @@ def strain_plotting_points(total_strain,points_per_iv):
      return  strain_plotting_points
 
 
+
 #%%
 folder="temperature_plots"
 folder_check_or_create(path_2_log_files,folder)
-column=3   
+column=4
 final_temp=np.zeros((erate.size))
 for i in range(erate.size):
      
     plt.plot(strainplot_tuple[i][:],log_file_tuple[i][:,column])
-    final_temp[i]=log_file_tuple[i][-1,column]
+    final_temp[i]=np.mean(log_file_tuple[i][:,column])
     
     mean_temp=np.mean(log_file_tuple[i][:,column])
     plt.axhline(np.mean(log_file_tuple[i][:,column]))
@@ -926,10 +994,10 @@ for i in range(erate.size):
 
 
 #%%
-plt.scatter(erate,final_temp)
+plt.scatter(erate[:],final_temp)
 plt.ylabel("$T$", rotation=0)
 plt.xlabel('$\dot{\gamma}$')
-plt.axhline(np.mean(final_temp))
+
 plt.savefig("temp_vs_gdot_damp_"+str(damp)+"_tstrain_"+str(strain_total)+"_.pdf",dpi=1200,bbox_inches='tight')
 
 
@@ -942,11 +1010,11 @@ plt.show()
 #%%
 strainplot_tuple=()
 for i in range(erate.size):
-     strain_unit=strain_total/lgf_row_count[i]
-     strain_plotting_points= np.linspace(0,strain_total, spring_force_positon_tensor_tuple[i].shape[0])
+     #strain_unit=strain_total/lgf_row_count[i]
+     strain_plotting_points= np.linspace(0,strain_total[i], spring_force_positon_tensor_tuple[i].shape[0])
    
      strainplot_tuple=strainplot_tuple+(strain_plotting_points,)  
-     print(strainplot_tuple[i].size)
+     print(strainplot_tuple[0].size)
 
 # compute erate prediction 
 
@@ -977,7 +1045,24 @@ for i in range(erate.size):
 plt.show()
 
 
-#%% plotting damping force
+#%% spring_extensions
+labels_interest=["$\ell_{1}$",
+               "$\ell_{2}$",
+               "$sp_{1}$",
+               "$sp_{2}$",
+               "$sp_{3}$"]
+for i in range(erate.size):
+    #for j in range(2,5):
+        spring_extension=np.sqrt(np.sum(interest_vectors_tuple[i][:,:,:]**2,axis=1))-eq_spring_length
+        #plt.plot(strainplot_tuple[i],spring_extension, label=labels_interest[j])
+        plt.hist(spring_extension,density=True)
+        plt.xlabel("$\Delta x$", rotation=0)
+        plt.title("$\dot{\gamma}="+str(erate[i])+"$")
+        #plt.xlabel("$\gamma$")
+        plt.legend()
+        plt.show()
+
+
 
 
 #%% look at internal stresses
@@ -1001,18 +1086,24 @@ for i in range(erate.size):
     plt.show()
 
 #%% normal stress
+#NOTE analyse the frequencies of these plots there is something periodic 
+
 for i in range(erate.size):
      for j in range(0,3):
+       # popt,pcov=curve_fit(sinusoidfit,strainplot_tuple[i],spring_force_positon_tensor_tuple[i][:,j])
         plt.plot(strainplot_tuple[i],spring_force_positon_tensor_tuple[i][:,j], label=labels_stress[j])
+        #plt.plot(spring_force_positon_tensor_tuple[i][:,j], label=labels_stress[j])
+      #  plt.plot(strainplot_tuple[i], popt[0]*np.sin(popt[1]*strainplot_tuple[i])+popt[2])
         #plt.plot(spring_force_positon_tensor_tuple_wa[i][:,j], label=labels_stress[j]+",$\dot{\gamma}="+str(erate[i])+"$")
         #plt.plot(viscoelastic_stress_tuple_wa[i][:,j], label=labels_stress[j]+",$\dot{\gamma}="+str(erate[i])+"$")
         #plt.ylim(-8000,10) 
+        plt.title("$\dot{\gamma}="+str(erate[i])+"$")
         plt.legend()
         plt.xlabel("$\gamma$")
      plt.show()
 
 #%%
-cutoff_ratio=0.4
+cutoff_ratio=0.1
 end_cutoff_ratio=1
 folder="N_1_plots"
 
@@ -1042,8 +1133,8 @@ plt.scatter((erate[:]),N_1_mean[:])
 
 # plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
 
-popt,pcov=curve_fit(quadfunc,erate[:],N_1_mean[:])
-plt.plot(erate[:],(popt[0]*(erate[:]**2)))  
+# popt,pcov=curve_fit(quadfunc,erate[:],N_1_mean[:])
+# plt.plot(erate[:],(popt[0]*(erate[:]**2)))  
 
 plt.ylabel("$N_{1}$")
 plt.xlabel("$\dot{\gamma}$")
@@ -1052,7 +1143,7 @@ plt.show()
 folder="N_2_plots"
 # cutoff_ratio=0.5
 # end_cutoff_ratio=0.7
-cutoff_ratio=0.5
+cutoff_ratio=0.1
 end_cutoff_ratio=1
 N_2_mean=np.zeros((erate.size))
 for i in range(erate.size):
@@ -1213,7 +1304,7 @@ for i in range(erate.size):
 
 #%% save tuples
 label='damp_'+str(damp)+'_K_'+str(K)+'_'
-
+import pickle as pck
 os.chdir(path_2_log_files)
 #os.mkdir("tuple_results")
 os.chdir("tuple_results")
@@ -1223,6 +1314,9 @@ with open(label+'spring_force_positon_tensor_tuple.pickle', 'wb') as f:
 
 with open(label+'conform_tensor_tuple.pickle', 'wb') as f:
     pck.dump(conform_tensor_tuple, f)
+
+with open(label+'interest_vectors_tuple.pickle','wb') as f:
+    pck.dump(interest_vectors_tuple,f)
 
 # with open(label+'viscoelastic_stress_tuple.pickle', 'wb') as f:
 #     pck.dump(viscoelastic_stress_tuple, f)
