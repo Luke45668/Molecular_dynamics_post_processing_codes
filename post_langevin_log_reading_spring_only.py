@@ -14,8 +14,8 @@ import matplotlib.colors as mcolors
 import regex as re
 import pandas as pd
 import sigfig
-plt.rcParams.update(plt.rcParamsDefault)
-plt.rcParams['text.usetex'] = True
+# plt.rcParams.update(plt.rcParamsDefault)
+# plt.rcParams['text.usetex'] = True
 from mpl_toolkits import mplot3d
 from matplotlib.gridspec import GridSpec
 import scipy.stats
@@ -24,7 +24,7 @@ import mmap
 import h5py as h5
 import math as m 
 
-
+import seaborn as sns
 
 path_2_post_proc_module= '/Users/luke_dev/Documents/MPCD_post_processing_codes/'
 os.chdir(path_2_post_proc_module)
@@ -45,19 +45,19 @@ strain_total=400
 path_2_log_files='/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/run_868387_high_T_iteration_moreoutputs'
 
 
-erate=np.flip(np.array([100,50,25,10,5,1,0.9,0.7,0.5,0.2,0.1,0.09,0.08,
-                0.07,0.06,0.05,0.04,
-                0.03,0.0275,0.025,0.0225,
-                0.02,0.0175,0.015,0.0125,
-                0.01,0.0075,0.005,0.0025,
-                0.001,0.00075,0.0005]))
+# erate=np.flip(np.array([100,50,25,10,5,1,0.9,0.7,0.5,0.2,0.1,0.09,0.08,
+#                 0.07,0.06,0.05,0.04,
+#                 0.03,0.0275,0.025,0.0225,
+#                 0.02,0.0175,0.015,0.0125,
+#                 0.01,0.0075,0.005,0.0025,
+#                 0.001,0.00075,0.0005]))
 
-no_timesteps=np.flip(np.array([       4000,      8000,     16000,     39000,     79000,    394000,
-          438000,    563000,    789000,   1972000,   3944000,   4382000,
-         4929000,   5634000,   6573000,   7887000,   9859000,  13145000,
-        14340000,  15774000,  17527000,  19718000,  22534000,  26290000,
-        31548000,  39435000,  52580000,  78870000, 157740000, 394351000,
-       525801000, 788702000]))
+# no_timesteps=np.flip(np.array([       4000,      8000,     16000,     39000,     79000,    394000,
+#           438000,    563000,    789000,   1972000,   3944000,   4382000,
+#          4929000,   5634000,   6573000,   7887000,   9859000,  13145000,
+#         14340000,  15774000,  17527000,  19718000,  22534000,  26290000,
+#         31548000,  39435000,  52580000,  78870000, 157740000, 394351000,
+#        525801000, 788702000]))
 
 erate=np.flip(np.array([1,0.9,0.7,0.5,0.35,0.2,0.1,0.09,0.08,
                 0.07,0.06,0.05,0.04,
@@ -732,7 +732,9 @@ for i in range(erate.size):
                     conform_tensor_array[j,:,8]=area_vector_array[j,:,2]*area_vector_array[j,:,1]#zy
                     
                     
-        interest_vectors_mean=np.mean(interest_vectors_array,axis=0)                        
+        interest_vectors_mean=np.mean(np.sqrt(np.sum(interest_vectors_array**2,axis=3)),axis=0)    
+        # need to take magnitude before averaging 
+                            
         lgf_mean=np.mean(log_file_array,axis=0)    
         pol_velocities_mean=np.mean(pol_velocities_array,axis=0)
         pol_positions_mean=np.mean(pol_positions_array,axis=0)
@@ -852,17 +854,18 @@ for i in range(erate.size):
     erate_mean_vel[i]=np.mean(erate_velocity_tuple[i][:,0])
 
 
-popt,pcov=curve_fit(linearfunc,COM_mean_vel,erate_mean_vel)
-plt.plot(COM_mean_vel,(popt[0]*(COM_mean_vel)+popt[1]))
-plt.scatter(COM_mean_vel,erate_mean_vel,label="gradient="+str(sigfig.round(popt[0],sigfigs=3))+",intercept="+str(sigfig.round(popt[1],sigfigs=3)))
-plt.xlabel("$v_{x,COM}$")
-plt.ylabel("$v_{x,\dot{\gamma}}$")
-plt.legend()
-print("gradient=",sigfig.round(popt[0],sigfigs=3))
-print("intercept=",sigfig.round(popt[1]))
-  #  plt.axhline(np.mean(COM_velocity_tuple[i][:,0]/erate_velocity_tuple[i][:,0]))
-    
+    popt,pcov=curve_fit(linearfunc,COM_mean_vel,erate_mean_vel)
+    plt.plot(COM_mean_vel,(popt[0]*(COM_mean_vel)+popt[1]))
+    plt.scatter(COM_mean_vel,erate_mean_vel,label="gradient="+str(sigfig.round(popt[0],sigfigs=3))+",intercept="+str(sigfig.round(popt[1],sigfigs=3)))
+    plt.xlabel("$v_{x,COM}$")
+    plt.ylabel("$v_{x,\dot{\gamma}}$")
+    plt.legend()
+    print("gradient=",sigfig.round(popt[0],sigfigs=3))
+    print("intercept=",sigfig.round(popt[1]))
+    #  plt.axhline(np.mean(COM_velocity_tuple[i][:,0]/erate_velocity_tuple[i][:,0]))
+        
 plt.show()
+
 
 
 
@@ -1046,21 +1049,37 @@ plt.show()
 
 
 #%% spring_extensions
+# still some spuriously large values of extension
 labels_interest=["$\ell_{1}$",
                "$\ell_{2}$",
                "$sp_{1}$",
                "$sp_{2}$",
                "$sp_{3}$"]
 for i in range(erate.size):
-    #for j in range(2,5):
-        spring_extension=np.sqrt(np.sum(interest_vectors_tuple[i][:,:,:]**2,axis=1))-eq_spring_length
+    for j in range(2,3):
+        spring_extension=interest_vectors_tuple[i][:,j]-eq_spring_length
+        spring_extension[np.abs(spring_extension)>0.5]=0
         #plt.plot(strainplot_tuple[i],spring_extension, label=labels_interest[j])
-        plt.hist(spring_extension,density=True)
-        plt.xlabel("$\Delta x$", rotation=0)
+        #plt.hist(spring_extension,density=True)
+        sns.kdeplot(spring_extension,label="$\dot{\gamma}="+str(erate[i])+"$")
+        plt.ylabel("$\Delta x$", rotation=0)
         plt.title("$\dot{\gamma}="+str(erate[i])+"$")
         #plt.xlabel("$\gamma$")
         plt.legend()
-        plt.show()
+plt.show()
+
+for i in range(erate.size):
+    for j in range(0,1):
+        spring_extension=interest_vectors_tuple[i][:,j]-3
+        spring_extension[np.abs(spring_extension)>0.5]=0
+        #plt.plot(strainplot_tuple[i],spring_extension, label=labels_interest[j])
+        #plt.hist(spring_extension,density=True)
+        sns.kdeplot(spring_extension,label="$\dot{\gamma}="+str(erate[i])+"$")
+        plt.ylabel("$\Delta x$", rotation=0)
+        plt.title("$\dot{\gamma}="+str(erate[i])+"$")
+        #plt.xlabel("$\gamma$")
+        plt.legend()
+plt.show()
 
 
 
