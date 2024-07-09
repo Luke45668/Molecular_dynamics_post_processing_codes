@@ -73,7 +73,7 @@ K=np.array([ 500     , 2000   ,
 strain_total=400
 
 path_2_log_files='/Users/luke_dev/Documents/simulation_test_folder/kdamp_prod_3_init_test_10_reals_200_strain/tuple_results'
-path_2_log_files='/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/run_868387_high_T_iteration_moreoutputs/tuple_results'
+path_2_log_files='/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/single_particle/run_868387_high_T_iteration_moreoutputs/tuple_results'
 #path_2_log_files='/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/run_run_694356/tuple_results'
 
 # erate= np.array([0.0075, 0.01  , 0.0125, 0.015 , 0.0175, 0.02  , 0.0225, 0.025 ,
@@ -366,10 +366,10 @@ for j in range(K.size):
         plt.show()
 
 #%%
-cutoff_ratio=0.1
+cutoff_ratio=0.2
 end_cutoff_ratio=1
 j_point_1=0
-j_point_2=K.size
+j_point_2=2
 folder="N_1_plots"
 
 N_1_mean=np.zeros((K.size,erate.size))
@@ -400,7 +400,7 @@ for j in range(j_point_1,j_point_2):
 #%% 
 for j in range(j_point_1,j_point_2):
    # plt.scatter((erate[:]),N_1_mean[j,:],label="$K="+str(K[j])+"$" ,marker=marker[j])
-    plt.errorbar((erate[:]),N_1_mean[j,:],yerr= np.abs(N_1_mean_std_dev[j,:]/np.sqrt(j_)),label="$K="+str(K[j])+"$" ,marker=marker[j])
+    plt.errorbar((erate[:]),N_1_mean[j,:]/K[j],yerr= np.abs(N_1_mean_std_dev[j,:]/np.sqrt(j_))/K[j],label="$K="+str(K[j])+"$" ,marker=marker[j])
     #popt,pcov=curve_fit(linearfunc,erate[:],N_1_mean[j,:])
     #plt.plot(erate[:],(popt[0]*(erate[:])+popt[1]))
     plt.ylabel("$N_{1}$", rotation=0, labelpad=20)
@@ -445,7 +445,7 @@ plt.savefig(path_2_log_files+"/plots/N1_K_vs_T.pdf",dpi=1200)
 plt.show()
 
  #%%
-cutoff_ratio=0.1
+cutoff_ratio=0.2
 end_cutoff_ratio=1
 folder="N_2_plots"
 
@@ -856,20 +856,23 @@ for j in range(K.size):
 
 
 #%% spring extension distributions
-
-
-for j in range(0,27):
+stokes_bead_rad=0.25
+erate_1=0
+erate_2=27
+#for j in range(0,27):
+for j in range(erate_1,erate_2):
         
         spring_extensions=np.zeros((len(interest_vectors_batch_tuple[j]),3))
         
         for i in range(0,len(interest_vectors_batch_tuple[j])):
 
      
-            spring_extensions[i,0]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][2,:]**2))-eq_spring_length
-            spring_extensions[i,1]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][3,:]**2))-eq_spring_length
-            spring_extensions[i,2]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][4,:]**2))-eq_spring_length
+            spring_extensions[i,0]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][2,:]**2))-eq_spring_length-stokes_bead_rad-(0.01*stokes_bead_rad)
+            spring_extensions[i,1]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][3,:]**2))-eq_spring_length-stokes_bead_rad-(0.01*stokes_bead_rad)
+            spring_extensions[i,2]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][4,:]**2))-eq_spring_length-stokes_bead_rad-(0.01*stokes_bead_rad)
  
         sns.kdeplot(data=spring_extensions)
+        #plt.plot(spring_extensions)
 
         plt.xlabel("$\Delta x$")
     
@@ -889,11 +892,12 @@ for j in range(27,56):
         for i in range(0,len(interest_vectors_batch_tuple[j])):
 
      
-            spring_extensions[i,0]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][2,:]**2))-eq_spring_length
-            spring_extensions[i,1]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][3,:]**2))-eq_spring_length
-            spring_extensions[i,2]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][4,:]**2))-eq_spring_length
+            spring_extensions[i,0]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][2,:]**2))-eq_spring_length-stokes_bead_rad-(0.01*stokes_bead_rad)
+            spring_extensions[i,1]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][3,:]**2))-eq_spring_length-stokes_bead_rad-(0.01*stokes_bead_rad)
+            spring_extensions[i,2]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][4,:]**2))-eq_spring_length-stokes_bead_rad-(0.01*stokes_bead_rad)
  
-        sns.kdeplot(data=spring_extensions)
+       #sns.kdeplot(data=spring_extensions)
+        plt.plot(spring_extensions)
 
         plt.xlabel("$\Delta x$")
     
@@ -905,8 +909,67 @@ for j in range(27,56):
     
 # Plot formatting
 plt.show()
+
+
+
             
            
 
+
+# %%
+
+erate_1=0
+erate_2=27
+#for j in range(0,27):
+for j in range(erate_1,erate_2):
+        
+        ell_vectors=np.zeros((len(interest_vectors_batch_tuple[j]),2))
+        
+        for i in range(0,len(interest_vectors_batch_tuple[j])):
+
+     
+            ell_vectors[i,0]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][0,:]**2))-2*stokes_bead_rad -3
+            ell_vectors[i,1]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][1,:]**2))-2*stokes_bead_rad -3 
+           
+        sns.kdeplot(data=ell_vectors)
+       # plt.plot(ell_vectors)
+
+        plt.xlabel("$|\ell_{i}|-|\ell_{i,eq}|$")
+    
+        plt.ylabel('Density')
+
+        plt.legend()
+   # plt.savefig(path_2_log_files+"/plots/distributions/spring_1_extension_K_"+\
+      #         str(K[j])+"_erate_"+str(erate[21])+"_"+str(erate[27])+".pdf",dpi=1200)
+    
+# Plot formatting
+plt.show()
+
+erate_1=27
+erate_2=56
+#for j in range(0,27):
+for j in range(erate_1,erate_2):
+        
+        ell_vectors=np.zeros((len(interest_vectors_batch_tuple[j]),2))
+        
+        for i in range(0,len(interest_vectors_batch_tuple[j])):
+
+     
+            ell_vectors[i,0]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][0,:]**2))-2*stokes_bead_rad -3
+            ell_vectors[i,1]=np.sqrt(np.sum(interest_vectors_batch_tuple[j][i][1,:]**2))-2*stokes_bead_rad -3 
+           
+        sns.kdeplot(data=ell_vectors)
+        #plt.plot(spring_extensions)
+
+        plt.xlabel("$|\ell_{i}|-|\ell_{i,eq}|$")
+    
+        plt.ylabel('Density')
+
+        plt.legend()
+   # plt.savefig(path_2_log_files+"/plots/distributions/spring_1_extension_K_"+\
+      #         str(K[j])+"_erate_"+str(erate[21])+"_"+str(erate[27])+".pdf",dpi=1200)
+    
+# Plot formatting
+plt.show()
 
 # %%

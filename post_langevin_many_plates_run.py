@@ -51,13 +51,24 @@ no_timesteps=np.flip(np.array([   394000,
         31548000,  39435000,  52580000,  78870000, 157740000, 394351000,
        525801000, 788702000]))
 
-
 erate=np.flip(np.array([1,0.9,0.7,0.5,0.2,0.1,0.09,0.08,
-                0.07,0.06,0.05,
-                0.03]))
+                0.07,0.06,0.05,0.04,
+                0.03,0.0275,0.025,0.0225,
+                0.02,0.0175,0.015,0.0125,
+                0.01,0.0075,0.005,0.0025,
+                0.001,0.00075,0.0005]))
 no_timesteps=np.flip(np.array([   394000,
           438000,    563000,    789000,  1972000,   3944000,   4382000,
-         4929000,   5634000,   6573000,   7887000,  13145000]))
+         4929000,   5634000,   6573000,   7887000,   9859000,  13145000,
+        14340000,  15774000,  17527000,  19718000,  22534000,  26290000,
+        31548000,  39435000,  52580000,  78870000, 157740000, 394351000,
+       525801000, 788702000]))
+# erate=np.flip(np.array([1,0.9,0.7,0.5,0.2,0.1,0.09,0.08,
+#                 0.07,0.06,0.05,
+#                 0.03]))
+# no_timesteps=np.flip(np.array([   394000,
+#           438000,    563000,    789000,  1972000,   3944000,   4382000,
+#          4929000,   5634000,   6573000,   7887000,  13145000]))
 
 # erate=np.flip(np.array([1,0.9,0.7,0.5,0.35,0.2,0.1,
 #                 0.03,0.025,0.0225,
@@ -75,12 +86,12 @@ no_timesteps=np.flip(np.array([   394000,
 
 thermo_vars='         KinEng         PotEng         Press         c_myTemp        c_bias         TotEng    '
 K=500
-j_=5
+j_=10
 box_size=100
 eq_spring_length=3*np.sqrt(3)/2
 mass_pol=5 
 
-filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/10_particle/run_835070_104809_233523"
+filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/10_particle/damp_0.01/sucessful_runs"
 path_2_log_files=filepath
 pol_general_name_string='*K_'+str(K)+'*pol*h5'
 
@@ -183,12 +194,14 @@ ph_velocities_tuple=()
 area_vector_tuple=()
 conform_tensor_tuple=()
 spring_force_positon_tensor_tuple=()
-count=0
+
 interest_vectors_tuple=()
 compare_vel_to_profile_tuple=()
 tilt_test=[]
-
-for i in range(erate.size):
+e_in=14
+e_end=15
+count=e_in
+for i in range(e_in,e_end):
      i_=(count*j_)
      print("i_",i_)
      with h5.File(realisation_name_h5_after_sorted_final_pol[i_],'r') as f_check:
@@ -210,7 +223,7 @@ for i in range(erate.size):
         erate_velocity_array=np.zeros(((j_,outputdim_hdf5,30,1)))
         spring_force_positon_array=np.zeros((j_,outputdim_hdf5,10,6))
         interest_vectors_array=np.zeros((j_,outputdim_hdf5,10,5,3))
-        for j in range(j_):
+        for j in range(9,j_):
             j_index=j+(j_*count)
 
             # need to get rid of print statements in log2numpy 
@@ -231,10 +244,13 @@ for i in range(erate.size):
                     ph_velocities_array[j,:,:,:]=f_ph['particles']['phantom']['velocity']['value']
                     ph_positions_array[j,:,:,:]=f_ph['particles']['phantom']['position']['value']
 
+                    # does this reshape work how I think it does? need to check this out 
+
                     pol_velocities_array_=np.reshape(pol_velocities_array,(j_,outputdim_hdf5,10,3,3))
                     pol_positions_array_=np.reshape(pol_positions_array,(j_,outputdim_hdf5,10,3,3))
                     ph_velocities_array_=np.reshape(ph_velocities_array,(j_,outputdim_hdf5,10,3,3))
                     ph_positions_array_=np.reshape(ph_positions_array,(j_,outputdim_hdf5,10,3,3))
+
 
                     ell_1=pol_positions_array_[j,:,:,1,:]-pol_positions_array_[j,:,:,0,:]
                     ell_2=pol_positions_array_[j,:,:,2,:]-pol_positions_array_[j,:,:,0,:]
@@ -246,6 +262,8 @@ for i in range(erate.size):
 
                     r1=0
                     r2=outputdim_hdf5
+                    r1=163
+                    r2=164
                     
                    
                     for l in range(r1,r2):
@@ -274,10 +292,14 @@ for i in range(erate.size):
                     
                        
                         
-                        interest_vectors=np.array([ell_1[l,:,:],ell_2[l,:,:],phant_1[l,:,:],phant_2[l,:,:],phant_3[l,:,:]])
+                        interest_vectors=np.array([ell_1[l,:,:],
+                                                   ell_2[l,:,:],
+                                                   phant_1[l,:,:],
+                                                   phant_2[l,:,:],
+                                                   phant_3[l,:,:]])
                         
-                        # print("unmodified particle array ",particle_array)
-                        # print("unmodified interest vectors", interest_vectors)
+                        print("unmodified particle array ",particle_array)
+                        print("unmodified interest vectors", interest_vectors)
 
                         
                         strain=l*dump_freq*md_step*erate[i] -\
@@ -285,33 +307,33 @@ for i in range(erate.size):
                         
                         
                         if strain <= 0.5:
-                            tilt= (int(box_size))*(strain)
+                            tilt= (box_size)*(strain)
                             #tilt_test.append(tilt)
                         else:
                                 
-                            tilt=-(1-strain)*int(box_size)
+                            tilt=-(1-strain)*box_size
                            # tilt_test.append(tilt)
                         #print("tilt",tilt)
 
-                      
+                        #z loop
 
                         for m in range(10):
 
                               # z shift 
                               # convention shift down to lower boundary 
 
-                            if np.any(np.abs(interest_vectors[:,m,2])>int(box_size)/2):
-                                # print("periodic anomalies detected")
-                                # print("z shift performed")
+                            if np.any(np.abs(interest_vectors[:,m,2])>box_size/2):
+                                print("periodic anomalies detected")
+                               
                                 
                             
 
                                 for r in range(6):
-                                    if particle_array[r,m,2]>int(box_size)/2:
-                                        particle_array[r,m,:]+=np.array([-tilt,0,-int(box_size)])
+                                    if particle_array[r,m,2]>box_size/2:
+                                        particle_array[r,m,:]+=np.array([-tilt,0,-box_size])
+                                        print("z shift performed")
 
-
-                              #print("post z mod particle array",particle_array)
+                        print("post z mod particle array",particle_array)
 
 
                         ell_1_c=particle_array[1,:,:]-particle_array[0,:,:]
@@ -322,20 +344,22 @@ for i in range(erate.size):
 
                         interest_vectors=np.array([ell_1_c,ell_2_c,phant_1_c,phant_2_c,phant_3_c])
                         
-                        # y shift 
+                        # y shift loop
                         for m in range(10):
 
                           
                         
 
-                            if np.any(np.abs(interest_vectors[:,m,1])>int(box_size)/2):
-                                #print("periodic anomalies detected")
+                            if np.any(np.abs(interest_vectors[:,m,1])>box_size/2):
+                               # print("periodic anomalies detected")
+                                
+                                    
                                 y_coords=particle_array[:,m,1]
-                                y_coords[y_coords<int(box_size)/2]+=int(box_size)
+                                y_coords[y_coords<box_size/2]+=box_size
                                 particle_array[:,m,1]=y_coords
-                            # print("y shift performed")
+                                print("y shift performed")
 
-                            # print("post y shift mod particle array",particle_array)
+                        print("post y shift mod particle array",particle_array)
                                 
                                
 
@@ -347,22 +371,22 @@ for i in range(erate.size):
 
                         interest_vectors=np.array([ell_1_c,ell_2_c,phant_1_c,phant_2_c,phant_3_c])
 
-                        # x shift 
+                        # x shift loop
 
                         for m in range(10):
 
-                            if np.any(np.abs(interest_vectors[:,m,0])>int(box_size)/2):
+                            if np.any(np.abs(interest_vectors[:,m,0])>box_size/2):
                                 #print("periodic anomalies detected")
                                 # x shift convention shift to smaller side
                                 
                                 x_coords=particle_array[:,m,0]
                                 z_coords=particle_array[:,m,2]
-                                box_position_x= x_coords -(z_coords/int(box_size))*tilt
-                                x_coords[box_position_x<int(box_size)/2]+=int(box_size)
+                                box_position_x= x_coords -(z_coords/box_size)*tilt
+                                x_coords[box_position_x<box_size/2]+=box_size
                                 particle_array[:,m,0]=x_coords
-                            # print("x shift performed")
+                                print("x shift performed")
 
-                        # print("post x shift mod particle array",particle_array)
+                        print("post x shift mod particle array",particle_array)
 
                         ell_1_c=particle_array[1,:,:]-particle_array[0,:,:]
                         ell_2_c=particle_array[2,:,:]-particle_array[0,:,:]
@@ -371,75 +395,135 @@ for i in range(erate.size):
                         phant_3_c=particle_array[2,:,:]-particle_array[3,:,:]
 
                         interest_vectors=np.array([ell_1_c,ell_2_c,phant_1_c,phant_2_c,phant_3_c])
-                            
 
-                            #print("interest vectors",interest_vectors)
-
-
-
-                            # if np.any(np.abs(interest_vectors)>23/2):
-                            #     interest_vectors[interest_vectors>23/2]-=23
-                            #     interest_vectors[interest_vectors<-23/2]+=23
-
-                        ell_1[l,:,:]=interest_vectors[0,:,:]
-                        ell_2[l,:,:]=interest_vectors[1,:,:]
-                        phant_1[l,:,:]=interest_vectors[2,:,:]
-                        phant_2[l,:,:]=interest_vectors[3,:,:]
-                        phant_3[l,:,:]=interest_vectors[4,:,:]
+                         
+                        ell_1[l,:,:]=ell_1_c
+                        ell_2[l,:,:]=ell_2_c
+                        phant_1[l,:,:]=phant_1_c
+                        phant_2[l,:,:]=phant_2_c
+                        phant_3[l,:,:]=phant_3_c
                         interest_vectors=np.reshape(interest_vectors,(10,5,3))
+
+                  
                         interest_vectors_array[j,l,:,:,:]=interest_vectors
 
+                        for m in range(10):
+                            if np.any(np.abs(interest_vectors[m,:,:])>box_size/2):
+                            
+                            # print(interest_vectors)
+                                print("m",m)
+                                print("anomalies still present")
+                                inspect_interest=interest_vectors[m,:,:]
+                                print("inspect interest vectors",inspect_interest)
+                                inspect_particle_array=particle_array[:,m,:]
+                                print("shape interest vectors", interest_vectors.shape)
+                                print("l",l)
+                                breakpoint()
+                                
+                    
+                                
 
-                            # if np.any(np.abs(interest_vectors)>23/2):
-                            #     # print(interest_vectors)
-                            #     # print("anomalies still present")
-
+                               
                         
-                            #     breakpoint
+                        
+
+
 
                       
 
-
-                    ell_1[ell_1[:,:,:]>int(box_size)/2]-=int(box_size)
-                    ell_1[ell_1[:,:,:]<-int(box_size)/2]+=int(box_size)
-                    ell_2[ell_2[:,:,:]>int(box_size)/2]-=int(box_size)
-                    ell_2[ell_2[:,:,:]<-int(box_size)/2]+=int(box_size)
+                    # final shift 
+                    ell_1[ell_1[:,:,:]>box_size/2]-=box_size
+                    ell_1[ell_1[:,:,:]<-box_size/2]+=box_size
+                    ell_2[ell_2[:,:,:]>box_size/2]-=box_size
+                    ell_2[ell_2[:,:,:]<-box_size/2]+=box_size
                     
-                    phant_1[phant_1[:,:,:]>int(box_size)/2]-=int(box_size)
-                    phant_1[phant_1[:,:,:]<-int(box_size)/2]+=int(box_size)
+                    phant_1[phant_1[:,:,:]>box_size/2]-=box_size
+                    phant_1[phant_1[:,:,:]<-box_size/2]+=box_size
                     
                   
-                    phant_2[phant_2[:,:,:]>int(box_size)/2]-=int(box_size)
-                    phant_2[phant_2[:,:,:]<-int(box_size)/2]+=int(box_size)
+                    phant_2[phant_2[:,:,:]>box_size/2]-=box_size
+                    phant_2[phant_2[:,:,:]<-box_size/2]+=box_size
                    
-                    phant_3[phant_3[:,:,:]>int(box_size)/2]-=int(box_size)
-                    phant_3[phant_3[:,:,:]<-int(box_size)/2]+=int(box_size)
+                    phant_3[phant_3[:,:,:]>box_size/2]-=box_size
+                    phant_3[phant_3[:,:,:]<-box_size/2]+=box_size
 
 
                   
                     # plt.plot(ell_1[r1:r2,0])
-                    # plt.title("$|\ell_{1}|,x$")
+                    # plt.title("$\ell_{1},x$")
                     # plt.xlabel("output count")
                     # plt.show()
 
                     # plt.plot(ell_2[r1:r2,0])
-                    # plt.title("$|\ell_{2}|,x$")
+                    # plt.title("$\ell_{2},x$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+                    # plt.plot(ell_1[r1:r2,1])
+                    # plt.title("$\ell_{1},y$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+                    # plt.plot(ell_2[r1:r2,1])
+                    # plt.title("$\ell_{2},y$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+                    # plt.plot(ell_1[r1:r2,:,2])
+                    # plt.title("$\ell_{1},z$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+                    # plt.plot(ell_2[r1:r2,:,2])
+                    # plt.title("$\ell_{2},z$")
                     # plt.xlabel("output count")
                     # plt.show()
 
                     # plt.plot(phant_1[r1:r2,0])
-                    # plt.title("$|ph_{1}|,x$")
+                    # plt.title("$\Delta_{1},x$")
                     # plt.xlabel("output count")
                     # plt.show()
 
                     # plt.plot(phant_2[r1:r2,0])
-                    # plt.title("$|ph_{2}|,x$")
+                    # plt.title("$\Delta_{2},x$")
                     # plt.xlabel("output count")
                     # plt.show()
 
 
                     # plt.plot(phant_3[r1:r2,0])
-                    # plt.title("$|ph_{3}|,x$")
+                    # plt.title("$\Delta_{3},x$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+                    # plt.plot(phant_1[r1:r2,1])
+                    # plt.title("$\Delta_{1},y$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+                    # plt.plot(phant_2[r1:r2,1])
+                    # plt.title("$\Delta_{2},y$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+
+                    # plt.plot(phant_3[r1:r2,1])
+                    # plt.title("$\Delta_{3},y$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+                    # plt.plot(phant_1[r1:r2,:,2])
+                    # plt.title("$\Delta_{1},z$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+                    # plt.plot(phant_2[r1:r2,:,2])
+                    # plt.title("$\Delta_{2},z$")
+                    # plt.xlabel("output count")
+                    # plt.show()
+
+
+                    # plt.plot(phant_3[r1:r2,:,2])
+                    # plt.title("$\Delta_{3},z$")
                     # plt.xlabel("output count")
                     # plt.show()
 
@@ -529,7 +613,7 @@ erate_velocity_tuple=()
 
 count=0
 box_error_count=0
-for i in range(erate.size):
+for i in range(e_in,e_end):
     i_=(count*j_)
     row_count=pol_velocities_tuple[i].shape[1]
     indv_velocity_array=np.zeros((j_,row_count,10,3,3))
@@ -608,7 +692,7 @@ plt.show()
 
  #%%             
 strainplot_tuple=()
-for i in range(erate.size):
+for i in range(e_in,e_end):
      # is this the correct way to plot 
      strain_plotting_points= np.linspace(0,strain_total, spring_force_positon_tensor_tuple[i].shape[0])
    
@@ -631,7 +715,7 @@ labels_stress=["$\sigma_{xx}$",
 #      plt.show()
 
 #%%
-for i in range(erate.size):
+for i in range(e_in,e_end):
     for j in range(0,3):
         plt.plot(strainplot_tuple[i],spring_force_positon_tensor_tuple[i][:,j], label=labels_stress[j])
     
