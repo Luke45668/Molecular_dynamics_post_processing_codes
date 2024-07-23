@@ -24,7 +24,8 @@ from log2numpy import *
 from mom2numpy import *
 from velP2numpy import *
 from dump2numpy import * 
-
+import seaborn as sns
+import h5py as h5
 
 
 import glob 
@@ -47,24 +48,31 @@ from scipy.optimize import curve_fit
 def linearfunc(x,a):
     return (a*x)
 steps=5000000
-#steps=1315000 
+#steps=1315000
+steps=394000 
 filepath="/Users/luke_dev/Documents/simulation_test_folder/langevin_test"
 #filepath="/Users/luke_dev/Documents/simulation_test_folder/low_damp_test"
+filepath="/Users/luke_dev/Documents/simulation_test_folder/uef_tests"
+filepath="/Users/luke_dev/Documents/simulation_test_folder/flat_elastic_high_shear_rate_test"
 os.chdir(filepath)
-log_name_list=glob.glob("log.lang*")
+log_name_list=glob.glob("log.lang*gdot_1.8*")
+hdf5_name_list=glob.glob("*h5")
 log_files =()
 
 thermo_vars='         KinEng          Temp          TotEng        c_msd[3]      c_vacf[3]   '
 #thermo_vars='         KinEng         PotEng        c_myTemp        c_bias         TotEng    '
+thermo_vars='         KinEng         PotEng         Press         c_myTemp        c_bias         TotEng    '
+#thermo_vars='         KinEng         PotEng         Press           Temp      c_uniaxnvttemp'
 for log_name in log_name_list:
         log_files=log_files+(log2numpy_reader(log_name,
                             filepath,
                             thermo_vars),)
 #log_array=np.zeros((10,133,6))
-log_array=np.zeros((11,500001,6))
-col=4
+log_array=np.zeros((len(log_name_list),log_files[0].shape[0],7))
+col=5
 
-for i in range(3):
+
+for i in range(len(log_name_list)):
 
         time=steps*0.00101432490424207
         log_array[i,:,:]=log_files[i]
@@ -77,11 +85,25 @@ for i in range(3):
         # popt,pcov=curve_fit(linearfunc,timepoints,log_files[i][:,4])
         # plt.plot(timepoints,(popt[0]*(timepoints)))
 plt.show()
+log_mean_temp=np.mean(log_array[:,5:,col],axis=0)
+
+#%% kde plot 
+for i in range(len(log_name_list)):
+       
+       sns.kdeplot(log_files[i][5:,col])
+plt.show()
+
+sns.kdeplot(log_mean_temp)
+plt.show()
+       
+       
+
+
 
 #%%
-col=2
+col=5
 cutoff=25
-for i in range(3):
+for i in range(1):
 
         time=steps*0.00101432490424207
         log_array[i,:,:]=log_files[i]
@@ -98,7 +120,7 @@ for i in range(3):
         # plt.plot(timepoints,(popt[0]*(timepoints)))
 plt.show()
 #%% total energy
-col=3
+col=1
 cutoff=25
 for i in range(3):
 
