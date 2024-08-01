@@ -15,45 +15,51 @@ path_2_post_proc_module= '/Users/luke_dev/Documents/MPCD_post_processing_codes/'
 os.chdir(path_2_post_proc_module)
 thermo_vars='         KinEng         PotEng         Press         c_myTemp        c_bias         TotEng    '
 
-j_=20
-damp=0.035
+j_=40
+damp=0.03633
 strain_total=400
-K=500
+K=4000
 
 
-erate=np.flip(np.array([1,0.9,0.7,0.5,0.2,0.1,0.09,0.08,
-                0.07,0.06,0.05,0.04,
-                0.03,0.0275,0.025,0.0225,
-                0.02,0.0175,0.015,0.0125,
-                0.01,0.0075,0.005,0.0025,
-                0.001,0.00075]))
-no_timesteps=np.flip(np.array([   394000,
-          438000,    563000,    789000,  1972000,   3944000,   4382000,
-         4929000,   5634000,   6573000,   7887000,   9859000,  13145000,
-        14340000,  15774000,  17527000,  19718000,  22534000,  26290000,
-        31548000,  39435000,  52580000,  78870000, 157740000, 394351000,
-       525801000]))
+def folder_check_or_create(filepath,folder):
+     os.chdir(filepath)
+     # combine file name with wd path
+     check_path=filepath+"/"+folder
+     print((check_path))
+     if os.path.exists(check_path) == 1:
+          print("file exists, proceed")
+          os.chdir(check_path)
+     else:
+          print("file does not exist, making new directory")
+          os.chdir(filepath)
+          os.mkdir(folder)
+          os.chdir(filepath+"/"+folder)
 
 
-# erate=np.flip(np.array([1,0.8,0.6,0.4,0.2,0.175,0.15,0.125,0.1,0.08,
-#                 0.06,0.04,
-#                 0.03,0.025,
-#                 0.02,0.015,
-#                 0.01,0.005,
-#                 0.001,0.00075]))
+erate=np.flip(np.array([1,0.8,0.6,0.4,0.2,0.175,0.15,0.125,0.1,0.08,
+                0.06,0.04,
+                0.03,0.025,
+                0.02,0.015,
+                0.01,0.005,
+                0.001,0.00075,0]))
 
-# no_timesteps=np.flip(np.array([   394000,    493000,    657000,    986000,   1972000,   2253000,
-#          2629000,   3155000,   3944000,   4929000,   6573000,   9859000,
-#         13145000,  15774000,  19718000,  26290000,  39435000,  78870000,
-#        394351000, 525801000]))
+no_timesteps=np.flip(np.array([   394000,    493000,    657000,    986000,   1972000,   2253000,
+         2629000,   3155000,   3944000,   4929000,   6573000,   9859000,
+        13145000,  15774000,  19718000,  26290000,  39435000,  78870000,
+       394351000, 525801000,1000000]))
 
+erate=np.array([0])
+no_timesteps=np.array([1000000])
 
 filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/10_particle/damp_0.01"
 filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/10_particle/no_rattle/run_156147_no_rattle"
 filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/10_particle/run_63179_844598_495895/damp_0.035"
 # filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/10_particle_pentagon/run_748702"
 # filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/10_particle/run_22190"
-#filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/10_particle/run_335862"
+filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/10_particle/run_335862"
+#filepath="/Users/luke_dev/Documents/simulation_run_folder/eq_run_tri_plate_damp_0.035_K_500_4000"
+filepath="/Users/luke_dev/Documents/simulation_run_folder/eq_run_tri_plate_damp_0.03633_K_500_4000"
+filepath="/Users/luke_dev/Documents/simulation_run_folder/eq_run_tri_plate_damp_0.05_K_500_4000"
 os.chdir(filepath)
 log_file_size_array=np.zeros((2,erate.size,j_))
 
@@ -62,7 +68,7 @@ count=np.zeros((erate.size)).astype("int")
 count_failed=np.zeros((erate.size)).astype("int")
 failed_files=[]
 passed_files=[]
-real_target=10
+real_target=28
 # can scan all the files and produce a list of files that pass test
 # check number of files in log file, this will be more clear than size
 for file in log_name_list:
@@ -117,7 +123,9 @@ for i in range(0,erate.size):
 plt.show()
 
 #%% making copy of file only with sucessful runs 
-os.mkdir("sucessful_runs_"+str(real_target)+"_reals")
+
+folder_check_or_create(filepath,"sucessful_runs_"+str(real_target)+"_reals")
+os.chdir(filepath)
 # need to put in check if file exists test
 for file in passed_files:
     unique_barcode=file.split('_')[5]
@@ -131,6 +139,7 @@ for file in passed_files:
 
 #%%
 os.chdir("sucessful_runs_"+str(real_target)+"_reals")
+
 
 count=np.zeros((erate.size)).astype("int")
 log_name_list=glob.glob("log.*K_"+str(K)+"*")

@@ -49,13 +49,14 @@ def linearfunc(x,a):
     return (a*x)
 steps=5000000
 #steps=1315000
-steps=394000 
+steps=1000000
 filepath="/Users/luke_dev/Documents/simulation_test_folder/langevin_test"
 #filepath="/Users/luke_dev/Documents/simulation_test_folder/low_damp_test"
 filepath="/Users/luke_dev/Documents/simulation_test_folder/uef_tests"
 filepath="/Users/luke_dev/Documents/simulation_test_folder/flat_elastic_high_shear_rate_test"
+filepath="/Users/luke_dev/Documents/simulation_test_folder/many_plates_test"
 os.chdir(filepath)
-log_name_list=glob.glob("log.lang*gdot_1.8*")
+log_name_list=glob.glob("log.lang*gdot_0_*")
 hdf5_name_list=glob.glob("*h5")
 log_files =()
 
@@ -87,21 +88,9 @@ for i in range(len(log_name_list)):
 plt.show()
 log_mean_temp=np.mean(log_array[:,5:,col],axis=0)
 
-#%% kde plot 
-for i in range(len(log_name_list)):
-       
-       sns.kdeplot(log_files[i][5:,col])
-plt.show()
 
-sns.kdeplot(log_mean_temp)
-plt.show()
-       
-       
-
-
-
-#%%
-col=5
+#%% kinetic  energy
+col=1
 cutoff=25
 for i in range(1):
 
@@ -119,18 +108,16 @@ for i in range(1):
         # popt,pcov=curve_fit(linearfunc,timepoints,log_files[i][:,4])
         # plt.plot(timepoints,(popt[0]*(timepoints)))
 plt.show()
-#%% total energy
-col=1
+#%% potential energy
+col=2
 cutoff=25
-for i in range(3):
+for i in range(1):
 
         time=steps*0.00101432490424207
         log_array[i,:,:]=log_files[i]
 
         timepoints=np.linspace(0,time,log_files[i].shape[0])
         plt.plot(timepoints[1:],log_files[i][1:,col])
-        plt.axhline(np.mean(log_files[i][1,col]))
-
        
         print(log_name_list[i])
         print(np.mean(log_files[i][1,col]))
@@ -138,44 +125,59 @@ for i in range(3):
         # popt,pcov=curve_fit(linearfunc,timepoints,log_files[i][:,4])
         # plt.plot(timepoints,(popt[0]*(timepoints)))
 plt.show()
-#%%
-log_mean=np.mean(log_array,axis=0)
-temp_mean=np.mean(log_array[:,2],axis=0)
-timepoints=np.linspace(0,time,log_mean.shape[0])
-cutoff=500000
-plt.plot(timepoints[:cutoff],log_mean[:cutoff,4])
-popt,pcov=curve_fit(linearfunc,timepoints[:cutoff],log_mean[:cutoff,4])
-plt.plot(timepoints[:cutoff],(popt[0]*(timepoints[:cutoff])))
-plt.ylabel("$\\langle \mathbf{r}^{2} \\rangle $", rotation=0, labelpad=10)
-plt.xlabel("$t$")
+
+
+
+#%% pressure
+col=3
+cutoff=25
+for i in range(1):
+
+        time=steps*0.00101432490424207
+        log_array[i,:,:]=log_files[i]
+
+        timepoints=np.linspace(0,time,log_files[i].shape[0])
+        plt.plot(timepoints[1:],log_files[i][1:,col])
+       
+        print(log_name_list[i])
+        print(np.mean(log_files[i][1,col]))
+        print(i)
+        # popt,pcov=curve_fit(linearfunc,timepoints,log_files[i][:,4])
+        # plt.plot(timepoints,(popt[0]*(timepoints)))
 plt.show()
+#%% bias temp
+col=5
+cutoff=25
+for i in range(1):
 
+        time=steps*0.00101432490424207
+        log_array[i,:,:]=log_files[i]
 
-
-
-#%% 
-eta_H20_non_dim=30
-r_particle=0.125
-diff_particle=popt[0]/6
-einstein_diffusion=1/(6*np.pi*eta_H20_non_dim*r_particle)
-
-
-diff_particle/einstein_diffusion
-
-# %% VACF curve 
-
-plt.plot(timepoints,log_mean[:,5])
-
-plt.ylabel("VACF", rotation=0)
-print("mean VACF",np.mean(log_mean[:,5]))
-
+        timepoints=np.linspace(0,time,log_files[i].shape[0])
+        plt.plot(timepoints[1:],log_files[i][1:,col])
+       
+        print(log_name_list[i])
+        print(np.mean(log_files[i][1,col]))
+        print(i)
+        # popt,pcov=curve_fit(linearfunc,timepoints,log_files[i][:,4])
+        # plt.plot(timepoints,(popt[0]*(timepoints)))
 plt.show()
-# %% temp plot
+# %%
+#%% total energy
+col=6
+cutoff=25
+for i in range(1):
 
-plt.plot(timepoints,log_mean[:,2])
-print("temp",np.mean(log_mean[:,2]))
+        time=steps*0.00101432490424207
+        log_array[i,:,:]=log_files[i]
 
-plt.ylabel("T")
-
+        timepoints=np.linspace(0,time,log_files[i].shape[0])
+        plt.plot(timepoints[1:],log_files[i][1:,col])
+       
+        print(log_name_list[i])
+        print(np.mean(log_files[i][1,col]))
+        print(i)
+        # popt,pcov=curve_fit(linearfunc,timepoints,log_files[i][:,4])
+        # plt.plot(timepoints,(popt[0]*(timepoints)))
 plt.show()
 # %%

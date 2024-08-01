@@ -61,9 +61,9 @@ erate_selection= np.array([0.02,0.0175,0.015,0.0125,0.01])
 #no_timesteps=np.array([7887000, 3944000, 1972000,  789000,  394000,   39000])
 no_timesteps_selection=np.array([5915000,  6760000,  7887000,  9464000, 11831000])
 #for bug test
-no_timestep_selection=np.array([2000,2000,2000,2000,2000])
+# no_timestep_selection=np.array([2000,2000,2000,2000,2000])
 # estimating number of steps  required
-index_step_erate=3#int(sys.argv[1]) # make sure to specify python argument 
+index_step_erate=0#int(sys.argv[1]) # make sure to specify python argument 
 erate=erate_selection[index_step_erate]
 no_timesteps=int(no_timesteps_selection[index_step_erate])
 restart_count=0
@@ -102,7 +102,7 @@ dump_general_name_string_after_phantom='*_restartcount_'+str(restart_count)+'*gd
                  
 
 filepath="/home/ucahlrl/Scratch/output"
-filepath="/Volumes/Backup Plus 1/PhD_/Rouse Model simulations/Using LAMMPS imac/Simulation_run_folder/bug_test_spring_force"
+filepath="/Users/luke_dev/Documents/simulation_test_folder"
 
 Path_2_dump=filepath
 # can chnage this to another array on kathleen

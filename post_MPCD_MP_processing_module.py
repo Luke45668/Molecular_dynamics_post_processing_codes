@@ -908,4 +908,18 @@ def stress_tensor_total_compute_shear(box_vol,realisation_index,delta_mom_summed
                     stress_tensor_summed[data_set,k,j,8]=delta_mom_pos_tensor_summed[data_set,k,j,8] + kinetic_energy_tensor_summed[data_set,k,j,3]#yx
 
             return stress_tensor_summed,kinetic_energy_tensor_summed,delta_mom_pos_tensor_summed
-    
+
+
+def folder_check_or_create(filepath,folder):
+     os.chdir(filepath)
+     # combine file name with wd path
+     check_path=filepath+"/"+folder
+     print((check_path))
+     if os.path.exists(check_path) == 1:
+          print("file exists, proceed")
+          os.chdir(check_path)
+     else:
+          print("file does not exist, making new directory")
+          os.chdir(filepath)
+          os.mkdir(folder)
+  

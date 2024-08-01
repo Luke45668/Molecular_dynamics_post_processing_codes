@@ -44,7 +44,7 @@ def log2numpy_reader(realisation_name,Path_2_log,thermo_vars):
       read_data = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) 
       
       if read_data.find(Thermo_data_start_line_bytes) != -1:
-         print('true')
+        #print('true')
          thermo_byte_start=read_data.find(Thermo_data_start_line_bytes)
          
       else:
@@ -52,24 +52,25 @@ def log2numpy_reader(realisation_name,Path_2_log,thermo_vars):
       
       
       # find end of run         
+
       
       if read_data.rfind(Thermo_data_end_line_bytes) != -1:
-         print('true')
+        #print('true')
          thermo_byte_end =read_data.rfind(Thermo_data_end_line_bytes)      #Thermo_data_end_line_bytes.search(read_data)#read_data.find(Thermo_data_end_line_bytes)
       else:
          print('could not find end of run')
          # correct 
-      if read_data.find(SRD_temp_lambda_start_bytes)!= -1:
-         print('true')
-         SRD_temp_lambda_start = read_data.find(SRD_temp_lambda_start_bytes)
-      else: 
-         print('Could not find SRD temperature')
+      # if read_data.find(SRD_temp_lambda_start_bytes)!= -1:
+      #   #print('true')
+      #    SRD_temp_lambda_start = read_data.find(SRD_temp_lambda_start_bytes)
+      # else: 
+      #    print('Could not find SRD temperature')
       
-      if read_data.find(SRD_temp_lambda_end_bytes)!= -1:
-         print('true')
-         SRD_temp_lambda_end = read_data.find(SRD_temp_lambda_end_bytes)
-      else:     
-            print("Could not find SRD temperature ending")
+      # if read_data.find(SRD_temp_lambda_end_bytes)!= -1:
+      #   #print('true')
+      #    SRD_temp_lambda_end = read_data.find(SRD_temp_lambda_end_bytes)
+      # else:     
+      #      print("Could not find SRD temperature ending")
       
          
          
@@ -85,12 +86,13 @@ def log2numpy_reader(realisation_name,Path_2_log,thermo_vars):
       read_data.seek(thermo_byte_start) 
 
       size_of_data =thermo_byte_end-thermo_byte_start
+      #print("size_data",size_of_data)
       log_array_bytes=read_data.read(thermo_byte_end)
       log_array_bytes_trim=log_array_bytes[0:size_of_data]
-      read_data.seek(SRD_temp_lambda_start)
-      SRD_temp_lambda_byte_array= read_data.read(SRD_temp_lambda_end)
-      size_of_temp_lambda_data = SRD_temp_lambda_end-SRD_temp_lambda_start
-      SRD_temp_lambda_byte_array_trim = SRD_temp_lambda_byte_array[0:size_of_temp_lambda_data]
+      # read_data.seek(SRD_temp_lambda_start)
+      # SRD_temp_lambda_byte_array= read_data.read(SRD_temp_lambda_end)
+      # size_of_temp_lambda_data = SRD_temp_lambda_end-SRD_temp_lambda_start
+      # SRD_temp_lambda_byte_array_trim = SRD_temp_lambda_byte_array[0:size_of_temp_lambda_data]
 
       read_data.close()
             
@@ -99,11 +101,11 @@ def log2numpy_reader(realisation_name,Path_2_log,thermo_vars):
       # Convert byte array to string
 
    log_string= str(log_array_bytes_trim)
-   SRD_temp_lambda_string = str(SRD_temp_lambda_byte_array_trim)
+   # SRD_temp_lambda_string = str(SRD_temp_lambda_byte_array_trim)
 
-   #Count SRD warnings   
+   # #Count SRD warnings   
    warn_count  = log_string.count(warning_start) 
-   #print('Number of Warnings:',warn_count)
+   # #print('Number of Warnings:',warn_count)
    newline_count= log_string.count('\\n')
 
    empty=''
@@ -111,27 +113,27 @@ def log2numpy_reader(realisation_name,Path_2_log,thermo_vars):
    final_warning_regex_pattern=re.compile(r'WARNING:\sToo\smany\swarnings:\s[-+]?([0-9]*[.])?[0-9]+([eE][-+]?\d+)?\svs\s[-+]?([0-9]*[.])?[0-9]+([eE][-+]?\d+)?\.\sAll\sfuture\swarnings\swill\sbe\ssuppressed\s\(\.\.\/thermo\.cpp:[-+]?([0-9]*[.])?[0-9]+([eE][-+]?\d+)?\)')
    #WARNING: Too many warnings: 101 vs 100. All future warnings will be suppressed (../thermo.cpp:465)
    newline_regex_pattern= re.compile(r'\\n')
-   # matches a floating point number [+-]?([0-9]*[.])?[0-9]+
+   # # matches a floating point number [+-]?([0-9]*[.])?[0-9]+
    warning_regex_pattern.search(log_string)
-   # remove warnings
-   count_warnings_with_regex=re.findall(warning_regex_pattern,log_string)
+   # # remove warnings
+   # # count_warnings_with_regex=re.findall(warning_regex_pattern,log_string)
    
    log_string=re.sub(warning_regex_pattern,empty,log_string,count=warn_count)
    log_string=re.sub( final_warning_regex_pattern,empty,log_string)
    log_string=re.sub(newline_regex_pattern,empty,log_string)
    # log_array=log_string.split()
-   warn_count_after  = log_string.count(warning_start) 
-   #print('Number of Warnings after:',warn_count_after)
-   #print(log_string)
-   newline_count_after = log_string.count('\\n') 
+   # warn_count_after  = log_string.count(warning_start) 
+   # #print('Number of Warnings after:',warn_count_after)
+   # #print(log_string)
+   # newline_count_after = log_string.count('\\n') 
 
-   if warn_count_after==0:
-      if newline_count_after==0:
-       print('All standard warnings removed')
-      else:
-       print('Warning removal failed, reapplying regex.')
-       log_string=re.sub(warning_regex_pattern,empty,log_string)
-       log_string=re.sub(newline_regex_pattern,empty,log_string)
+   # if warn_count_after==0:
+   #    if newline_count_after==0:
+   #     print('All standard warnings removed')
+   #    else:
+   #     print('Warning removal failed, reapplying regex.')
+   #     log_string=re.sub(warning_regex_pattern,empty,log_string)
+   #     log_string=re.sub(newline_regex_pattern,empty,log_string)
   
    
    log_string_array=log_string[:-1]
