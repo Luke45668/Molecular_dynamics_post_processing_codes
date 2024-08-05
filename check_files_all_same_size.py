@@ -15,11 +15,10 @@ path_2_post_proc_module= '/Users/luke_dev/Documents/MPCD_post_processing_codes/'
 os.chdir(path_2_post_proc_module)
 thermo_vars='         KinEng         PotEng         Press         c_myTemp        c_bias         TotEng    '
 
-j_=40
-damp=0.03633
+j_=10
+damp=0.035
 strain_total=400
-K=4000
-
+K=100
 
 def folder_check_or_create(filepath,folder):
      os.chdir(filepath)
@@ -36,20 +35,60 @@ def folder_check_or_create(filepath,folder):
           os.chdir(filepath+"/"+folder)
 
 
-erate=np.flip(np.array([1,0.8,0.6,0.4,0.2,0.175,0.15,0.125,0.1,0.08,
-                0.06,0.04,
-                0.03,0.025,
-                0.02,0.015,
-                0.01,0.005,
-                0.001,0.00075,0]))
 
-no_timesteps=np.flip(np.array([   394000,    493000,    657000,    986000,   1972000,   2253000,
-         2629000,   3155000,   3944000,   4929000,   6573000,   9859000,
-        13145000,  15774000,  19718000,  26290000,  39435000,  78870000,
-       394351000, 525801000,1000000]))
 
-erate=np.array([0])
-no_timesteps=np.array([1000000])
+# erate=np.flip(np.array([1,0.8,0.6,0.4,0.2,0.175,0.15,0.125,0.1,0.08,
+#                 0.06,0.04,
+#                 0.03,0.025,
+#                 0.02,0.015,
+#                 0.01,0.005,
+#                 0.001,0.00075,0]))
+
+# no_timesteps=np.flip(np.array([   394000,    493000,    657000,    986000,   1972000,   2253000,
+#          2629000,   3155000,   3944000,   4929000,   6573000,   9859000,
+#         13145000,  15774000,  19718000,  26290000,  39435000,  78870000,
+#        394351000, 525801000,1000000]))
+
+# code to remove failed erates
+
+
+
+
+
+
+
+
+#K=100
+erate=np.array([0, 0.00075, 0.001, 0.04, 0.06, 0.08,
+        0.1, 0.125,0.15, 0.175, 0.2, 0.4,
+        0.8, 1])
+
+no_timesteps=np.array([  1000000, 525801000, 394351000,   9859000,   6573000,   4929000,
+          3944000,   3155000,   2629000,   2253000,   1972000,    986000,
+           493000,    394000])
+
+
+# considering failed runs for K=50
+# erate=np.flip(np.array([1,0.8,0.6,0.4,0.2,0.175,0.15,0.125,0.1,0.08,
+#                 0.06,0.001,0.00075,0]))
+
+# considering failed runs for K=100
+# erate=np.flip(np.array([1,0.8,0.4,0.2,0.175,0.15,0.125,0.1,0.08,
+#                 0.06,0.04,
+#                 0.03,0.025,
+#                 0.02,0.015,
+#                 0.01,0.005,
+#                 0.001,0.00075,0]))
+
+# no_timesteps=np.flip(np.array([   394000,    493000,    657000,    986000,   1972000,   2253000,
+#          2629000,   3155000,   3944000,   4929000,   6573000,   9859000,
+#         13145000,  15774000,  19718000,  26290000,  39435000,  78870000,
+#        394351000, 525801000,1000000]))
+
+
+
+# erate=np.array([0])
+# no_timesteps=np.array([1000000])
 
 filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/10_particle/damp_0.01"
 filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/10_particle/no_rattle/run_156147_no_rattle"
@@ -60,6 +99,7 @@ filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/10_particle
 #filepath="/Users/luke_dev/Documents/simulation_run_folder/eq_run_tri_plate_damp_0.035_K_500_4000"
 filepath="/Users/luke_dev/Documents/simulation_run_folder/eq_run_tri_plate_damp_0.03633_K_500_4000"
 filepath="/Users/luke_dev/Documents/simulation_run_folder/eq_run_tri_plate_damp_0.05_K_500_4000"
+filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/run_692855"
 os.chdir(filepath)
 log_file_size_array=np.zeros((2,erate.size,j_))
 
@@ -68,7 +108,7 @@ count=np.zeros((erate.size)).astype("int")
 count_failed=np.zeros((erate.size)).astype("int")
 failed_files=[]
 passed_files=[]
-real_target=28
+real_target=3
 # can scan all the files and produce a list of files that pass test
 # check number of files in log file, this will be more clear than size
 for file in log_name_list:
@@ -84,13 +124,20 @@ for file in log_name_list:
         file_size_rows=log2numpy_reader(file,
                                 filepath,
                                 thermo_vars).shape[0]
+        #print(file_size_rows)
         log_file_size_array[0,erate_ind,count[erate_ind]]=file_size_rows
         if count[erate_ind]==real_target:
            
             continue
+
+        elif file_size_rows<10000:
+            continue
+    
         else:
             passed_files.append(file)
             count[erate_ind]+=1
+        
+       
         
 
     except:
@@ -119,7 +166,7 @@ for file in log_name_list:
 
 for i in range(0,erate.size):
    plt.plot(log_file_size_array[0,i,:], marker='x', linestyle='None')
-   plt.yscale('log')
+   #plt.yscale('log')
 plt.show()
 
 #%% making copy of file only with sucessful runs 
@@ -178,3 +225,4 @@ print("file count:",np.sum(count))
 print("expected file count",real_target*erate.size)
 
 # %%
+erate,no_timesteps=remove_failed_erates(erate,no_timesteps,count)

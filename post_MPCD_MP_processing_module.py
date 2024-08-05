@@ -922,4 +922,16 @@ def folder_check_or_create(filepath,folder):
           print("file does not exist, making new directory")
           os.chdir(filepath)
           os.mkdir(folder)
+
+def remove_failed_erates(erate,no_timesteps,count):
+        new_erate=[]
+        new_timesteps=[]
+
+        for i in range(count.size):
+            if count[i]>=3:
+                new_erate.append(erate[i])
+                new_timesteps.append(no_timesteps[i])
+        new_erate=np.array([new_erate])
+        new_timesteps=np.array([new_timesteps])
+    return new_erate,new_timesteps
   
