@@ -39,29 +39,28 @@ import pickle as pck
 
 
 damp=0.035
-strain_total=400
+strain_total=100
 
-erate=np.flip(np.array([1,0.8,0.6,0.4,0.2,0.175,0.15,0.125,0.1,0.08,
-                0.06,0.04,
-                0.03,0.025,
-                0.02,0.015,
-                0.01,0.005,
-                0.001,0.00075]))
+erate=np.flip(np.array([1,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.175,0.15,0.125,0.1,0.08,
+                0.06,0.04,0.02,0.01,0.005,0]))
 
-no_timesteps=np.flip(np.array([   394000,    493000,    657000,    986000,   1972000,   2253000,
-         2629000,   3155000,   3944000,   4929000,   6573000,   9859000,
-        13145000,  15774000,  19718000,  26290000,  39435000,  78870000,
-       394351000, 525801000]))
+no_timesteps=np.flip(np.array([ 3944000,  4382000,  4929000,  5634000,  6573000,  7887000,
+         9859000, 13145000, 19718000,  2253000,  2629000,  3155000,
+         3944000,  4929000,  6573000,  9859000, 19718000, 39435000,
+        78870000, 10000000])
+
 
 
 thermo_vars='         KinEng         PotEng         Press         c_myTemp        c_bias         TotEng    '
-K=4000
-j_=37
+K=50
+j_=3
 box_size=100
 eq_spring_length=3*np.sqrt(3)/2
-mass_pol=5 
+mass_pol=5
+n_plates=100
 
-filepath="/home/ucahlrl/Scratch/output/langevin_runs/10_particle/single_tri_plate/run_335862/sucessful_runs_37_reals/"
+
+filepath="/home/ucahlrl/Scratch/output/langevin_runs/100_particle/run_312202/sucessful_runs_3_reals/"
 path_2_log_files=filepath
 pol_general_name_string='*K_'+str(K)+'*pol*h5'
 
@@ -176,7 +175,7 @@ print(len(realisation_name_dump_sorted_final))
 
 #NOTE: make sure the lists are all correct with precisely the right number of repeats or this code below
 # will not work properly. 
-
+import dump2numpy
 dump_start_line = "ITEM: ATOMS id type x y z vx vy vz"
 Path_2_dump=filepath
 md_step=0.00101432490424207
@@ -202,22 +201,23 @@ for i in range(e_in,e_end):
     outputdim_dump=int(dump2numpy_f(dump_start_line,
                                     Path_2_dump,
                                     realisation_name_dump_sorted_final[i_],
-                                    60).shape[0]/60)
+                                    n_plates*6).shape[0]/(n_plates*6))
     outputdim_log=log2numpy_reader(realisation_name_log_sorted_final[i_],
                                                     path_2_log_files,
                                                     thermo_vars).shape[0]
     
     dump_freq=int(realisation_name_log_sorted_final[i_].split('_')[10])
-
-    log_file_array=np.zeros((j_,outputdim_log,7))
-    p_velocities_array=np.zeros((j_,outputdim_dump,60,3))
-    p_positions_array=np.zeros((j_,outputdim_dump,60,3))
     
-    area_vector_array=np.zeros((j_,outputdim_dump,10,3))
+    #log_file_array=np.zeros((j_,outputdim_log,6)) #eq
+    log_file_array=np.zeros((j_,outputdim_log,7)) #nemd
+    p_velocities_array=np.zeros((j_,outputdim_dump,n_plates*6,3))
+    p_positions_array=np.zeros((j_,outputdim_dump,n_plates*6,3))
     
-    erate_velocity_array=np.zeros(((j_,outputdim_dump,30,1)))
-    spring_force_positon_array=np.zeros((j_,outputdim_dump,10,6))
-    interest_vectors_array=np.zeros((j_,outputdim_dump,10,5,3))
+    area_vector_array=np.zeros((j_,outputdim_dump,n_plates,3))
+    
+    erate_velocity_array=np.zeros(((j_,outputdim_dump,int(n_plates*6/2),1)))
+    spring_force_positon_array=np.zeros((j_,outputdim_dump,n_plates,6))
+    interest_vectors_array=np.zeros((j_,outputdim_dump,n_plates,5,3))
     for j in range(j_):
             j_index=j+(j_*count)
 
@@ -230,19 +230,19 @@ for i in range(e_in,e_end):
             dump_data=dump2numpy_f(dump_start_line,
                                     Path_2_dump,
                                     realisation_name_dump_sorted_final[j_index],
-                                    60)
-            dump_data=np.reshape(dump_data,(outputdim_dump,60,8)).astype('float')
-            new_pos_vel_array=np.zeros((outputdim_dump,10,6,3))
+                                    n_plates*6)
+            dump_data=np.reshape(dump_data,(outputdim_dump,n_plates*6,8)).astype('float')
+            new_pos_vel_array=np.zeros((outputdim_dump,n_plates,6,3))
             
             p_positions_array[j,:,:,:]= dump_data[:,:,2:5]
             
             p_velocities_array[j,:,:,:]= dump_data[:,:,5:8]
 
             
-            interest_vectors_store=np.zeros((outputdim_dump,10,5,3))
+            interest_vectors_store=np.zeros((outputdim_dump,n_plates,5,3))
 
-            for m in range(10):
-                splicing_indices=np.arange(0,60,6)
+            for m in range(n_plates):
+                splicing_indices=np.arange(0,n_plates*6,6)
                 r1=0
                 r2=outputdim_dump
                 # r1=8025
@@ -358,13 +358,28 @@ for i in range(e_in,e_end):
                             particle_array[:,2]=x_coords
                             #print("x shift performed")
 
-                        #print("post x shift mod particle array",particle_array)
+                        # old correction 
+                        # ell_1=particle_array[1,2:5]-particle_array[0,2:5]
+                        # ell_2=particle_array[2,2:5]-particle_array[0,2:5]
+                        # ell_3=particle_array[2,2:5]-particle_array[1,2:5]
+                        # ph_1_st_1=particle_array[3,2:5]-particle_array[0,2:5]
+                        # ph_2_st_2=particle_array[4,2:5]-particle_array[1,2:5]
+                        # ph_3_st_3=particle_array[5,2:5]-particle_array[0,2:5]
+                        # dot_1=np.dot(ell_1,ph_1_st_1)
+                        # dot_2=np.dot(ell_3,ph_2_st_2)
+                        # dot_3=np.dot(ell_2,ph_3_st_3)
 
+                        # theta_1=np.arccos(dot_1/(norm(ell_1,axis=0)*norm(ph_1_st_1,axis=0)))
+                        # #print(dot_1/(norm(ell_1,axis=0)*norm(ph_1_st_1,axis=0)))
+                        # theta_2=np.arccos(dot_2/(norm(ell_3,axis=0)*norm(ph_2_st_2,axis=0)))
+                        # #print(dot_2/(norm(ell_3)*norm(ph_2_st_2)))
+                        # theta_3=np.arccos(dot_3/(norm(ell_2,axis=0)*norm(ph_3_st_3,axis=0)))
+                        # #print(dot_3/(norm(ell_2)*norm(ph_3_st_3)))
+                        # # shift particles back to position 
+                        # particle_array[3,2:5]-= ph_1_st_1*np.sin(theta_1)
+                        # particle_array[4,2:5]-= ph_2_st_2*np.sin(theta_2)
+                        # particle_array[5,2:5]-= ph_3_st_3*np.sin(theta_3)
 
-                      
-                        #now correct for the phantom positions being off the ell vectors 
-
-                       
                         # final recalc of interest vectors 
 
                         ell_1=particle_array[1,2:5]-particle_array[0,2:5]
@@ -451,8 +466,10 @@ for i in range(e_in,e_end):
 
             spring_force_positon_tensor_xx=f_spring_1[:,:,0]*f_spring_1_dirn[:,:,0] +\
               f_spring_2[:,:,0]*f_spring_2_dirn[:,:,0] +f_spring_3[:,:,0]*f_spring_3_dirn[:,:,0] 
+            
             spring_force_positon_tensor_yy=f_spring_1[:,:,1]*f_spring_1_dirn[:,:,1] +\
               f_spring_2[:,:,1]*f_spring_2_dirn[:,:,1] +f_spring_3[:,:,1]*f_spring_3_dirn[:,:,1] 
+            
             spring_force_positon_tensor_zz=f_spring_1[:,:,2]*f_spring_1_dirn[:,:,2] +\
               f_spring_2[:,:,2]*f_spring_2_dirn[:,:,2] +f_spring_3[:,:,2]*f_spring_3_dirn[:,:,2] 
             spring_force_positon_tensor_xz=f_spring_1[:,:,0]*f_spring_1_dirn[:,:,2] +\
