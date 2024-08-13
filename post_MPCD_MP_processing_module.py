@@ -933,5 +933,5 @@ def remove_failed_erates(erate,no_timesteps,count):
                 new_timesteps.append(no_timesteps[i])
         new_erate=np.array([new_erate])
         new_timesteps=np.array([new_timesteps])
-    return new_erate,new_timesteps
+        return new_erate,new_timesteps
   
