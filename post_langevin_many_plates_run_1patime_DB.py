@@ -43,24 +43,10 @@ from numpy.linalg import norm
 damp=0.035
 strain_total=100
 
-# old run with bad low shear rate data 
-# K=50 
-# no_timesteps=np.flip(np.array([   394000,    493000,    657000,    986000,   1972000,   2253000,
-#          2629000,   3155000,   3944000,   4929000,   6573000, 
-#        394351000, 525801000, 1000000]))
-
-
-# erate=np.flip(np.array([1,0.8,0.6,0.4,0.2,0.175,0.15,0.125,0.1,0.08,
-#                 0.06,0.001,0.00075,0]))
-
-# timestep_multiplier=np.array([0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2,
-#                               0.05,0.05,0.005,0.005,0.005,0.005])
-
-
 
 # erate=np.array([0])
 # no_timesteps=np.array([10000000])
-K=50
+
 erate=np.flip(np.array([1,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.175,0.15,0.125,0.1,0.08,
                 0.06,0.04,0.01,0.005,0]))
 
@@ -81,17 +67,15 @@ thermo_vars='         KinEng         PotEng         Press         c_myTemp      
 
 
 
-
+K=50
 j_=5
 box_size=100
 eq_spring_length=3*np.sqrt(3)/2
 mass_pol=5 
 n_plates=100
 
-filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/run_692855/sucessful_runs_3_reals"
-#filepath='/Users/luke_dev/Documents/simulation_run_folder/tri_plate_with_6_angles/eq_run_tri_plate_damp_0.035_K_50_100_particles'
-filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/run_312202/"
-#filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/run_667325"
+
+filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/dumbell_run/log_tensor_files"
 path_2_log_files=filepath
 pol_general_name_string='*K_'+str(K)+'*pol*h5'
 
@@ -221,7 +205,7 @@ print(len(realisation_name_dump_sorted_final))
 #NOTE: make sure the lists are all correct with precisely the right number of repeats or this code below
 # will not work properly. 
 import dump2numpy
-dump_start_line = "ITEM: ATOMS id type x y z vx vy vz"
+dump_start_line ='ITEM: ENTRIES c_spring_f_d[1] c_spring_f_d[2] c_spring_f_d[3] c_spring_f_d[4] c_spring_f_d[5] c_spring_f_d[6]'
 Path_2_dump=filepath
 
 
@@ -241,332 +225,113 @@ tilt_test=[]
 e_in=0
 e_end=erate.size
 count=e_in
+from collections import Counter
+# need to ake this geenral 
+def dump2numpy_tensor_1tstep(dump_start_line,
+                      Path_2_dump,dump_realisation_name,
+                      number_of_particles_per_dump):
+       
+       
+        
+
+        os.chdir(Path_2_dump) #+simulation_file+"/" +filename
+
+        
+
+        with open(dump_realisation_name, 'r') as file:
+            
+
+            lines = file.readlines()
+            
+            counter = Counter(lines)
+            
+            #print(counter.most_common(3))
+            n_outs=int(counter["ITEM: TIMESTEP\n"])
+            dump_outarray=np.zeros((n_outs,100,6))
+            #print(counter["ITEM: ENTRIES c_spring_f_d[1] c_spring_f_d[2] c_spring_f_d[3] c_spring_f_d[4] c_spring_f_d[5] c_spring_f_d[6]\n"])
+            
+            skip_array=np.arange(1,len(lines),109)
+            for i in range(n_outs):
+                k=skip_array[i]
+                # timestep_list=[]
+                start=k-1
+                end=start+109
+                timestep_list=lines[start:end]
+                data_list=timestep_list[9:]
+                #print(data_list[0])
+                #print(len(data_list))
+                data=np.zeros((100,6))
+                for j in range(len(data_list)):
+                    data[j,:]=data_list[j].split(" ")[0:6]
+            
+                dump_outarray[i,:,:]=data
+
+
+        return dump_outarray
+
+            
+    
+    
+
+
 #%%
 # need to write dump to numpy to only look at chunks to save on ram 
 for i in range(e_in,e_end):
     i_=(count*j_)
     print("i_",i_)
+
+
     
-    outputdim_dump=int(dump2numpy_f(dump_start_line,
+    outputdim_dump=dump2numpy_tensor_1tstep(dump_start_line,
                                     Path_2_dump,
-                                    realisation_name_dump_sorted_final[i_],
-                                    n_plates*6).shape[0]/(n_plates*6))
+                                     realisation_name_dump_sorted_final[i_],
+                                     n_plates).shape[0]
+    
     outputdim_log=log2numpy_reader(realisation_name_log_sorted_final[i_],
                                                     path_2_log_files,
                                                     thermo_vars).shape[0]
+
     
-    dump_freq=int(realisation_name_log_sorted_final[i_].split('_')[10])
-    
-    #log_file_array=np.zeros((j_,outputdim_log,6)) #eq
     log_file_array=np.zeros((j_,outputdim_log,7)) #nemd
-    p_velocities_array=np.zeros((j_,outputdim_dump,n_plates*6,3))
-    p_positions_array=np.zeros((j_,outputdim_dump,n_plates*6,3))
+   
     
-    area_vector_array=np.zeros((j_,outputdim_dump,n_plates,3))
-    
-    erate_velocity_array=np.zeros(((j_,outputdim_dump,int(n_plates*6/2),1)))
     spring_force_positon_array=np.zeros((j_,outputdim_dump,n_plates,6))
-    interest_vectors_array=np.zeros((j_,outputdim_dump,n_plates,5,3))
+
+
     for j in range(j_):
             j_index=j+(j_*count)
 
-            # need to get rid of print statements in log2numpy 
-            # print(realisation_name_log_sorted_final[j_index])
-            print(j_index)
+
+
             log_file_array[j,:,:]=log2numpy_reader(realisation_name_log_sorted_final[j_index],
                                                         path_2_log_files,
                                                         thermo_vars)
-            dump_data=dump2numpy_f(dump_start_line,
+            dump_data=dump2numpy_tensor_1tstep(dump_start_line,
                                     Path_2_dump,
                                     realisation_name_dump_sorted_final[j_index],
-                                    n_plates*6)
-            dump_data=np.reshape(dump_data,(outputdim_dump,n_plates*6,8)).astype('float')
-            new_pos_vel_array=np.zeros((outputdim_dump,n_plates,6,3))
-            
-            p_positions_array[j,:,:,:]= dump_data[:,:,2:5]
-            
-            p_velocities_array[j,:,:,:]= dump_data[:,:,5:8]
+                                    n_plates)
+            print(dump_data.shape)
 
-            
-            interest_vectors_store=np.zeros((outputdim_dump,n_plates,5,3))
+            # bond local reverses the sign of direction, lower id - higher id 
 
-            for m in range(n_plates):
-                splicing_indices=np.arange(0,n_plates*6,6)
-                r1=0
-                r2=outputdim_dump
-                # r1=8025
-                # r2=8100
+            spring_force_positon_array[j,:,:,0]=-dump_data[:,:,0]*dump_data[:,:,3]#xx
+            spring_force_positon_array[j,:,:,1]=-dump_data[:,:,1]*dump_data[:,:,4]#yy
+            spring_force_positon_array[j,:,:,2]=-dump_data[:,:,2]*dump_data[:,:,5]#zz
+            spring_force_positon_array[j,:,:,3]=-dump_data[:,:,0]*dump_data[:,:,5]#xz
+            spring_force_positon_array[j,:,:,4]=-dump_data[:,:,0]*dump_data[:,:,4]#xy
+            spring_force_positon_array[j,:,:,5]=-dump_data[:,:,1]*dump_data[:,:,5]#yz
 
+          
 
-
-
-                for l in range(r1,r2):
-                        unsrt_dump= dump_data[l,:,:]
-                        srt_dump=unsrt_dump[unsrt_dump[:,0].argsort()]
-                        p_positions_array[j,l,:,:]=srt_dump[:,2:5]
-                        p_velocities_array[j,l,:,:]=srt_dump[:,5:8]
-                       
-
-                    
-                        particle_array=srt_dump[splicing_indices[m]:splicing_indices[m]+6,:]
-                        ell_1=particle_array[1,2:5]-particle_array[0,2:5]
-                        ell_2=particle_array[2,2:5]-particle_array[0,2:5]
-                        phant_1=particle_array[0,2:5]-particle_array[4,2:5]
-                        phant_2=particle_array[1,2:5]-particle_array[5,2:5]
-                        phant_3=particle_array[2,2:5]-particle_array[3,2:5]
-                        interest_vectors=np.array([ell_1,
-                                                    ell_2,
-                                                    phant_1,
-                                                    phant_2,
-                                                    phant_3])
-                        
-                        strain=l*dump_freq*md_step[i]*erate[i] -\
-                                np.floor(l*dump_freq*md_step[i]*erate[i])
-                            
-                            
-                        if strain <= 0.5:
-                            tilt= (box_size)*(strain)
-                            #tilt_test.append(tilt)
-                        else:
-                                
-                            tilt=-(1-strain)*box_size
-                        # tilt_test.append(tilt)
-                        #print("tilt",tilt)
-
-                        #z loop
-                        if np.any(np.abs(interest_vectors[:,2])>box_size/box_size_div):
-                                #print("periodic anomalies detected")
-                                
-
-                                for r in range(6):
-                                            if particle_array[r,4]>box_size/2:
-                                                particle_array[r,2:5]+=np.array([-tilt,0,-box_size])
-                                                # adjusting the x velocity for the down shift
-                                                particle_array[r,5]+=-box_size*erate[i]
-
-                                                #print("z shift performed")
-
-                               # print("post z mod particle array",particle_array)
-
-
-                        ell_1=particle_array[1,2:5]-particle_array[0,2:5]
-                        ell_2=particle_array[2,2:5]-particle_array[0,2:5]
-                        phant_1=particle_array[0,2:5]-particle_array[4,2:5]
-                        #f_spring_1_dirn=pol_positions_tuple[i][j,0,:]-ph_positions_tuple[i][j,1,:]
-                        phant_2=particle_array[1,2:5]-particle_array[5,2:5]
-                        #f_spring_2_dirn=pol_positions_tuple[i][j,1,:]-ph_positions_tuple[i][j,2,:]
-                        phant_3=particle_array[2,2:5]-particle_array[3,2:5]
-                        
-                        interest_vectors=np.array([ell_1,
-                                                    ell_2,
-                                                    phant_1,
-                                                    phant_2,
-                                                    phant_3])
-                        # y shift loop
-                            
-
-                            
-                        if np.any(np.abs(interest_vectors[:,1])>box_size/box_size_div):
-                            # print("periodic anomalies detected")
-                                
-                                    
-                                y_coords=particle_array[:,1]
-                                y_coords[y_coords<box_size/2]+=box_size
-                                particle_array[:,3]=y_coords
-                                #print("y shift performed")
-
-                        #print("post y shift mod particle array",particle_array)
-
-
-                        ell_1=particle_array[1,2:5]-particle_array[0,2:5]
-                        ell_2=particle_array[2,2:5]-particle_array[0,2:5]
-                        phant_1=particle_array[0,2:5]-particle_array[4,2:5]
-                        #f_spring_1_dirn=pol_positions_tuple[i][j,0,:]-ph_positions_tuple[i][j,1,:]
-                        phant_2=particle_array[1,2:5]-particle_array[5,2:5]
-                        #f_spring_2_dirn=pol_positions_tuple[i][j,1,:]-ph_positions_tuple[i][j,2,:]
-                        phant_3=particle_array[2,2:5]-particle_array[3,2:5]
-
-                        interest_vectors=np.array([ell_1,
-                                                    ell_2,
-                                                    phant_1,
-                                                    phant_2,
-                                                    phant_3])
-
-
-
-                        if np.any(np.abs(interest_vectors[:,0])>box_size/box_size_div):
-                            #print("periodic anomalies detected")
-                            # x shift convention shift to smaller side
-                            
-                            x_coords=particle_array[:,2]
-                            z_coords=particle_array[:,4]
-                            box_position_x= x_coords -(z_coords/box_size)*tilt
-                            x_coords[box_position_x<box_size/2]+=box_size
-                            particle_array[:,2]=x_coords
-                            #print("x shift performed")
-
-                        # old correction 
-                        # ell_1=particle_array[1,2:5]-particle_array[0,2:5]
-                        # ell_2=particle_array[2,2:5]-particle_array[0,2:5]
-                        # ell_3=particle_array[2,2:5]-particle_array[1,2:5]
-                        # ph_1_st_1=particle_array[3,2:5]-particle_array[0,2:5]
-                        # ph_2_st_2=particle_array[4,2:5]-particle_array[1,2:5]
-                        # ph_3_st_3=particle_array[5,2:5]-particle_array[0,2:5]
-                        # dot_1=np.dot(ell_1,ph_1_st_1)
-                        # dot_2=np.dot(ell_3,ph_2_st_2)
-                        # dot_3=np.dot(ell_2,ph_3_st_3)
-
-                        # theta_1=np.arccos(dot_1/(norm(ell_1,axis=0)*norm(ph_1_st_1,axis=0)))
-                        # #print(dot_1/(norm(ell_1,axis=0)*norm(ph_1_st_1,axis=0)))
-                        # theta_2=np.arccos(dot_2/(norm(ell_3,axis=0)*norm(ph_2_st_2,axis=0)))
-                        # #print(dot_2/(norm(ell_3)*norm(ph_2_st_2)))
-                        # theta_3=np.arccos(dot_3/(norm(ell_2,axis=0)*norm(ph_3_st_3,axis=0)))
-                        # #print(dot_3/(norm(ell_2)*norm(ph_3_st_3)))
-                        # # shift particles back to position 
-                        # particle_array[3,2:5]-= ph_1_st_1*np.sin(theta_1)
-                        # particle_array[4,2:5]-= ph_2_st_2*np.sin(theta_2)
-                        # particle_array[5,2:5]-= ph_3_st_3*np.sin(theta_3)
-
-                        # final recalc of interest vectors 
-
-                        ell_1=particle_array[1,2:5]-particle_array[0,2:5]
-                        ell_2=particle_array[2,2:5]-particle_array[0,2:5]
-                        phant_1=particle_array[0,2:5]-particle_array[4,2:5]
-                        #f_spring_1_dirn=pol_positions_tuple[i][j,0,:]-ph_positions_tuple[i][j,1,:]
-                        phant_2=particle_array[1,2:5]-particle_array[5,2:5]
-                        #f_spring_2_dirn=pol_positions_tuple[i][j,1,:]-ph_positions_tuple[i][j,2,:]
-                        phant_3=particle_array[2,2:5]-particle_array[3,2:5]
-
-                        interest_vectors_store[l,m,0,:]=ell_1
-                        interest_vectors_store[l,m,1,:]=ell_2
-                        interest_vectors_store[l,m,2,:]=phant_1
-                        interest_vectors_store[l,m,3,:]=phant_2
-                        interest_vectors_store[l,m,4,:]=phant_3
-
-                        new_pos_vel_array[l,m,0:3,:]=particle_array[0:3,2:5]
-                        new_pos_vel_array[l,m,3:6,:]=particle_array[0:3,5:8]
-
-
-
-
-
-            # final correction for undected anomalies
-                      
-                  
-
-            interest_vectors_store[interest_vectors_store>box_size/2]-=box_size
-            interest_vectors_store[interest_vectors_store<-box_size/2]+=box_size  
-
-                     
-        
-            # plt.plot( interest_vectors_store[r1:r2,:,0,0])
-            # plt.title("$\ell_{1},x$")
-            # plt.xlabel("output count")
-            # plt.legend()
-            # plt.show()
-
-            # plt.plot(interest_vectors_store[r1:r2,:,1,0])
-            # plt.title("$\ell_{2},x$")
-            # plt.xlabel("output count")
-            # plt.show()
-
-            # plt.plot(interest_vectors_store[r1:r2,:,2,0])
-            # plt.title("$\Delta_{1},x$")
-            # plt.xlabel("output count")
-            # plt.show()
-
-            # plt.plot(interest_vectors_store[r1:r2,:,3,0])
-            # plt.title("$\Delta_{2},x$")
-            # plt.xlabel("output count")
-            # plt.show()
-
-
-            # plt.plot(interest_vectors_store[r1:r2,:,4,0])
-            # plt.title("$\Delta_{3},x$")
-            # plt.xlabel("output count")
-            # plt.show()
-
-            f_spring_1_dirn= interest_vectors_store[:,:,2,:]
-           
-            f_spring_1_mag=np.transpose(np.tile(np.sqrt(np.sum((f_spring_1_dirn)**2,axis=2)),\
-                                                (3,1,1)),(1,2,0))
-
-            f_spring_1=(K*(f_spring_1_dirn/f_spring_1_mag)*(f_spring_1_mag-eq_spring_length))
-        
-            # spring 2
-            f_spring_2_dirn= interest_vectors_store[:,:,3,:]
-        
-            f_spring_2_mag=np.transpose(np.tile(np.sqrt(np.sum((f_spring_2_dirn)**2,axis=2)),\
-                                                (3,1,1)),(1,2,0))
-
-            f_spring_2=(K*(f_spring_2_dirn/f_spring_2_mag)*(f_spring_2_mag-eq_spring_length))
-        
-            # spring 3
-
-            f_spring_3_dirn= interest_vectors_store[:,:,4,:]
-        
-            f_spring_3_mag=np.transpose(np.tile(np.sqrt(np.sum((f_spring_3_dirn)**2,axis=2)),\
-                                                (3,1,1)),(1,2,0))
-
-            f_spring_3=(K*(f_spring_3_dirn/f_spring_3_mag)*(f_spring_3_mag-eq_spring_length))
-
-
-            spring_force_positon_tensor_xx=f_spring_1[:,:,0]*f_spring_1_dirn[:,:,0] +\
-              f_spring_2[:,:,0]*f_spring_2_dirn[:,:,0] +f_spring_3[:,:,0]*f_spring_3_dirn[:,:,0] 
-            
-            spring_force_positon_tensor_yy=f_spring_1[:,:,1]*f_spring_1_dirn[:,:,1] +\
-              f_spring_2[:,:,1]*f_spring_2_dirn[:,:,1] +f_spring_3[:,:,1]*f_spring_3_dirn[:,:,1] 
-            
-            spring_force_positon_tensor_zz=f_spring_1[:,:,2]*f_spring_1_dirn[:,:,2] +\
-              f_spring_2[:,:,2]*f_spring_2_dirn[:,:,2] +f_spring_3[:,:,2]*f_spring_3_dirn[:,:,2] 
-            spring_force_positon_tensor_xz=f_spring_1[:,:,0]*f_spring_1_dirn[:,:,2] +\
-              f_spring_2[:,:,0]*f_spring_2_dirn[:,:,2] +f_spring_3[:,:,0]*f_spring_3_dirn[:,:,2] 
-            spring_force_positon_tensor_xy=f_spring_1[:,:,0]*f_spring_1_dirn[:,:,1] +\
-              f_spring_2[:,:,0]*f_spring_2_dirn[:,:,1] +f_spring_3[:,:,0]*f_spring_3_dirn[:,:,1] 
-            spring_force_positon_tensor_yz=f_spring_1[:,:,1]*f_spring_1_dirn[:,:,2] +\
-              f_spring_2[:,:,1]*f_spring_2_dirn[:,:,2] +f_spring_3[:,:,1]*f_spring_3_dirn[:,:,2] 
-            
-                
-            np_array_spring_pos_tensor=np.transpose(np.array([spring_force_positon_tensor_xx,
-                                                spring_force_positon_tensor_yy,
-                                                spring_force_positon_tensor_zz,
-                                                spring_force_positon_tensor_xz,
-                                                spring_force_positon_tensor_xy,
-                                                spring_force_positon_tensor_yz, 
-                                                    ]),(1,2,0))
-            
-            
-  
-
-            spring_force_positon_array[j,:,:,:]= np_array_spring_pos_tensor
-
-
-            # this can be switched off for general runs
-            # just to check there isnt any PBC anomalies
-            
-    
-            
-            # this isnt being filled up properly 
-            area_vector_array[j,:,:,:]=np.cross(interest_vectors_store[:,:,0,:],
-                                        interest_vectors_store[:,:,1,:]
-                                        ,axisa=2,axisb=2)
-            
-            
-    interest_vectors_mag=np.sqrt(np.sum(interest_vectors_store**2,
-                                                     axis=3))
-    
     lgf_mean=np.mean(log_file_array,axis=0)    
     spring_force_positon_mean=np.mean(np.mean(spring_force_positon_array,axis=0),
                                       axis=1)
     
-    new_pos_vel_tuple=new_pos_vel_tuple+(new_pos_vel_array,)
-    p_positions_tuple=p_positions_tuple+(p_positions_array,)
-    p_velocities_tuple=p_velocities_tuple+(p_velocities_array,)
+  
+   
     log_file_tuple=log_file_tuple+(lgf_mean,)
-    area_vector_tuple=area_vector_tuple+(area_vector_array,)
     spring_force_positon_tensor_tuple=spring_force_positon_tensor_tuple+\
         (spring_force_positon_array,)
-    interest_vectors_tuple=interest_vectors_tuple+( interest_vectors_mag,)
     count+=1
 
 
@@ -636,7 +401,7 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 marker=['x','o','+','^',"1","X","d","*","P","v"]
 aftcut=1
-cut=0.4
+cut=0.5
 
 labels_stress=["$\sigma_{xx}$",
                "$\sigma_{yy}$",
@@ -870,7 +635,9 @@ plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])**2),
          label="$N_{1,fit},m="+str(sigfig.round(popt[0],sigfigs=3))+\
             ",\\varepsilon="+str(sigfig.round(difference,sigfigs=3))+"$")
 plt.legend()
-#plt.xscale('log')
+plt.ylabel("$N_{1}$", rotation=0, labelpad=20)
+plt.xlabel("$\dot{\gamma}$")
+
 plt.show()
 
 print(difference)
@@ -886,7 +653,9 @@ plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])),
          label="$N_{2,fit},m="+str(sigfig.round(popt[0],sigfigs=3))+\
            ",\\varepsilon="+str(sigfig.round(difference,sigfigs=3))+"$")
 plt.legend()
-plt.xscale('log')
+
+plt.ylabel("$N_{2}$", rotation=0, labelpad=20)
+plt.xlabel("$\dot{\gamma}$")
 plt.show()
 print(difference)
 
@@ -901,6 +670,7 @@ plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])**2),
          label="$N_{2,fit},m="+str(sigfig.round(popt[0],sigfigs=3))+\
             ",\\varepsilon="+str(sigfig.round(difference,sigfigs=3))+"$")
 plt.legend()
+plt.xlabel("$\dot{\gamma}$")
 #plt.xscale('log')
 plt.show()
 print(difference)
@@ -918,8 +688,8 @@ plt.plot(erate[:e_end],(popt[0]*(erate[:e_end])),
          ",\\varepsilon="+str(sigfig.round(difference,sigfigs=3))+"$")
 
 plt.legend()  
-plt.xscale('log')
-plt.yscale('log')
+# plt.xscale('log')
+# plt.yscale('log')
 plt.ylabel("$\sigma_{xz}$", rotation=0)
 plt.xlabel("$\dot{\gamma}$")
 
@@ -954,43 +724,29 @@ plt.xlabel("$\dot{\gamma}$")
 
 plt.show() 
 
-# herschel buckley fit yield stress is negative so dont use it 
-# plt.errorbar(erate[cutoff:e_end], xz_stress/erate[cutoff:e_end], yerr =xz_stress_std[cutoff:], ls='none',label="$\sigma_{xz}$",marker=marker[0] )
-# popt,cov_matrix_xz=curve_fit(herschbuck,erate[cutoff:e_end], xz_stress/erate[cutoff:e_end])
-# y=xz_stress/erate[cutoff:e_end]
-# y_pred=(popt[0]/erate[cutoff:e_end])+ popt[1]*(erate[cutoff:e_end]**(popt[2]))
-# difference=np.sqrt(np.sum((y-y_pred)**2)/e_end-cutoff)
+#%% viscosity no fit 
+xz_stress= stress_tensor[cutoff:,3]
+xz_stress_std=stress_tensor_std[:,3]/np.sqrt(j_*n_plates)
+#powerlaw
+plt.errorbar(erate[cutoff:e_end], xz_stress/erate[cutoff:e_end], yerr =xz_stress_std[cutoff:], ls='none',label="$\sigma_{xz}$",marker=marker[0] )
 
-# plt.plot(erate[cutoff:e_end],((popt[0]/erate[cutoff:e_end])+ popt[1]*(erate[cutoff:e_end]**(popt[2]))),
-#          label="$\eta_{fit},a="+str(sigfig.round(popt[0],sigfigs=3))+",b="+str(sigfig.round(popt[1],sigfigs=3))+
-#          ",n="+str(sigfig.round(popt[2],sigfigs=3))+
+plt.legend(fontsize=14) 
+plt.ylabel("$\eta$", rotation=0,labelpad=20)
+plt.xlabel("$\dot{\gamma}$")
+# plt.xscale('log')
+# plt.yscale('log')
 
-#           ",\\varepsilon=\pm"+str(sigfig.round(difference,sigfigs=3))+"$")#
-
-# #plt.legend()  
-# plt.legend(fontsize=11) 
-
-# plt.ylabel("$\eta$", rotation=0,labelpad=20)
-# plt.xlabel("$\dot{\gamma}$")
-# # plt.xscale('log')
-# # plt.yscale('log')
-
-# plt.show() 
-
-# need to find power law fit 
-# power law model for viscosity 
-
+plt.show() 
 
 
 #%% plot N1 and N2 together 
-multi=-16
 sns.set_palette('icefire')
 plt.scatter(erate,n_1,label="$N_{1}$", marker="x")
-plt.scatter(erate,multi*n_2,label="$"+str(multi)+"N_{2}$", marker="*")
+plt.scatter(erate,-16*n_2,label="$-16N_{2}$", marker="*")
 plt.xlabel("$\dot{\gamma}$")
 #plt.ylabel("$\\frac{N_{1}}{N_{2}}$", rotation=0)
 plt.legend()
-plt.xscale('log')
+#plt.xscale('log')
 plt.show()
 
 #%%
@@ -1058,7 +814,7 @@ plt.xlabel('$\dot{\gamma}$')
 plt.xscale('log')
 # plt.yscale('log')
 plt.axhline(np.mean(mean_temp_array),label="$\\bar{T}="+str(sigfig.round(np.mean(mean_temp_array),sigfigs=5))+"$")
-plt.ylim(0.95,1.05)
+#plt.ylim(0.95,1.05)
 plt.legend()
 plt.tight_layout()
 plt.show()
@@ -1129,11 +885,11 @@ skip_array_2=np.arange(0,int(no_timesteps[0]/100),100)
 
 
 
-for i in range(skip_array.size):
+for i in range(erate.size):
     #for j in range(j_):
 
 
-        i=skip_array[i]
+        #i=skip_array[i]
         
         # sns.displot( data=np.ravel(spherical_coords_tuple[i][:,200000,:,1]),
         #             label ="$\dot{\gamma}="+str(erate[i])+"$", kde=True)
@@ -1180,9 +936,9 @@ print(chi_stat_table)
 #%% phi 
 plt.rcParams["figure.figsize"] = (8,6 )
 plt.rcParams.update({'font.size': 16})
-for i in range(skip_array.size):
+for i in range(erate.size):
     #for j in range(skip_array_2.size):
-        i=skip_array[i]
+        #i=skip_array[i]
 
         # sns.kdeplot( data=np.ravel(spherical_coords_tuple[i][:,skip_array_2[j],:,2]),
         #              label="output_range:"+str(skip_array_2[j]))
@@ -1227,160 +983,60 @@ plt.xlim(-3,2)
 plt.show()
 
 
-#%% plotting stress tensor entry distributions 
-
-skip_array=np.arange(0,e_end,4)
-for i in range(skip_array.size):
-     i=skip_array[i]
-     sns.kdeplot(np.ravel(spring_force_positon_tensor_tuple[i][:,:,:,0]),label ="$\dot{\gamma}="+str(erate[i])+"$")
-plt.title("$\sigma_{xx}$ distribution")
-plt.xlim(-200,400)
-plt.legend()
-plt.show()
 
 
-for i in range(skip_array.size):
-     i=skip_array[i]
-     sns.kdeplot(np.ravel(spring_force_positon_tensor_tuple[i][:,:,:,1]),label ="$\dot{\gamma}="+str(erate[i])+"$")
-plt.title("$\sigma_{yy}$ distribution")
-plt.xlim(-200,400)
-plt.legend()
-plt.show()
-
-for i in range(skip_array.size):
-     i=skip_array[i]
-     sns.kdeplot(np.ravel(spring_force_positon_tensor_tuple[i][:,:,:,2]),label ="$\dot{\gamma}="+str(erate[i])+"$")
-plt.title("$\sigma_{zz}$ distribution")
-plt.xlim(-200,400)
-plt.legend()
-plt.show()
-
-
-
-
-# %%m stress distributions 
-stretch_events_ratio=np.zeros((6,erate.size))
-for l in range(6):
+#%% cleaner plots 
+#stress tensor 
+plt.rcParams['text.usetex'] = True
+def plot_stress_tensor(t_0,t_1,
+                       stress_tensor,
+                       stress_tensor_std,
+                       j_,n_plates, labels_stress,marker,cutoff):
     
-               
-   
-           
+    fig, ax = plt.subplots(figsize=(6, 5))
+    color = ["#2B2F42", "#8D99AE", "#EF233C","#2B2F42", "#8D99AE", "#EF233C"]
+    # Define font sizes
+    SIZE_DEFAULT = 14
+    SIZE_LARGE = 16
+    plt.rcParams['text.usetex'] = True
+    plt.rc("font", family="Roboto")  # controls default font
+    plt.rc("font", weight="normal")  # controls default font
+    plt.rc("font", size=SIZE_DEFAULT)  # controls default text sizes
+    plt.rc("axes", titlesize=SIZE_LARGE)  # fontsize of the axes title
+    plt.rc("axes", labelsize=SIZE_LARGE)  # fontsize of the x and y labels
+    plt.rc("xtick", labelsize=SIZE_DEFAULT)  # fontsize of the tick labels
+    plt.rc("ytick", labelsize=SIZE_DEFAULT)  # fontsize of the tick labels
+        
+    for l in range(t_0,t_1):
+        ax.errorbar(erate[cutoff:e_end], 
+                    stress_tensor[cutoff:,l],
+                      yerr =stress_tensor_std[cutoff:,l]/np.sqrt(j_*n_plates), 
+                      ls='--',label=labels_stress[l],marker=marker[l], color=color[l] )
+        #   ax.text(
+        #         erate[-1] * 1.05,
+        #         stress_tensor[-1,l],
+        #         labels_stress[l],
+        #         fontweight="bold",
+        #         horizontalalignment="left",
+        #         verticalalignment="center",
+        #     )
+        ax.spines["right"].set_visible(False)
+       # ax.spines["left"].set_visible(False)
+        ax.spines["top"].set_visible(False)
 
-                #data=np.mean(spring_force_positon_tensor_tuple[i][:,:,m,2]-spring_force_positon_tensor_tuple[i][:,:,m,1], axis=0)
-                # need to include a cut off in this to get rid of any start up effects
-                i=0
-                cutoff=int(np.round(0.1*spring_force_positon_tensor_tuple[i][:,:,:,l].shape[1]))
-                data=np.ravel(spring_force_positon_tensor_tuple[i][:,cutoff:,:,l])
-                #plt.plot(data)
-                sns.kdeplot(data=data, label=labels_stress[l]+", $\\bar{\sigma}="+\
-                            str(sigfig.round(np.mean(data),sigfigs=4))+\
-                                ", \dot{\gamma}="+str(erate[i])+\
-                                    ", N_{p}<0/N_{p}>0="+str(sigfig.round(data[data<0].size/data[data>0].size,sigfigs=3))+"$")
-                
-                # i=5
-                # cutoff=int(np.round(0.1*spring_force_positon_tensor_tuple[i][:,:,:,l].shape[1]))
-                # data=np.ravel(spring_force_positon_tensor_tuple[i][:,cutoff:,:,l])
+    plt.xlabel("$\dot{\gamma}$")
+    plt.ylabel("$\sigma_{\\alpha\\beta}$",rotation=0,labelpad=15)
+    plt.legend(loc="best")      
+    plt.show()
 
-                
-                # #plt.plot(data)
-                # sns.kdeplot(data=data, label=labels_stress[l]+", $\\bar{\sigma}="+\
-                #             str(sigfig.round(np.mean(data),sigfigs=4))+\
-                #                 ", \dot{\gamma}="+str(erate[i])+\
-                #                     ", N_{p}<0/N_{p}>0="+str(sigfig.round(data[data<0].size/data[data>0].size,sigfigs=3))+"$")
-                
-           
+plot_stress_tensor(0,3,
+                       stress_tensor,
+                       stress_tensor_std,
+                       j_,n_plates, labels_stress,marker,0)
 
-                
-                # i=10
-                # cutoff=int(np.round(0.1*spring_force_positon_tensor_tuple[i][:,:,:,l].shape[1]))
-                # data=np.ravel(spring_force_positon_tensor_tuple[i][:,cutoff:,:,l])
-
-                
-                # #plt.plot(data)
-                # sns.kdeplot(data=data, label=labels_stress[l]+", $\\bar{\sigma}="+\
-                #             str(sigfig.round(np.mean(data),sigfigs=4))+\
-                #                 ", \dot{\gamma}="+str(erate[i])+\
-                #                     ", N_{p}<0/N_{p}>0="+str(sigfig.round(data[data<0].size/data[data>0].size,sigfigs=3))+"$")
-                
-           
-
-                # #data=np.mean(spring_force_positon_tensor_tuple[i][:,:,m,2]-spring_force_positon_tensor_tuple[i][:,:,m,1], axis=0)
-                # # need to include a cut off in this to get rid of any start up effects
-                # i=15
-                # cutoff=int(np.round(0.1*spring_force_positon_tensor_tuple[i][:,:,:,l].shape[1]))
-                # data=np.ravel(spring_force_positon_tensor_tuple[i][:,cutoff:,:,l])
-
-                
-                # #plt.plot(data)
-                # sns.kdeplot(data=data, label=labels_stress[l]+", $\\bar{\sigma}="+\
-                #             str(sigfig.round(np.mean(data),sigfigs=4))+\
-                #                 ", \dot{\gamma}="+str(erate[i])+\
-                #                     ", N_{p}<0/N_{p}>0="+str(sigfig.round(data[data<0].size/data[data>0].size,sigfigs=3))+"$")
-                
-           
-                # i=e_end-1
-                # cutoff=int(np.round(0.1*spring_force_positon_tensor_tuple[i][:,:,:,l].shape[1]))
-                # data=np.ravel(spring_force_positon_tensor_tuple[i][:,cutoff:,:,l])
-
-                
-                # #plt.plot(data)
-                # sns.kdeplot(data=data, label=labels_stress[l]+", $\\bar{\sigma}="+\
-                #             str(sigfig.round(np.mean(data),sigfigs=4))+\
-                #                 ", \dot{\gamma}="+str(erate[i])+\
-                #                     ", N_{p}<0/N_{p}>0="+str(sigfig.round(data[data<0].size/data[data>0].size,sigfigs=3))+"$")
-                
-
-                
-            
-                
-                plt.legend(bbox_to_anchor=[1.1, 0.45])              
-                plt.show()
-
-
-
-# %% looking a relative number of stretch and compression events in each entry of stress tensor 
-
-ex_stretch_events_ratio=np.zeros((6,erate.size))
-stress_bound=0
-for l in range(6):
-    for i in range(erate.size):
-        cutoff=int(np.round(0.1*spring_force_positon_tensor_tuple[i][:,:,:,l].shape[1]))
-        data=np.ravel(spring_force_positon_tensor_tuple[i][:,cutoff:,:,0])-np.ravel(spring_force_positon_tensor_tuple[i][:,cutoff:,:,2])
-        try: 
-            ex_stretch_events_ratio[l,i]=data[data<-stress_bound].size/data[data>stress_bound].size
-        except:
-            ex_stretch_events_ratio[l,i]=0
-
-for l in range(3):
-    plt.scatter(erate,ex_stretch_events_ratio[l,:], label=labels_stress[l], marker=marker[l])
-    plt.xlabel("$\dot{\gamma}$", rotation=0)
-    plt.ylabel("$\\frac{N_{e}<"+str(stress_bound)+"}{N_{e}>"+str(stress_bound)+"}$", rotation=0, labelpad=20)
-plt.legend()
-#plt.xscale('log')
-plt.show()
-ex_stretch_events_ratio=np.zeros((6,erate.size))
-stress_bound=0
-for l in range(6):
-    for i in range(erate.size):
-        cutoff=int(np.round(0.1*spring_force_positon_tensor_tuple[i][:,:,:,l].shape[1]))
-        data=np.ravel(spring_force_positon_tensor_tuple[i][:,cutoff:,:,2])-np.ravel(spring_force_positon_tensor_tuple[i][:,cutoff:,:,1])
-        try: 
-            ex_stretch_events_ratio[l,i]=data[data<-stress_bound].size/data[data>stress_bound].size
-        except:
-            ex_stretch_events_ratio[l,i]=0
-
-for l in range(3):
-    plt.scatter(erate,ex_stretch_events_ratio[l,:], label=labels_stress[l], marker=marker[l])
-    plt.xlabel("$\dot{\gamma}$", rotation=0)
-    plt.ylabel("$\\frac{N_{e}<"+str(stress_bound)+"}{N_{e}>"+str(stress_bound)+"}$", rotation=0, labelpad=20)
-plt.legend()
-#plt.xscale('log')
-plt.show()
-
-
-
-
-#note need to consider if we can include the weighting 
-
+plot_stress_tensor(3,6,
+                       stress_tensor,
+                       stress_tensor_std,
+                       j_,n_plates, labels_stress,marker,0)
 
 # %%
