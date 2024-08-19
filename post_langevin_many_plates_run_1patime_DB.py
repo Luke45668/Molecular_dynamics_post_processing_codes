@@ -596,37 +596,11 @@ n_2,n_2_error=compute_plot_n_stress_diff(stress_tensor,
 
 
      
-     
-
-#%% linear fit n1 and n2
-cutoff=0
-plt.errorbar(erate[cutoff:e_end], n_1[cutoff:e_end], yerr =n_1_error[cutoff:e_end], ls='none',label="$N_{1}$",marker=marker[0] )
-popt,cov_matrix_n1=curve_fit(linearthru0,erate[cutoff:e_end], n_1[cutoff:e_end])
-difference=np.sqrt(np.sum((n_1[cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
-
-plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])),
-         label="$N_{1,fit},m="+str(sigfig.round(popt[0],sigfigs=3))+\
-            ",\\varepsilon="+str(sigfig.round(difference,sigfigs=3))+"$")
-
-#plt.xscale('log')
-#plt.show()
-print(difference)
-
-plt.errorbar(erate[cutoff:e_end], n_2[cutoff:e_end], yerr =n_2_error[cutoff:e_end], ls='none',label="$N_{2}$",marker=marker[0] )
-popt,cov_matrix_n2=curve_fit(linearthru0,erate[cutoff:e_end], n_2[cutoff:e_end])
-difference=np.sqrt(np.sum((n_2[cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
-
-plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])),
-         label="$N_{2,fit},m="+str(sigfig.round(popt[0],sigfigs=3))+\
-           ",\\varepsilon="+str(sigfig.round(difference,sigfigs=3))+"$")
-plt.legend(fontsize=12)
-plt.xscale('log')
-plt.xlabel("$\dot{\gamma}$")
-plt.show()
-print(difference)
+    
 
 
 #%%quadratic fit n1
+cutoff=0
 plt.errorbar(erate[cutoff:e_end], n_1[cutoff:e_end], yerr =n_1_error[cutoff:e_end], ls='none',label="$N_{1}$",marker=marker[0] )
 popt,cov_matrix_n1=curve_fit(quadfunc,erate[cutoff:e_end], n_1[cutoff:e_end])
 difference=np.sqrt(np.sum((n_1[cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])**2))**2)/(e_end))
@@ -647,11 +621,12 @@ print(difference)
 #%% linear fit n2
 plt.errorbar(erate[cutoff:e_end], n_2[cutoff:e_end], yerr =n_2_error[cutoff:e_end], ls='none',label="$N_{2}$",marker=marker[0] )
 popt,cov_matrix_n1=curve_fit(linearthru0,erate[cutoff:e_end], n_2[cutoff:e_end])
-difference=np.sqrt(np.sum((n_2[cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
+# difference=np.sqrt(np.sum((n_2[cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
 
-plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])),
-         label="$N_{2,fit},m="+str(sigfig.round(popt[0],sigfigs=3))+\
-           ",\\varepsilon="+str(sigfig.round(difference,sigfigs=3))+"$")
+# plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])),
+#          label="$N_{2,fit},m="+str(sigfig.round(popt[0],sigfigs=3))+\
+#            ",\\varepsilon="+str(sigfig.round(difference,sigfigs=3))+"$")
+plt.axhline(np.mean(n_2), label="$\\bar{N}_{2}="+str(sigfig.round(np.mean(n_2),sigfigs=4))+"$")
 plt.legend()
 
 plt.ylabel("$N_{2}$", rotation=0, labelpad=20)
@@ -659,21 +634,6 @@ plt.xlabel("$\dot{\gamma}$")
 plt.show()
 print(difference)
 
-
-
-#%%quadratic fit n2
-plt.errorbar(erate[cutoff:e_end], n_2[cutoff:e_end], yerr =n_2_error[cutoff:e_end], ls='none',label="$N_{2}$",marker=marker[0] )
-popt,cov_matrix_n1=curve_fit(quadfunc,erate[cutoff:e_end], n_2[cutoff:e_end])
-difference=np.sqrt(np.sum((n_2[cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])**2))**2)/(e_end))
-
-plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])**2),
-         label="$N_{2,fit},m="+str(sigfig.round(popt[0],sigfigs=3))+\
-            ",\\varepsilon="+str(sigfig.round(difference,sigfigs=3))+"$")
-plt.legend()
-plt.xlabel("$\dot{\gamma}$")
-#plt.xscale('log')
-plt.show()
-print(difference)
 
 
 #%% shear stress xz
@@ -690,46 +650,19 @@ plt.plot(erate[:e_end],(popt[0]*(erate[:e_end])),
 plt.legend()  
 # plt.xscale('log')
 # plt.yscale('log')
-plt.ylabel("$\sigma_{xz}$", rotation=0)
+plt.ylabel("$\sigma_{xz}$", rotation=0, labelpad=20)
 plt.xlabel("$\dot{\gamma}$")
 
 plt.show() 
-#%% viscosity plot 
-def powerlaw(x,a,n):
-    return a*(x**(n))
 
-def herschbuck(x,a,b,n):
-     
-     return (a/x)+ b*(x**(n))
-     
-cutoff=1
-xz_stress= stress_tensor[cutoff:,3]
-xz_stress_std=stress_tensor_std[:,3]/np.sqrt(j_*n_plates)
-#powerlaw
-plt.errorbar(erate[cutoff:e_end], xz_stress/erate[cutoff:e_end], yerr =xz_stress_std[cutoff:], ls='none',label="$\sigma_{xz}$",marker=marker[0] )
-popt,cov_matrix_xz=curve_fit(powerlaw,erate[cutoff:e_end], xz_stress/erate[cutoff:e_end])
-y=xz_stress/erate[cutoff:e_end]
-y_pred=popt[0]*(erate[cutoff:e_end]**(popt[1]))
-difference=np.sqrt(np.sum((y-y_pred)**2)/e_end-cutoff)
-plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end]**(popt[1]))),
-         label="$\sigma_{xz,fit},a="+str(sigfig.round(popt[0],sigfigs=3))+",n="+str(sigfig.round(popt[1],sigfigs=3))+
-
-          ",\\varepsilon=\pm"+str(sigfig.round(difference,sigfigs=3))+"$")
-
-plt.legend(fontsize=14) 
-plt.ylabel("$\eta$", rotation=0,labelpad=20)
-plt.xlabel("$\dot{\gamma}$")
-# plt.xscale('log')
-# plt.yscale('log')
-
-plt.show() 
 
 #%% viscosity no fit 
 xz_stress= stress_tensor[cutoff:,3]
 xz_stress_std=stress_tensor_std[:,3]/np.sqrt(j_*n_plates)
 #powerlaw
-plt.errorbar(erate[cutoff:e_end], xz_stress/erate[cutoff:e_end], yerr =xz_stress_std[cutoff:], ls='none',label="$\sigma_{xz}$",marker=marker[0] )
-
+plt.errorbar(erate[cutoff:e_end], xz_stress/erate[cutoff:e_end], yerr =xz_stress_std[cutoff:], ls='none',label="$\eta$",marker=marker[0] )
+mean_visc=np.mean(xz_stress/erate[cutoff:e_end])
+plt.axhline(mean_visc, label="$\\bar{\eta}="+str(sigfig.round(mean_visc,sigfigs=4))+"$")
 plt.legend(fontsize=14) 
 plt.ylabel("$\eta$", rotation=0,labelpad=20)
 plt.xlabel("$\dot{\gamma}$")

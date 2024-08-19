@@ -38,6 +38,7 @@ import glob
 from post_MPCD_MP_processing_module import *
 import pickle as pck
 from numpy.linalg import norm
+from post_langevin_module import *
 
 #%%
 damp=0.035
@@ -91,7 +92,7 @@ n_plates=100
 filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/run_692855/sucessful_runs_3_reals"
 #filepath='/Users/luke_dev/Documents/simulation_run_folder/tri_plate_with_6_angles/eq_run_tri_plate_damp_0.035_K_50_100_particles'
 filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/run_312202/"
-#filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/run_667325"
+filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/run_667325/"
 path_2_log_files=filepath
 pol_general_name_string='*K_'+str(K)+'*pol*h5'
 
@@ -649,7 +650,7 @@ def stress_tensor_averaging(e_end,
                             labels_stress,
                             trunc1,
                             trunc2,
-                            spring_force_positon_tensor_tuple):
+                            spring_force_positon_tensor_tuple,j_):
     stress_tensor=np.zeros((e_end,6))
     stress_tensor_std=np.zeros((e_end,6))
     stress_tensor_reals=np.zeros((e_end,j_,6))
@@ -673,7 +674,7 @@ stress_tensor,stress_tensor_std=stress_tensor_averaging(e_end,
                             labels_stress,
                             cut,
                             aftcut,
-                            spring_force_positon_tensor_tuple)
+                            spring_force_positon_tensor_tuple,j_)
 
 #%% plot stress vs strain 
 
@@ -752,7 +753,7 @@ plotting_n_difff_vs_strain(spring_force_positon_tensor_tuple,e_in,e_end,j_,strai
 def plot_stress_tensor(t_0,t_1,
                        stress_tensor,
                        stress_tensor_std,
-                       j_,n_plates, labels_stress,marker,cutoff):
+                       j_,n_plates, labels_stress,marker,cutoff,erate,e_end):
     for l in range(t_0,t_1):
           plt.errorbar(erate[cutoff:e_end], stress_tensor[cutoff:,l], yerr =stress_tensor_std[cutoff:,l]/np.sqrt(j_*n_plates), ls='--',label=labels_stress[l],marker=marker[l] )
           plt.xlabel("$\dot{\gamma}$")
@@ -763,12 +764,12 @@ def plot_stress_tensor(t_0,t_1,
 plot_stress_tensor(0,3,
                        stress_tensor,
                        stress_tensor_std,
-                       j_,n_plates, labels_stress,marker,0)
+                       j_,n_plates, labels_stress,marker,0,erate,e_end)
 
 plot_stress_tensor(3,6,
                        stress_tensor,
                        stress_tensor_std,
-                       j_,n_plates, labels_stress,marker,0)
+                       j_,n_plates, labels_stress,marker,0,erate,e_end)
 
 
     
@@ -936,13 +937,13 @@ cutoff=1
 xz_stress= stress_tensor[cutoff:,3]
 xz_stress_std=stress_tensor_std[:,3]/np.sqrt(j_*n_plates)
 #powerlaw
-plt.errorbar(erate[cutoff:e_end], xz_stress/erate[cutoff:e_end], yerr =xz_stress_std[cutoff:], ls='none',label="$\sigma_{xz}$",marker=marker[0] )
+plt.errorbar(erate[cutoff:e_end], xz_stress/erate[cutoff:e_end], yerr =xz_stress_std[cutoff:], ls='none',label="$\eta$",marker=marker[0] )
 popt,cov_matrix_xz=curve_fit(powerlaw,erate[cutoff:e_end], xz_stress/erate[cutoff:e_end])
 y=xz_stress/erate[cutoff:e_end]
 y_pred=popt[0]*(erate[cutoff:e_end]**(popt[1]))
 difference=np.sqrt(np.sum((y-y_pred)**2)/e_end-cutoff)
 plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end]**(popt[1]))),
-         label="$\sigma_{xz,fit},a="+str(sigfig.round(popt[0],sigfigs=3))+",n="+str(sigfig.round(popt[1],sigfigs=3))+
+         label="$\eta_{fit},a="+str(sigfig.round(popt[0],sigfigs=3))+",n="+str(sigfig.round(popt[1],sigfigs=3))+
 
           ",\\varepsilon=\pm"+str(sigfig.round(difference,sigfigs=3))+"$")
 
