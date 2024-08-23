@@ -56,13 +56,13 @@ no_timesteps=np.flip(np.array([ 3944000,  4382000,  4929000,  5634000,  6573000,
         78870000, 10000000]))
 
 timestep_multiplier=np.flip(np.array(
-[0.005,0.005,0.005,0.005,
-0.005,0.005,0.005,0.005,0.005,
-0.05,0.05,0.05,0.05,0.05,0.05,
-0.05,0.05,0.05,0.2]))
+[0.0005,0.0005,0.0005,0.0005,
+0.0005,0.0005,0.0005,0.0005,0.0005,
+0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,
+0.0005,0.0005,0.005,0.005,0.2]))
 
 
-thermo_vars='         KinEng         PotEng         Press         c_myTemp        c_bias         TotEng    '
+thermo_vars='         KinEng         PotEng         Press           Temp      c_uniaxnvttemp'
 #thermo_vars='         KinEng         PotEng         Press         c_myTemp        TotEng    '
 
 
@@ -75,7 +75,7 @@ mass_pol=5
 n_plates=100
 
 
-filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/dumbell_run/log_tensor_files"
+filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/extension_runs/run_94057/sucessful_runs_5_reals"
 path_2_log_files=filepath
 pol_general_name_string='*K_'+str(K)+'*pol*h5'
 
@@ -223,13 +223,13 @@ new_pos_vel_tuple=()
 interest_vectors_tuple=()
 tilt_test=[]
 e_in=0
-e_end=erate.size
+e_end=13# for extension runs 
 count=e_in
 from collections import Counter
 # need to ake this geenral 
 def dump2numpy_tensor_1tstep(dump_start_line,
                       Path_2_dump,dump_realisation_name,
-                      number_of_particles_per_dump):
+                      number_of_particles_per_dump,lines_per_dump, cols_per_dump):
        
        
         
@@ -247,27 +247,30 @@ def dump2numpy_tensor_1tstep(dump_start_line,
             
             #print(counter.most_common(3))
             n_outs=int(counter["ITEM: TIMESTEP\n"])
-            dump_outarray=np.zeros((n_outs,100,6))
+            dump_outarray=np.zeros((n_outs,lines_per_dump,cols_per_dump))
             #print(counter["ITEM: ENTRIES c_spring_f_d[1] c_spring_f_d[2] c_spring_f_d[3] c_spring_f_d[4] c_spring_f_d[5] c_spring_f_d[6]\n"])
-            
-            skip_array=np.arange(1,len(lines),109)
+            skip_spacing=lines_per_dump+9
+            skip_array=np.arange(1,len(lines),skip_spacing)
             for i in range(n_outs):
                 k=skip_array[i]
                 # timestep_list=[]
                 start=k-1
-                end=start+109
+                end=start+skip_spacing
                 timestep_list=lines[start:end]
                 data_list=timestep_list[9:]
                 #print(data_list[0])
                 #print(len(data_list))
-                data=np.zeros((100,6))
+                data=np.zeros((lines_per_dump,cols_per_dump))
                 for j in range(len(data_list)):
-                    data[j,:]=data_list[j].split(" ")[0:6]
+                    data[j,:]=data_list[j].split(" ")[0:cols_per_dump]
             
                 dump_outarray[i,:,:]=data
 
 
         return dump_outarray
+
+
+
 
             
     
@@ -285,17 +288,17 @@ for i in range(e_in,e_end):
     outputdim_dump=dump2numpy_tensor_1tstep(dump_start_line,
                                     Path_2_dump,
                                      realisation_name_dump_sorted_final[i_],
-                                     n_plates).shape[0]
+                                     n_plates,300,6).shape[0]
     
     outputdim_log=log2numpy_reader(realisation_name_log_sorted_final[i_],
                                                     path_2_log_files,
                                                     thermo_vars).shape[0]
 
     
-    log_file_array=np.zeros((j_,outputdim_log,7)) #nemd
+    log_file_array=np.zeros((j_,outputdim_log,6)) #nemd
    
     
-    spring_force_positon_array=np.zeros((j_,outputdim_dump,n_plates,6))
+    spring_force_positon_array=np.zeros((j_,outputdim_dump,300,6))
 
 
     for j in range(j_):
@@ -309,7 +312,7 @@ for i in range(e_in,e_end):
             dump_data=dump2numpy_tensor_1tstep(dump_start_line,
                                     Path_2_dump,
                                     realisation_name_dump_sorted_final[j_index],
-                                    n_plates)
+                                    n_plates,300,6)
             print(dump_data.shape)
 
             # bond local reverses the sign of direction, lower id - higher id 
@@ -320,6 +323,9 @@ for i in range(e_in,e_end):
             spring_force_positon_array[j,:,:,3]=-dump_data[:,:,0]*dump_data[:,:,5]#xz
             spring_force_positon_array[j,:,:,4]=-dump_data[:,:,0]*dump_data[:,:,4]#xy
             spring_force_positon_array[j,:,:,5]=-dump_data[:,:,1]*dump_data[:,:,5]#yz
+
+
+            # need to compute the ell vectors from this. 
 
           
 
@@ -401,7 +407,7 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 marker=['x','o','+','^',"1","X","d","*","P","v"]
 aftcut=1
-cut=0.5
+cut=0.15
 
 labels_stress=["$\sigma_{xx}$",
                "$\sigma_{yy}$",
@@ -463,16 +469,17 @@ def plotting_stress_vs_strain(spring_force_positon_tensor_tuple,
             gradient_vec=np.gradient(np.mean(stress,axis=1))
             mean_grad=np.mean(gradient_vec)
             mean_grad_l.append(mean_grad)
-            #print(stress.shape)
-            # plt.plot(strain_plot,np.mean(stress,axis=1))
-            # plt.ylabel(labels_stress[stress_component],rotation=0)
-            # plt.xlabel("$\gamma$")
-            # plt.plot(strain_plot,gradient_vec, label="$\\frac{dy}{dx}="+str(mean_grad)+"$")
+            print(stress.shape)
+            plt.plot(strain_plot,np.mean(stress,axis=1))
+            plt.axhline(np.mean(np.mean(stress,axis=1)))
+            plt.ylabel(labels_stress[stress_component],rotation=0)
+            plt.xlabel("$\gamma$")
+            #plt.plot(strain_plot,gradient_vec, label="$\\frac{dy}{dx}="+str(mean_grad)+"$")
 
             #plt.legend()
-            #plt.show()
+            plt.show()
 
-    plt.scatter(erate,mean_grad_l, label=label_stress)
+    plt.scatter(erate[:e_end],mean_grad_l, label=label_stress)
     plt.xlabel("$\dot{\gamma}$")
     plt.ylabel("$\\frac{d\\bar{\sigma}_{\\alpha\\beta}}{dt}$", rotation=0,labelpad=20)
     #plt.show()
@@ -519,7 +526,9 @@ def plot_stress_tensor(t_0,t_1,
                        stress_tensor_std,
                        j_,n_plates, labels_stress,marker,cutoff):
     for l in range(t_0,t_1):
-          plt.errorbar(erate[cutoff:e_end], stress_tensor[cutoff:,l], yerr =stress_tensor_std[cutoff:,l]/np.sqrt(j_*n_plates), ls='--',label=labels_stress[l],marker=marker[l] )
+          plt.errorbar(erate[cutoff:e_end], stress_tensor[cutoff:,l],
+                        yerr =stress_tensor_std[cutoff:,l]/np.sqrt(j_*n_plates), 
+                        ls='none',label=labels_stress[l],marker=marker[l] )
           plt.xlabel("$\dot{\gamma}$")
           plt.ylabel("$\sigma_{\\alpha\\beta}$",rotation=0,labelpad=20)
     plt.legend()      
@@ -534,6 +543,10 @@ plot_stress_tensor(3,6,
                        stress_tensor,
                        stress_tensor_std,
                        j_,n_plates, labels_stress,marker,0)
+
+for i in range(3,6):
+     plt.axhline(np.mean(stress_tensor[:,i],axis=0))
+plt.show()
 
 
     
@@ -551,6 +564,7 @@ def compute_plot_n_stress_diff(stress_tensor,
     plt.scatter(erate[:e_end],n_diff )
     plt.ylabel(ylab, rotation=0, labelpad=20)
     plt.xlabel("$\dot{\gamma}$")
+   
     plt.legend()  
     plt.show() 
         
@@ -571,6 +585,26 @@ n_2,n_2_error=compute_plot_n_stress_diff(stress_tensor,
                           "$N_{2}$")
   
 
+#compute extensional viscosity
+
+def ext_visc_compute(stress_tensor,stress_tensor_std,i1,i2,n_plates,e_end):
+    extvisc=(stress_tensor[1:,i1]- stress_tensor[1:,i2])/erate[1:e_end]/30.3
+    extvisc_error=np.sqrt(stress_tensor_std[:,i1]**2 +stress_tensor_std[:,i2]**2)/np.sqrt(j_*n_plates)
+
+    return extvisc,extvisc_error
+
+ext_visc_1,ext_visc_1_error=ext_visc_compute(stress_tensor,stress_tensor_std,0,2,n_plates,e_end)
+     
+#ext_visc_2,ext_visc_2_error=ext_visc_compute(stress_tensor,stress_tensor_std,1,2,n_plates,e_end)
+
+plt.scatter(erate[1:e_end],ext_visc_1, label="$\eta_{1}$")
+plt.ylabel("$\eta/\eta_{s}$", rotation=0, labelpad=20)
+plt.xlabel("$\dot{\gamma}$")
+# plt.plot(erate[1:e_end],ext_visc_2, label="$\eta_{2}$")
+# plt.xscale('log')
+# plt.yscale('log')
+
+plt.show()
 
 #%% collecting n1 and n2 
 # n_1_list=[]
