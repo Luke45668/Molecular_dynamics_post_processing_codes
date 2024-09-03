@@ -43,7 +43,7 @@ from numpy.linalg import norm
 
 #%%
 damp=0.035
-strain_total=100
+strain_total=60
 
 
 # erate=np.array([0])
@@ -93,6 +93,8 @@ n_plates=100
 
 filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/extension_runs/run_94057/sucessful_runs_5_reals"
 filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/run_759848/sucessful_runs_5_reals"
+#filepath='/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/run_224048/sucessful_runs_5_reals'
+#filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/run_64228/sucessful_runs_5_reals"
 path_2_log_files=filepath
 pol_general_name_string='*K_'+str(K)+'*pol*h5'
 
@@ -449,8 +451,8 @@ for i in range(0,e_end):
         # column=4
         # plt.plot(log_file_tuple[i][:,column],label="Temp")
 
-        column=5
-        plt.plot(log_file_tuple[i][:,column],label="uef_temp")
+        # column=5
+        # plt.plot(log_file_tuple[i][:,column],label="uef_temp")
       
 
         # column=5 # ecouple 
@@ -520,7 +522,7 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 marker=['x','o','+','^',"1","X","d","*","P","v"]
 aftcut=1
-cut=0.4
+cut=0.75
 
 labels_stress=["$\sigma_{xx}$",
                "$\sigma_{yy}$",
@@ -547,6 +549,10 @@ def stress_tensor_averaging(e_end,
                 # print(cutoff)
                 # print(aftercutoff)
                 data=np.ravel(spring_force_positon_tensor_tuple[i][j,cutoff:aftercutoff,:,l])
+                # plt.axhline(np.mean(data))
+                # plt.plot(data,label=labels_stress[l])
+                # plt.legend()
+                # plt.show()
                 stress_tensor_reals[i,j,l]=np.mean(data)
                 stress_tensor_std_reals[i,j,l]=np.std(data)
                 stress_tensor=np.mean(stress_tensor_reals, axis=1)
@@ -585,17 +591,17 @@ def plotting_stress_vs_strain(spring_force_positon_tensor_tuple,
             print(stress.shape)
             # plt.plot(strain_plot,np.mean(stress,axis=1))
             # plt.axhline(np.mean(np.mean(stress,axis=1)))
-            # plt.ylabel(labels_stress[stress_component],rotation=0)
+            # #plt.ylabel(labels_stress[stress_component],rotation=0)
             # plt.xlabel("$\gamma$")
             # #plt.plot(strain_plot,gradient_vec, label="$\\frac{dy}{dx}="+str(mean_grad)+"$")
 
-            # #plt.legend()
-            # plt.show()
+            # plt.legend()
+            #plt.show()
 
     plt.scatter(erate[:e_end],mean_grad_l, label=label_stress)
     plt.xlabel("$\dot{\gamma}$")
     plt.ylabel("$\\frac{d\\bar{\sigma}_{\\alpha\\beta}}{dt}$", rotation=0,labelpad=20)
-    #plt.show()
+    plt.show()
 
 for i in range(6):
 
@@ -644,6 +650,7 @@ def plot_stress_tensor(t_0,t_1,
                         ls='none',label=labels_stress[l],marker=marker[l] )
           plt.xlabel("$\dot{\gamma}$")
           plt.ylabel("$\sigma_{\\alpha\\beta}$",rotation=0,labelpad=20)
+    plt.xscale('log')
     plt.legend()      
     plt.show()
 
@@ -657,12 +664,13 @@ plot_stress_tensor(3,6,
                        stress_tensor_std,
                        j_,n_plates, labels_stress,marker,0)
 
-for i in range(3,6):
-     plt.axhline(np.mean(stress_tensor[:,i],axis=0))
-plt.show()
+# for i in range(3,6):
+#      plt.axhline(np.mean(stress_tensor[:,i],axis=0))
+# plt.show()
 
 
     
+
 #%%normal stress differences 
 
 def compute_plot_n_stress_diff(stress_tensor, 
@@ -728,8 +736,9 @@ plt.rcParams["figure.figsize"] = (8,6 )
 plt.rcParams.update({'font.size': 16})
 eq_spring_length=3*np.sqrt(3)/2
 skip_array=np.arange(0,e_end,3)
-for i in range(1,e_end):
-    #i=skip_array[i]
+#for i in range(1,e_end):
+for i in range(3,skip_array.size):
+    i=skip_array[i]
 # for i in range(e_in,e_end):
 
     # sns.kdeplot(eq_spring_length-np.ravel(interest_vectors_tuple[i][:,:,2:5]),
@@ -738,7 +747,7 @@ for i in range(1,e_end):
     #spring_extension=np.ravel(np.mean(spring_extension_tuple[i],axis=0))
     spring_extension=np.ravel(spring_extension_tuple[i])
     sns.kdeplot(eq_spring_length+0.125-spring_extension,
-                  label ="$\dot{\gamma}="+str(erate[i])+"$")
+                  label ="$\dot{\gamma}="+str(erate[i])+"$", bw_adjust=5)
     
     plt.xlabel("$\Delta x$")
 
@@ -748,7 +757,7 @@ for i in range(1,e_end):
     plt.legend(fontsize=11) 
     #plt.xlim(-3,2)
     
-    plt.show()
+plt.show()
 
 #%% collecting n1 and n2 
 # n_1_list=[]
