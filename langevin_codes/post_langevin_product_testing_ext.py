@@ -36,7 +36,7 @@ from scipy.optimize import curve_fit
 import seaborn as sns
 
 import glob 
-from post_MPCD_MP_processing_module import *
+# from post_MPCD_MP_processing_module import *
 import pickle as pck
 from post_langevin_module import *
 from reading_lammps_module import *
@@ -53,8 +53,9 @@ linestyle_tuple = ['-',
 damp=np.array([ 0.035, 0.035 ,0.035,0.035])
 K=np.array([  60,480,960,1500   ,
             ])
-# K=np.array([  50   ,
-#             ])
+# thermal_damp_multiplier=np.array([75,150,300,600,1200])
+K=np.array([  50 ,500  
+             ])
 erate=np.flip(np.array([1,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.175,0.15,0.125,0.1,0.08,
                 0.06,0.04,0.01,0.005,0]))
 
@@ -62,6 +63,15 @@ no_timesteps=np.flip(np.array([ 3944000,  4382000,  4929000,  5634000,  6573000,
          9859000, 13145000, 19718000,  2253000,  2629000,  3155000,
          3944000,  4929000,  6573000,  9859000, 39435000,
         78870000, 10000000]))
+
+erate=np.flip(np.array([0.5,0.45,0.4,0.35,0.3,0.2,0.175,0.15,0.125,0.1,0.08,
+                0.06,0.04,0.02,0.01,0.005]))
+
+no_timesteps=np.flip(np.array([ 473221000,  525801000,  591526000,  676030000,  788702000,
+        1183053000, 1352060000, 1577404000, 1892885000,  236611000,
+         295763000,  394351000,  591526000, 1183053000,  236611000,
+         473221000]))
+
 
 e_in=0
 e_end=erate.size
@@ -75,10 +85,11 @@ strain_total=60
 path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/run_279865/saved_tuples"
 #path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/dumbell_run/log_tensor_files/saved_tuples"
 path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/product_run"
-
+#path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/db_runs/run_226020/saved_tuples"
+path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/db_runs/non_zero_natural_length_run/run_727608/sucessful_runs_5_reals/saved_tuples"
 thermo_vars='         KinEng         PotEng         Press         c_myTemp        c_bias         TotEng    '
 thermo_vars='         KinEng         PotEng         Press           Temp         Ecouple       Econserve   '
-
+thermo_vars='         KinEng         PotEng         Press           Temp         Ecouple       Econserve    c_uniaxnvttemp'
 
 j_=5
 sim_fluid=30.315227255599112
@@ -113,8 +124,11 @@ interest_vectors_batch_tuple=()
 
 
 # loading all data into one 
+#for i in range(thermal_damp_multiplier.size):
 for i in range(K.size):
     label='damp_'+str(damp[i])+'_K_'+str(K[i])+'_'
+    #label='damp_'+str(thermal_damp_multiplier[i])+'_K_'+str(K[0])+'_'
+    print(label)
 
     spring_force_positon_tensor_batch_tuple= spring_force_positon_tensor_batch_tuple+(batch_load_tuples(label,
                                                             "spring_force_positon_tensor_tuple.pickle"),)
@@ -153,7 +167,7 @@ def strain_plotting_points(total_strain,points_per_iv):
      return  strain_plotting_points
 
 
-
+#%% fix k vary tdamp
 folder="temperature_plots"
 folder_check_or_create(path_2_log_files,folder)
 column=4
@@ -161,34 +175,122 @@ final_temp=np.zeros((erate.size))
 mean_temp_tuple=()
 
 e_end=[11,14,15,16]
-for j in range(K.size):
-    mean_temp_array=np.zeros((erate[:e_end[j]].size))
-    for i in range(erate[:e_end[j]].size):
-        
-        # plt.plot(strainplot_tuple[i][:],log_file_batch_tuple[j][i][:,column])
+e_end=[20,20,20,20,19]
+#for j in range(K.size):
+for i in range(erate[:e_end[j]].size):
+    for j in range(thermal_damp_multiplier.size):
+        mean_temp_array=np.zeros((erate[:e_end[j]].size))
+        #for i in range(erate[:e_end[j]].size):
+        i=15
+            
+        plt.plot(strainplot_tuple[i][:],log_file_batch_tuple[j][i][:,column],
+        label="tdamp="+str(thermal_damp_multiplier[j]))
         # final_temp[i]=log_file_batch_tuple[j][i][-1,column]
         
         mean_temp_array[i]=np.mean(log_file_batch_tuple[j][i][1000:,column])
 
-    mean_temp_tuple=mean_temp_tuple+(mean_temp_array,)
-      
-        #plt.axhline(np.mean(log_file_batch_tuple[j][i][:,column]))
-    #     plt.ylabel("$T$", rotation=0)
-    #     plt.xlabel("$\gamma$")
+        mean_temp_tuple=mean_temp_tuple+(mean_temp_array,)
+        
+            #plt.axhline(np.mean(log_file_batch_tuple[j][i][:,column]))
+        #     plt.ylabel("$T$", rotation=0)
+        #     plt.xlabel("$\gamma$")
+        
+
+        # #   plt.savefig("temp_vs_strain_damp_"+str(damp)+"_gdot_"+str(erate[i])+"_.pdf",dpi=1200,bbox_inches='tight')
+    plt.legend()
+    plt.show()
+
+#%% fix tdamp vary k 
+folder="temperature_plots"
+folder_check_or_create(path_2_log_files,folder)
+column=4
+final_temp=np.zeros((erate.size))
+mean_temp_tuple=()
+
+e_end=[11,14,15,16]
+e_end=[16,16]
+j=0
+for i in range(erate[:e_end[j]].size):
+        for j in range(K.size):
+
     
+        
+            
+            plt.plot(log_file_batch_tuple[j][i][:,column],
+            label="K="+str(K[j])+",$\dot{\gamma}="+str(erate[i])+"$")
+            # final_temp[i]=log_file_batch_tuple[j][i][-1,column]
+            
+            mean_temp_array[i]=np.mean(log_file_batch_tuple[j][i][1000:,column])
 
-    # #   plt.savefig("temp_vs_strain_damp_"+str(damp)+"_gdot_"+str(erate[i])+"_.pdf",dpi=1200,bbox_inches='tight')
-    #     plt.show()
+            mean_temp_tuple=mean_temp_tuple+(mean_temp_array,)
+            
+            #plt.axhline(np.mean(log_file_batch_tuple[j][i][:,column]))
+        #     plt.ylabel("$T$", rotation=0)
+        #     plt.xlabel("$\gamma$")
+        
 
-#
+        # #   plt.savefig("temp_vs_strain_damp_"+str(damp)+"_gdot_"+str(erate[i])+"_.pdf",dpi=1200,bbox_inches='tight')
+        plt.legend()
+        plt.show()
+
+#%% potential energy fix k vary tdamp 
+j=0
+for i in range(erate[:e_end[j]].size):
+    for j in range(thermal_damp_multiplier.size):
+        column=2
+        #for i in range(erate[:e_end[j]].size):
+        
+            
+        plt.plot(log_file_batch_tuple[j][i][:,column],
+        label="tdamp="+str(thermal_damp_multiplier[j]))
+        
+        # final_temp[i]=log_file_batch_tuple[j][i][-1,column]
+        
+    
+        
+            #plt.axhline(np.mean(log_file_batch_tuple[j][i][:,column]))
+        #     plt.ylabel("$T$", rotation=0)
+        #     plt.xlabel("$\gamma$")
+        
+
+        # #   plt.savefig("temp_vs_strain_damp_"+str(damp)+"_gdot_"+str(erate[i])+"_.pdf",dpi=1200,bbox_inches='tight')
+    plt.yscale('log')
+    plt.legend()
+    plt.show()
+#%% potential energy fix tdamp vary K 
+j=0
+for i in range(erate[:e_end[j]].size):
+        for j in range(1,2):
+            column=2
+            #for i in range(erate[:e_end[j]].size):
+            
+                
+            plt.plot(log_file_batch_tuple[j][i][:,column],
+             label="K="+str(K[j])+",$\dot{\gamma}="+str(erate[i])+"$")
+            plt.ylabel("$E_{p}$")
+            # final_temp[i]=log_file_batch_tuple[j][i][-1,column]
+        
+    
+        
+            #plt.axhline(np.mean(log_file_batch_tuple[j][i][:,column]))
+        #     plt.ylabel("$T$", rotation=0)
+        #     plt.xlabel("$\gamma$")
+        
+
+        # #   plt.savefig("temp_vs_strain_damp_"+str(damp)+"_gdot_"+str(erate[i])+"_.pdf",dpi=1200,bbox_inches='tight')
+        #plt.yscale('log')
+        plt.legend()
+        plt.show()
+
 #%%
 marker=['x','+','^',"1","X","d","*","P","v"]
 
-for j in range(K.size):
+# for j in range(K.size):
+for j in range(thermal_damp_multiplier.size-1):
     plt.scatter(erate[:e_end[j]],mean_temp_tuple[j],label="$K="+str(K[j])+"$" ,marker=marker[j])
     plt.ylabel("$T$", rotation=0)
     plt.xlabel('$\dot{\gamma}$')
-    plt.xscale('log')
+    #plt.xscale('log')
    # plt.yscale('log')
 plt.axhline(1,label="$T_{0}=1$")
 plt.legend()
@@ -201,7 +303,7 @@ plt.show()
 
 #%% look at internal stresses
 aftcut=1
-cut=0.5
+cut=0.9
 folder_check_or_create(path_2_log_files,folder)
 labels_stress=np.array(["\sigma_{xx}$",
                "\sigma_{yy}$",
@@ -283,8 +385,8 @@ plt.show()
 
 #%%
 def ext_visc_compute(stress_tensor,stress_tensor_std,i1,i2,n_plates,e_end):
-    extvisc=(stress_tensor[1:,i1]- stress_tensor[1:,i2])/erate[1:e_end]/30.3
-    extvisc_error=np.sqrt(stress_tensor_std[1:,i1]**2 +stress_tensor_std[1:,i2]**2)/np.sqrt(j_*n_plates)
+    extvisc=(stress_tensor[:,i1]- stress_tensor[:,i2])/erate[:e_end]/30.3
+    extvisc_error=np.sqrt(stress_tensor_std[:,i1]**2 +stress_tensor_std[:,i2]**2)/np.sqrt(j_*n_plates)
 
     return extvisc,extvisc_error
 
@@ -293,7 +395,8 @@ for j in range(K.size):
 
     ext_visc_1,ext_visc_1_error=ext_visc_compute(stress_tensor_tuple[j],stress_tensor_std_tuple[j],0,2,n_plates,e_end[j])
     cutoff=1
-    plt.errorbar(erate[1:e_end[j]],ext_visc_1,yerr=ext_visc_1_error, label="$\eta_{1},K="+str(K[j])+"$", linestyle='none', marker=marker[j])
+    #plt.errorbar(erate[:e_end[j]],ext_visc_1,yerr=ext_visc_1_error, label="$\eta_{1},K="+str(K[j])+"$", linestyle='none', marker=marker[j])
+    plt.plot(erate[:e_end[j]],ext_visc_1, label="$\eta_{1},K="+str(K[j])+"$", linestyle='none', marker=marker[j])
     plt.ylabel("$\eta/\eta_{s}$", rotation=0, labelpad=20)
     plt.xlabel("$\dot{\gamma}$")
 

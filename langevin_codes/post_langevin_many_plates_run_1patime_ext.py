@@ -95,6 +95,7 @@ filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particl
 filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/run_759848/sucessful_runs_5_reals"
 #filepath='/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/run_224048/sucessful_runs_5_reals'
 #filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/run_64228/sucessful_runs_5_reals"
+
 path_2_log_files=filepath
 pol_general_name_string='*K_'+str(K)+'*pol*h5'
 
