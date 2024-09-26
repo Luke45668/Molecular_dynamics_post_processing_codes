@@ -102,6 +102,7 @@ no_timesteps=np.flip(np.array([ 492939000,  547710000,  616173000,  657252000,  
 thermo_vars='         KinEng         PotEng         Press           Temp      c_uniaxnvttemp'
 #thermo_vars='         KinEng         PotEng         Press         c_myTemp        TotEng    '
 thermo_vars='         KinEng         PotEng         Press           Temp         Ecouple       Econserve   '
+thermo_vars='         KinEng         PotEng         Press           Temp         Ecouple       Econserve    c_uniaxnvttemp'
 
 
 
@@ -137,12 +138,12 @@ cfg_general_name_after_string='after*.cfg'
 
 
 
-(realisation_name_force_dump,
+(realisation_name_posvel_dump,
  realisation_name_cfg_before,
  count_mom,count_phantom,
  realisation_name_log,
  count_log,
- realisation_name_posvel_dump,
+ realisation_name_force_dump,
  count_dump,
  realisation_name_cfg_after,
  count_pol)= VP_and_momentum_data_realisation_name_grabber(cfg_general_name_after_string,
@@ -185,15 +186,30 @@ def org_names(split_list_for_sorting,unsorted_list,first_sort_index,second_sort_
 
 
 realisations_for_sorting_after_cfg=[]
-timestep_split_index=21
+# first sort cfg via realisation and erate 
+realisation_split_index=7
 erate_index=16
 realisation_name_after_sorted_final_cfg=org_names(realisations_for_sorting_after_cfg,
                                                       realisation_name_cfg_after,
-                                                     timestep_split_index,
+                                                     realisation_split_index,
                                                      erate_index)
 realisations_for_sorting_before_cfg=[]
 realisation_name_before_sorted_final_cfg=org_names(realisations_for_sorting_before_cfg,
                                                       realisation_name_cfg_before,
+                                                     realisation_split_index,
+                                                     erate_index)
+#%%
+# then sort cfg via timestep and erate 
+timestep_split_index=21
+erate_index=16
+realisations_for_sorting_after_cfg=[]
+realisation_name_after_sorted_final_cfg=org_names(realisations_for_sorting_after_cfg,
+                                                      realisation_name_after_sorted_final_cfg,
+                                                     timestep_split_index,
+                                                     erate_index)
+realisations_for_sorting_before_cfg=[]
+realisation_name_before_sorted_final_cfg=org_names(realisations_for_sorting_before_cfg,
+                                                      realisation_name_before_sorted_final_cfg,
                                                       timestep_split_index,
                                                      erate_index)
 
@@ -353,27 +369,39 @@ for i in range(100):
                       n_plates*2, 4)
     sort_array=full_dump_coord_after[i]
     full_dump_coord_after[i] = sort_array[sort_array[:,3].argsort()]
-    velocity_array[i]=full_dump_coord_after[i][:,0:3]-full_dump_coord_before[i][:,0:3]/(5.07162452121036e-06)
+    velocity_array[i]=(full_dump_coord_after[i][:,0:3]-full_dump_coord_before[i][:,0:3])/(100*5.07162452121036e-06)
 
 
 #plot phase plane 
 for i in range(100):
-    plt.scatter(full_dump_coord_before[i][:,0],velocity_array[i][:,0])
+    plt.scatter(full_dump_coord_before[i,:,0],velocity_array[i,:,0])
+    plt.xlabel("$x$")
+    plt.ylabel("$v_{x}$")
+    #plt.ylim(-0.02,0.02)
 plt.show()
-    
+      
 for i in range(100):
-    plt.scatter(full_dump_coord_before[i][:,1],velocity_array[i][:,1])
+    plt.scatter(full_dump_coord_before[i,:,1],velocity_array[i,:,1])
+    plt.xlabel("$y$")
+    plt.ylabel("$v_{y}$")
+    #plt.ylim(-0.02,0.015)
 plt.show()
 
 for i in range(100):
-    plt.scatter(full_dump_coord_before[i][:,2],velocity_array[i][:,2])
+    plt.scatter(full_dump_coord_before[i,:,2],velocity_array[i,:,2])
+    plt.xlabel("$z$")
+    plt.ylabel("$v_{z}$")
+   # plt.ylim(-0.02,0.015)
 plt.show()
      
 # plot coordinate space
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
-for i in range(100):
+#%%
+# this will come in useful for showing orientations of dumbells 
+for i in range(0,1):
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
     for j in range(200):
+       
     
         xs=full_dump_coord_after[i][j,0]
         ys=full_dump_coord_after[i][j,1]
@@ -382,7 +410,7 @@ for i in range(100):
         v=velocity_array[i][j,1]
         w=velocity_array[i][j,2]
         #ax.scatter(xs, ys, zs)
-        ax.quiver(xs, ys, zs, u, v, w, length=0.1, normalize=True)
+        ax.quiver(xs, ys, zs, u, v, w,length=0.1, normalize=True)
     plt.show()
 
 # fig = plt.figure()
@@ -417,22 +445,30 @@ for i in range(e_in,e_end):
     outputdim_posvel_dump=int(dump2numpy_f(dump_start_line_posvel,
                                     Path_2_dump,
                                     realisation_name_posvel_dump_sorted_final[i_],
-                                    n_plates*2).shape[0]/(n_plates*6))
+                                    n_plates*2).shape[0]/(n_plates*2))
+
+    outputdim_cfg_dump=cfg2numpy_coords(Path_2_dump,realisation_name_before_sorted_final_cfg[i_],
+                      n_plates*2, 4).shape[0]
     
     outputdim_log=log2numpy_reader(realisation_name_log_sorted_final[i_],
                                                     path_2_log_files,
                                                     thermo_vars).shape[0]
 
+                                                
+
     
     log_file_array=np.zeros((j_,outputdim_log,8)) #nemd
    
     
-    spring_force_positon_array=np.zeros((j_,outputdim_dump,100,6))
-    dirn_vector_array=np.zeros((j_,outputdim_dump,100,3))
-    area_vector_array=np.zeros((j_,outputdim_dump,100,3))
-    spring_extension_array=np.zeros((j_,outputdim_dump,100))
+    spring_force_positon_array=np.zeros((j_,outputdim_force_dump,100,6))
+    pos_vel_array=((j_,outputdim_posvel_dump,8))
+    cfg_pos_vel_array=
+    dirn_vector_array=np.zeros((j_,outputdim_force_dump,100,3))
+    #area_vector_array=np.zeros((j_,outputdim_force_dump,100,3))
+    spring_extension_array=np.zeros((j_,outputdim_force_dump,100))
 
 
+#%%
 
     for j in range(j_):
             j_index=j+(j_*count)
@@ -442,10 +478,25 @@ for i in range(e_in,e_end):
             log_file_array[j,:,:]=log2numpy_reader(realisation_name_log_sorted_final[j_index],
                                                         path_2_log_files,
                                                         thermo_vars)
+            # data from compute bond local                                         
             dump_data=dump2numpy_tensor_1tstep(dump_start_line,
                                     Path_2_dump,
                                     realisation_name_dump_sorted_final[j_index],
                                     n_plates,100,6)
+
+            # pos vel data from dump files 
+            posvel_from_dump=dump2numpy_f(dump_start_line_posvel,
+                                    Path_2_dump,
+                                    realisation_name_posvel_dump_sorted_final[j_index],
+                                    n_plates*2)
+
+            # pos vel data from cfg files we need another loop here 
+
+            for l in range(num_cfg_per_run):
+                posvel_from_cfg=cfg2numpy_coords(Path_2_dump,realisation_name_before_sorted_final_cfg[j_index],
+                      n_plates*2, 4)
+
+
             print(dump_data.shape)
 
             # bond local reverses the sign of direction, lower id - higher id 

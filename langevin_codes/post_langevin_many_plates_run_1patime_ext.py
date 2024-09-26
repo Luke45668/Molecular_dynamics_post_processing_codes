@@ -84,7 +84,7 @@ thermo_vars='         KinEng         PotEng         Press           Temp        
 
 
 
-K=60
+K=480
 j_=5
 box_size=100
 eq_spring_length=3*np.sqrt(3)/2
@@ -94,7 +94,7 @@ n_plates=100
 filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/extension_runs/run_94057/sucessful_runs_5_reals"
 filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/run_759848/sucessful_runs_5_reals"
 #filepath='/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/run_224048/sucessful_runs_5_reals'
-#filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/run_64228/sucessful_runs_5_reals"
+filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/run_64228/sucessful_runs_5_reals"
 
 path_2_log_files=filepath
 pol_general_name_string='*K_'+str(K)+'*pol*h5'
@@ -244,7 +244,7 @@ interest_vectors_tuple=()
 spring_extension_tuple=()
 tilt_test=[]
 e_in=0
-e_end=11# for extension runs 
+e_end=14# for extension runs 
 count=e_in
 from collections import Counter
 # need to ake this geenral 
@@ -523,7 +523,7 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 marker=['x','o','+','^',"1","X","d","*","P","v"]
 aftcut=1
-cut=0.75
+cut=0.9
 
 labels_stress=["$\sigma_{xx}$",
                "$\sigma_{yy}$",
@@ -738,16 +738,16 @@ plt.rcParams.update({'font.size': 16})
 eq_spring_length=3*np.sqrt(3)/2
 skip_array=np.arange(0,e_end,3)
 #for i in range(1,e_end):
-for i in range(3,skip_array.size):
-    i=skip_array[i]
-# for i in range(e_in,e_end):
+# for i in range(3,skip_array.size):
+#     i=skip_array[i]
+for i in range(10,e_end):
 
     # sns.kdeplot(eq_spring_length-np.ravel(interest_vectors_tuple[i][:,:,2:5]),
     #              label ="$K="+str(K)+"$")
                  #label ="$\dot{\gamma}="+str(erate[i])+"$")
     #spring_extension=np.ravel(np.mean(spring_extension_tuple[i],axis=0))
     spring_extension=np.ravel(spring_extension_tuple[i])
-    sns.kdeplot(eq_spring_length+0.125-spring_extension,
+    sns.kdeplot(eq_spring_length-spring_extension,
                   label ="$\dot{\gamma}="+str(erate[i])+"$", bw_adjust=5)
     
     plt.xlabel("$\Delta x$")
