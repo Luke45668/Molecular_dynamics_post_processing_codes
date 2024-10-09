@@ -58,7 +58,7 @@ thermal_damp_multiplier=np.array([750,1000,1500,2000])
 thermal_damp_multiplier=np.array([750,1000,1500])
 #thermal_damp_multiplier=np.array([50,250,500,750,1000])
 
-K=np.array([  25,50])
+K=np.array([  25,50,100,200])
 erate=np.flip(np.array([1,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.175,0.15,0.125,0.1,0.08,
                 0.06,0.04,0.01,0.005,0]))
 
@@ -157,6 +157,8 @@ conform_tensor_batch_tuple=()
 log_file_batch_tuple=()
 area_vector_spherical_batch_tuple=()
 interest_vectors_batch_tuple=()
+posvel_batch_tuple=()
+
 
 damp=2000
 # loading all data into one 
@@ -168,6 +170,9 @@ for i in range(K.size):
 
     spring_force_positon_tensor_batch_tuple= spring_force_positon_tensor_batch_tuple+(batch_load_tuples(label,
                                                             "spring_force_positon_tensor_tuple.pickle"),)
+    posvel_batch_tuple=posvel_batch_tuple+(batch_load_tuples(label,"posvelocities_tuple.pickle"),)
+    
+
     # erate_velocity_batch_tuple=erate_velocity_batch_tuple+(batch_load_tuples(label,
     #                                                         "erate_velocity_tuple.pickle"),)
     # COM_velocity_batch_tuple=COM_velocity_batch_tuple+(batch_load_tuples(label,
@@ -275,15 +280,18 @@ for i in range(erate[:e_end[j]].size):
             
             plt.show()
 #%% fix tdamp vary k
+from fitter import Fitter
+
 folder="temperature_plots"
 folder_check_or_create(path_2_log_files,folder)
 column=4
 final_temp=np.zeros((erate.size))
 mean_temp_tuple=()
-plt.rcParams["figure.figsize"] = (24,6 )
+plt.rcParams["figure.figsize"] = (24,12 )
 plt.rcParams.update({'font.size': 16})
 
 e_end=[24,24,24,24]
+#e_end=[1,1,1,1]
 #for j in range(K.size):
 j=0
 for i in range(erate[:e_end[j]].size):
@@ -294,7 +302,7 @@ for i in range(erate[:e_end[j]].size):
         
         #for i in range(erate[:e_end[j]].size):
         #i=15
-            plt.subplot(1, 3, 1)
+            plt.subplot(2, 3, 1)
             column=4
             signal_std=sigfig.round(np.std(log_file_batch_tuple[j][i][100:,column]), sigfigs=3)
             signal_mean=sigfig.round(np.mean(log_file_batch_tuple[j][i][100:,column]), sigfigs=5)
@@ -306,7 +314,7 @@ for i in range(erate[:e_end[j]].size):
             plt.legend()
 
 
-            plt.subplot(1, 3, 2)
+            plt.subplot(2, 3, 2)
             column=2
             grad_pe=np.gradient(log_file_batch_tuple[j][i][:,column])
             grad_mean=np.mean(grad_pe[500:])
@@ -322,12 +330,60 @@ for i in range(erate[:e_end[j]].size):
 
             
         #for i in range(erate[:e_end[j]].size):
-            plt.subplot(1, 3, 3)
+            plt.subplot(2,3 , 3)
             column=1
             plt.plot(strainplot_tuple[i][:],log_file_batch_tuple[j][i][:,column],
             label="K="+str(K[j])+",$\dot{\gamma}="+str(erate[i])+"$")
             plt.ylabel("$E_{k}$")
             plt.title("$\dot{\gamma}="+str(erate[i])+"$")
+
+            vel_data=posvel_batch_tuple[j][i].astype('float')[:,5:8]
+            plt.subplot(2,3,4)
+           
+            x_vel=np.ravel(vel_data[:,0])
+            # f = Fitter(x_vel)
+            
+            # f.distributions =  ['gennorm']
+            # f.fit()
+            # # # may take some time since by default, all distributions are tried
+            # # # but you call manually provide a smaller set of distributions
+            # f.summary()
+            sns.kdeplot(x_vel, bw_adjust=1)
+
+            plt.xlabel("$v_{x}$")
+            #plt.legend()
+            plt.subplot(2,3,5)
+           
+            y_vel=np.ravel(vel_data[:,1])
+            # f = Fitter(y_vel)
+            
+            # f.distributions =  ['gennorm']
+            # f.fit()
+            # # # may take some time since by default, all distributions are tried
+            # # # but you call manually provide a smaller set of distributions
+            # f.summary()
+            sns.kdeplot(y_vel, bw_adjust=1)
+            plt.xlabel("$v_{y}$")
+            #plt.legend()
+            plt.subplot(2,3,6)
+            z_vel=np.ravel(vel_data[:,2])
+            # f = Fitter(z_vel)
+            
+            # f.distributions =  ['gennorm']
+            # f.fit()
+            # # # may take some time since by default, all distributions are tried
+            # # # but you call manually provide a smaller set of distributions
+            # f.summary()
+            test=scipy.stats.kstest(z_vel, 'norm')
+            sns.kdeplot(z_vel, bw_adjust=1,label="$D="+str(test[0])+",p="+str(test[1])+"$")
+            #plt.legend()
+           
+
+            plt.xlabel("$v_{z}$")
+
+
+
+
             
             mean_temp_array[i]=np.mean(log_file_batch_tuple[j][i][500:,column])
 
@@ -488,21 +544,26 @@ labels_stress=np.array(["\sigma_{xx}$",
                "\sigma_{xy}$",
                "\sigma_{yz}$"])
 damp_cutoff=0
-for i in range(0,erate[:e_end[j]].size):
-    for j in range(damp_cutoff,thermal_damp_multiplier.size):
+for j in range(K.size):
+    for i in range(0,erate[:e_end[j]].size):
+    # for j in range(damp_cutoff,thermal_damp_multiplier.size):
+    #for j in range(K.size):
 
         stress_tensor_mean=np.mean(spring_force_positon_tensor_batch_tuple[j][i],axis=0)
         stress_tensor_mean=np.mean(stress_tensor_mean,axis=1)
 
         for l in range(1):
 
-            plt.plot( stress_tensor_mean[:,l],label="$"+labels_stress[l]+\
-                ",$tdamp="+str(thermal_damp_multiplier[j])+"$")
+            # plt.plot( stress_tensor_mean[:,l],label="$"+labels_stress[l]+\
+            #     ",$tdamp="+str(thermal_damp_multiplier[j])+"$")
+            plt.plot( stress_tensor_mean[:,l],label="$\dot{\gamma}="+str(erate[i])+"$")
 
-        plt.legend(loc='upper right', bbox_to_anchor=(1.5,1))
-        plt.title("$\dot{\gamma}="+str(erate[i])+"$")
-        #plt.ylim(-250,250)
-        plt.show()
+    plt.legend(loc='upper right', bbox_to_anchor=(1.2,1))
+    plt.title("$K="+str(K[j])+","+labels_stress[l])
+
+    plt.yscale('log')
+    plt.ylim(-0.2,0.2)
+    plt.show()
 
 
 #%% yy stress
@@ -603,17 +664,20 @@ for j in range(K.size):
         
 
     #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
-        plt.legend(loc='upper right', bbox_to_anchor=(1.5,1))
+       
         plt.xlabel("$\dot{\gamma}$")
+        plt.ylabel("$\sigma_{\\alpha \\alpha}$")
         #plt.yticks(y_ticks_stress)
         #plt.ylim(0.9,1.3)
         #plt.tight_layout()
-        #plt.xscale('log')
+        #plt.yscale('log')
         #plt.savefig(path_2_log_files+"/plots/stress_tensor_0_3_plots.pdf",dpi=1200,bbox_inches='tight') 
+plt.legend(loc='upper right', bbox_to_anchor=(1.5,1))
 plt.show()
 
 #%%
-
+plt.rcParams["figure.figsize"] = (10,6 )
+plt.rcParams.update({'font.size': 16})
 #for j in range(thermal_damp_multiplier.size): 
 for j in range(K.size): 
     for l in range(3,6):
@@ -624,14 +688,16 @@ for j in range(K.size):
     #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
         plt.legend(fontsize=10) 
         plt.xlabel("$\dot{\gamma}$")
+        plt.ylabel("$\sigma_{\\alpha \\beta}$")
         #plt.yticks(y_ticks_stress)
         #plt.ylim(0.9,1.3)
         #plt.xscale('log')
         #plt.tight_layout()
 
         #plt.savefig(path_2_log_files+"/plots/stress_tensor_0_3_plots.pdf",dpi=1200,bbox_inches='tight') 
-    plt.ylim(-3,3)
-    plt.show()
+    
+#plt.ylim(-3,3)
+plt.show()
 
 #%%
 def ext_visc_compute(stress_tensor,stress_tensor_std,i1,i2,n_plates,e_end):
@@ -646,7 +712,7 @@ for j in range(K.size):
 
 
     ext_visc_1,ext_visc_1_error=ext_visc_compute(stress_tensor_tuple[j],stress_tensor_std_tuple[j],0,2,n_plates,e_end[j])
-    cutoff=1
+    cutoff=0
     #plt.errorbar(erate[cutoff:e_end[j]],ext_visc_1[cutoff:],yerr=ext_visc_1_error, label="$\eta_{1},K="+str(K[j])+"$", linestyle='none', marker=marker[j])
     #plt.errorbar(erate[cutoff:e_end[j]],ext_visc_1[cutoff:],yerr=ext_visc_1_error, label="$\eta_{1},tdamp="+str(thermal_damp_multiplier[j])+"$", marker=marker[j])
     plt.errorbar(erate[cutoff:e_end[j]],ext_visc_1[cutoff:],yerr=ext_visc_1_error[cutoff:], label="$\eta_{1},K="+str(K[j])+"$", marker=marker[j])

@@ -1,6 +1,8 @@
 import numpy as np
 import os 
 import matplotlib.pyplot as plt
+from collections import Counter
+from numpy.linalg import inv as matinv
 
 def stress_tensor_averaging(e_end,
                             labels_stress,
@@ -172,3 +174,211 @@ def linearthru0(x,a):
 
 def powerlaw(x,a,n):
     return a*(x**(n))
+
+
+
+class realisation():
+     def __init__(self,realisation_full_str,data_set,realisation_index_):
+          self.realisation_full_str= realisation_full_str
+          self.data_set= data_set
+          self.realisation_index_=realisation_index_
+     def __repr__(self):
+        return '({},{},{})'.format(self.realisation_full_str,self.data_set,self.realisation_index_)
+realisations_for_sorting_after_srd=[]
+realisation_split_index=6
+erate_index=15
+
+def org_names(split_list_for_sorting,unsorted_list,first_sort_index,second_sort_index):
+    for i in unsorted_list:
+          realisation_index_=int(i.split('_')[first_sort_index])
+          data_set =i.split('_')[second_sort_index]
+          split_list_for_sorting.append(realisation(i,data_set,realisation_index_))
+
+
+    realisation_name_sorted=sorted(split_list_for_sorting,
+                                                key=lambda x: ( x.data_set,x.realisation_index_))
+    realisation_name_sorted_final=[]
+    for i in realisation_name_sorted:
+          realisation_name_sorted_final.append(i.realisation_full_str)
+    
+    return realisation_name_sorted_final
+
+
+
+def dump2numpy_tensor_1tstep(dump_start_line,
+                      Path_2_dump,dump_realisation_name,
+                      number_of_particles_per_dump,lines_per_dump, cols_per_dump):
+       
+       
+        
+
+        os.chdir(Path_2_dump) #+simulation_file+"/" +filename
+
+        
+
+        with open(dump_realisation_name, 'r') as file:
+            
+
+            lines = file.readlines()
+            
+            counter = Counter(lines)
+            
+            #print(counter.most_common(3))
+            n_outs=int(counter["ITEM: TIMESTEP\n"])
+            dump_outarray=np.zeros((n_outs,lines_per_dump,cols_per_dump))
+            #print(counter["ITEM: ENTRIES c_spring_f_d[1] c_spring_f_d[2] c_spring_f_d[3] c_spring_f_d[4] c_spring_f_d[5] c_spring_f_d[6]\n"])
+            skip_spacing=lines_per_dump+9
+            skip_array=np.arange(1,len(lines),skip_spacing)
+            for i in range(n_outs):
+                k=skip_array[i]
+                # timestep_list=[]
+                start=k-1
+                end=start+skip_spacing
+                timestep_list=lines[start:end]
+                data_list=timestep_list[9:]
+                #print(data_list[0])
+                #print(len(data_list))
+                data=np.zeros((lines_per_dump,cols_per_dump))
+                for j in range(len(data_list)):
+                    data[j,:]=data_list[j].split(" ")[0:cols_per_dump]
+            
+                dump_outarray[i,:,:]=data
+
+
+        return dump_outarray
+
+
+def dump2numpy_box_coords_1tstep(Path_2_dump,dump_realisation_name,
+                     lines_per_dump):
+       
+       
+        
+
+        os.chdir(Path_2_dump) #+simulation_file+"/" +filename
+
+        
+
+        with open(dump_realisation_name, 'r') as file:
+            
+
+            lines = file.readlines()
+            
+            counter = Counter(lines)
+            
+            #print(counter.most_common(3))
+            n_outs=int(counter["ITEM: TIMESTEP\n"])
+            #dump_outarray=np.zeros((n_outs,lines_per_dump,cols_per_dump))
+            #print(counter["ITEM: ENTRIES c_spring_f_d[1] c_spring_f_d[2] c_spring_f_d[3] c_spring_f_d[4] c_spring_f_d[5] c_spring_f_d[6]\n"])
+            skip_spacing=lines_per_dump+9
+            #print(skip_spacing)
+            skip_array=np.arange(1,len(lines),skip_spacing)
+            data_list=[]
+            for i in range(n_outs):
+                k=skip_array[i]
+               
+                # timestep_list=[]
+                start=k-1
+                end=start+skip_spacing
+                timestep_list=lines[start:end]
+                
+
+                data_list.append(timestep_list[:9])
+                #print(data_list)
+
+                #print(data_list[0])
+                #print(len(data_list))
+                # data=np.zeros((lines_per_dump,cols_per_dump))
+                # for j in range(len(data_list)):
+                #     data[j,:]=data_list[j].split(" ")[0:cols_per_dump]
+            
+                #dump_outarray[i,:,:]=data
+
+
+        return data_list
+
+
+def cfg2numpy_coords(Path_2_dump,dump_realisation_name,
+                      number_of_particles_per_dump,cols_per_dump):
+       
+       
+        
+
+        os.chdir(Path_2_dump) #+simulation_file+"/" +filename
+
+        
+
+        with open(dump_realisation_name, 'r') as file:
+            
+
+            lines = file.readlines()
+            box_vec_lines=lines[2:11] 
+            #print(box_vec_lines[0])
+            box_vec_array=np.zeros((9))
+            
+            for i in range(9):
+                 
+                 box_vec_array[i]=box_vec_lines[i].split(" ")[2]
+                 #print(coord)
+                 
+
+            box_vec_array=np.reshape(box_vec_array,(3,3))
+
+            lines=lines[15:] #remove intial file lines 
+
+            for i in range(len(lines)-1):
+                #print(lines)
+                try:
+                   lines.remove("C \n")
+                   lines.remove("5.000000 \n")
+                
+                except:
+                    continue 
+                
+                # print(lines)
+                # print(i)
+                
+            
+            
+            dump_outarray=np.zeros((number_of_particles_per_dump,cols_per_dump))
+            #print(counter["ITEM: ENTRIES c_spring_f_d[1] c_spring_f_d[2] c_spring_f_d[3] c_spring_f_d[4] c_spring_f_d[5] c_spring_f_d[6]\n"])
+             
+            for i in range(len(lines)):
+                dump_outarray[i,:]=lines[i].split(" ")[0:cols_per_dump]
+                #print(lines[i].split(" ")[0:cols_per_dump])
+                
+
+
+
+        return dump_outarray,box_vec_array
+
+def q_matrix_transform(box_vector_array_cfg,box_vec_array_upper_tri,
+                      full_cfg_coord_after_sorted,posvel_from_dump_sing_sorted,
+                       n_particles,n_plates,db_forces,db_dirns,k):
+    
+    inv_box_vec_array=matinv(box_vec_array_upper_tri) 
+
+    Q_matrix=np.matmul(box_vector_array_cfg.T,inv_box_vec_array) 
+    unscaled_cfg=np.zeros((n_particles,3))
+    transform_dump_coords=np.zeros((n_particles,3))  
+    transform_force_dump=np.zeros((n_plates,6))
+
+    for m in range(n_particles):
+
+        unscaled_cfg[m]=np.matmul(box_vector_array_cfg.T,full_cfg_coord_after_sorted[m][0:3])
+        transform_dump_coords[m]=np.matmul(Q_matrix,posvel_from_dump_sing_sorted[m][2:5])
+    for m in range(n_plates):
+        transform_force_dump[m,0:3]=np.matmul(Q_matrix,db_forces[k,m])
+        transform_force_dump[m,3:6]=np.matmul(Q_matrix,db_dirns[k,m])
+
+    comparison=np.abs(unscaled_cfg-transform_dump_coords)
+
+
+
+    if np.any(comparison>1e-3):
+        #print("comparison incorrect")
+         break
+
+
+    
+    return transform_dump_coords,transform_force_dump
+
