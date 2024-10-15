@@ -806,7 +806,7 @@ for i in range(len(skip_array)):
 
         plt.subplot(1, 3, i+1)
         sns.kdeplot(eq_spring_length-np.ravel(interest_vectors_batch_tuple[j][l][:,:,2:5]),
-                    label ="$\dot{\gamma}="+str(erate[l])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[j])
+                    label ="$\dot{\gamma}="+str(erate[l])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j])
         #NOTE: is this level of smoothing appropriate
         # plt.hist(eq_spring_length+0.125-np.ravel(interest_vectors_batch_tuple[j][i][:,:,2:5]),
         #         histtype='step', stacked=True,
@@ -827,20 +827,23 @@ plt.show()
 
 
 #%% 
+skip_array=[0,9,13,18]
 plt.rcParams["figure.figsize"] = (12,6 )
 
 dist_xticks=([[-1,0,1,2,3],[-3,-2,-1,0,1,2,3],[-7.5,-5,-2.5,0,2.5,5]])
-f, axs = plt.subplots(1, 3, figsize=(10, 6),sharey=True,sharex=True)
+
+
+f, axs = plt.subplots(1, 4, figsize=(12, 6),sharey=True,sharex=True)
 
 #for i in range(len(skip_array)):
-adjust=10    
+adjust=1
 for j in range(K.size):
         R_x=interest_vectors_batch_tuple[j][0][:,:,2]
         R_y=interest_vectors_batch_tuple[j][0][:,:,3]
         R_z=interest_vectors_batch_tuple[j][0][:,:,4]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
 
-        sns.kdeplot(eq_spring_length-np.ravel(magnitude_spring),
+        sns.kdeplot(np.ravel(magnitude_spring)-eq_spring_length,
                     label ="$\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[0])
         axs[0].legend(fontsize=legfont)
         # axs[0].xticks(dist_xticks[0][:])
@@ -850,23 +853,32 @@ for j in range(K.size):
         R_z=interest_vectors_batch_tuple[j][9][:,:,4]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
        
-        sns.kdeplot(eq_spring_length-np.ravel(magnitude_spring),
+        sns.kdeplot(np.ravel(magnitude_spring)-eq_spring_length,
                     label ="$\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[1])
         axs[1].legend(fontsize=legfont)
         # axs[1].xticks(dist_xticks[1][:])
+        R_x=interest_vectors_batch_tuple[j][13][:,:,2]
+        R_y=interest_vectors_batch_tuple[j][13][:,:,3]
+        R_z=interest_vectors_batch_tuple[j][13][:,:,4]
+        magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
+        sns.kdeplot(np.ravel(magnitude_spring)-eq_spring_length,
+                    label ="$\dot{\gamma}="+str(erate[13])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[2])
+        axs[2].legend(fontsize=legfont)
+        # axs[2].xticks(dist_xticks[2][:])
+        #plt.legend(fontsize=legfont) 
         R_x=interest_vectors_batch_tuple[j][18][:,:,2]
         R_y=interest_vectors_batch_tuple[j][18][:,:,3]
         R_z=interest_vectors_batch_tuple[j][18][:,:,4]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
-        sns.kdeplot(eq_spring_length-np.ravel(magnitude_spring),
-                    label ="$\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[2])
-        axs[2].legend(fontsize=legfont)
-        # axs[2].xticks(dist_xticks[2][:])
-        #plt.legend(fontsize=legfont) 
+        sns.kdeplot(np.ravel(magnitude_spring)-eq_spring_length,
+                    label ="$\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[3])
+        axs[3].legend(fontsize=legfont)
         
         
 
 plt.yticks(extension_ticks)
+plt.xticks()
+
 
 f.supxlabel("$\Delta x$")
 f.tight_layout()
@@ -891,11 +903,11 @@ for j in range(1,2):
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
 
         sns.kdeplot(eq_spring_length-np.ravel(R_x),
-                    label ="$R_{x},\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[1], ax=axs[0])
+                    label ="$R_{x},\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[1], ax=axs[0])
         sns.kdeplot(eq_spring_length-np.ravel(R_y),
-                    label ="$R_{y},\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[2], ax=axs[0])
+                    label ="$R_{y},\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[2], ax=axs[0])
         sns.kdeplot(eq_spring_length-np.ravel(R_z),
-                    label ="$R_{z},\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[3], ax=axs[0])
+                    label ="$R_{z},\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[3], ax=axs[0])
 
         axs[0].legend(fontsize=legfont)
         # axs[0].xticks(dist_xticks[0][:])
@@ -906,11 +918,11 @@ for j in range(1,2):
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
        
         sns.kdeplot(eq_spring_length-np.ravel(R_x),
-                    label ="$R_{x},\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[1], ax=axs[1])
+                    label ="$R_{x},\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[1], ax=axs[1])
         sns.kdeplot(eq_spring_length-np.ravel(R_y),
-                    label ="$R_{y},\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[2], ax=axs[1])
+                    label ="$R_{y},\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[2], ax=axs[1])
         sns.kdeplot(eq_spring_length-np.ravel(R_z),
-                    label ="$R_{z},\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[3], ax=axs[1])
+                    label ="$R_{z},\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[3], ax=axs[1])
         axs[1].legend(fontsize=legfont)
         # axs[1].xticks(dist_xticks[1][:])
         R_x=interest_vectors_batch_tuple[j][18][:,:,2]
@@ -918,11 +930,11 @@ for j in range(1,2):
         R_z=interest_vectors_batch_tuple[j][18][:,:,4]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
         sns.kdeplot(eq_spring_length-np.ravel(R_x),
-                    label ="$R_{x},\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[1], ax=axs[2])
+                    label ="$R_{x},\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[1], ax=axs[2])
         sns.kdeplot(eq_spring_length-np.ravel(R_y),
-                    label ="$R_{y},\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[2], ax=axs[2])
+                    label ="$R_{y},\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[2], ax=axs[2])
         sns.kdeplot(eq_spring_length-np.ravel(R_z),
-                    label ="$R_{z},\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[3], ax=axs[2])
+                    label ="$R_{z},\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[3], ax=axs[2])
         axs[2].legend(fontsize=legfont)
         # axs[2].xticks(dist_xticks[2][:])
         #plt.legend(fontsize=legfont) 
@@ -952,7 +964,7 @@ for j in range(K.size):
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
 
         sns.kdeplot(eq_spring_length-np.ravel(R_y),
-                    label ="$\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[j], ax=axs[0])
+                    label ="$\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[0])
         axs[0].legend(fontsize=legfont)
         # axs[0].xticks(dist_xticks[0][:])
 
@@ -962,7 +974,7 @@ for j in range(K.size):
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
        
         sns.kdeplot(eq_spring_length-np.ravel(R_y),
-                    label ="$\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[j], ax=axs[1])
+                    label ="$\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[1])
         axs[1].legend(fontsize=legfont)
         # axs[1].xticks(dist_xticks[1][:])
         R_x=interest_vectors_batch_tuple[j][18][:,:,2]
@@ -970,7 +982,7 @@ for j in range(K.size):
         R_z=interest_vectors_batch_tuple[j][18][:,:,4]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
         sns.kdeplot(eq_spring_length-np.ravel(R_y),
-                    label ="$\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[j], ax=axs[2])
+                    label ="$\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[2])
         axs[2].legend(fontsize=legfont)
         # axs[2].xticks(dist_xticks[2][:])
         #plt.legend(fontsize=legfont) 
@@ -1000,19 +1012,19 @@ f, axs = plt.subplots(1, 3, figsize=(10, 6),sharey=True,sharex=True)
 for j in range(K.size):
 
         sns.kdeplot(eq_spring_length-np.ravel(interest_vectors_batch_tuple[j][0][:,:,4]),
-                    label ="$\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[j], ax=axs[0])
+                    label ="$\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[0])
         axs[0].legend(fontsize=legfont)
         # axs[0].xticks(dist_xticks[0][:])
 
         
        
         sns.kdeplot(eq_spring_length-np.ravel(interest_vectors_batch_tuple[j][9][:,:,4]),
-                    label ="$\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[j], ax=axs[1])
+                    label ="$\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[1])
         axs[1].legend(fontsize=legfont)
         # axs[1].xticks(dist_xticks[1][:])
        
         sns.kdeplot(eq_spring_length-np.ravel(interest_vectors_batch_tuple[j][18][:,:,4]),
-                    label ="$\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=10,linestyle=linestyle_tuple[j], ax=axs[2])
+                    label ="$\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[2])
         axs[2].legend(fontsize=legfont)
         # axs[2].xticks(dist_xticks[2][:])
         #plt.legend(fontsize=legfont) 
