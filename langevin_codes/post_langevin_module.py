@@ -351,34 +351,223 @@ def cfg2numpy_coords(Path_2_dump,dump_realisation_name,
 
         return dump_outarray,box_vec_array
 
+# def cfg2numpy_coords_plate(Path_2_dump,dump_realisation_name,
+#                       number_of_particles_per_dump,cols_per_dump):
+       
+       
+        
+
+#         os.chdir(Path_2_dump) #+simulation_file+"/" +filename
+
+        
+
+#         with open(dump_realisation_name, 'r') as file:
+            
+
+#             lines = file.readlines()
+#             box_vec_lines=lines[2:11] 
+#             #print(box_vec_lines[0])
+#             box_vec_array=np.zeros((9))
+            
+#             for i in range(9):
+                 
+#                  box_vec_array[i]=box_vec_lines[i].split(" ")[2]
+#                  #print(coord)
+                 
+
+#             box_vec_array=np.reshape(box_vec_array,(3,3))
+
+#             lines=lines[15:] #remove intial file lines 
+
+#             for i in range(len(lines)-1):
+#                 #print(lines)
+#                 try:
+#                    lines.remove("C \n")
+#                    lines.remove("5.000000 \n")
+                
+#                 except:
+#                     continue 
+                
+#                 # print(lines)
+#                 # print(i)
+                
+            
+            
+#             dump_outarray=np.zeros((number_of_particles_per_dump,cols_per_dump))
+#             #print(counter["ITEM: ENTRIES c_spring_f_d[1] c_spring_f_d[2] c_spring_f_d[3] c_spring_f_d[4] c_spring_f_d[5] c_spring_f_d[6]\n"])
+             
+#             for i in range(len(lines)):
+#                 dump_outarray[i,:]=lines[i].split(" ")[0:cols_per_dump]
+#                 #print(lines[i].split(" ")[0:cols_per_dump])
+                
+
+
+
+#         return dump_outarray,box_vec_array
+
+
+def cfg2numpy_coords(Path_2_dump,dump_realisation_name,
+                      number_of_particles_per_dump,cols_per_dump):
+       
+       
+        
+
+        os.chdir(Path_2_dump) #+simulation_file+"/" +filename
+
+        
+
+        with open(dump_realisation_name, 'r') as file:
+            
+
+            lines = file.readlines()
+            box_vec_lines=lines[2:11] 
+            #print(box_vec_lines[0])
+            box_vec_array=np.zeros((9))
+            
+            for i in range(9):
+                 
+                 box_vec_array[i]=box_vec_lines[i].split(" ")[2]
+               
+                 
+
+            box_vec_array=np.reshape(box_vec_array,(3,3))
+
+            lines=lines[15:] #remove intial file lines 
+
+            # print(len(lines))
+            # print(lines)
+            
+            # list filtering 
+            lines= list(filter(("C \n").__ne__, lines))
+            lines= list(filter(("5.000000 \n").__ne__, lines))
+            lines= list(filter(("0.050000 \n").__ne__, lines))
+           
+
+            # for i in range(len(lines)-1):
+                
+
+
+            #     try:
+            #        lines.remove("C \n")
+            #        lines.remove("5.000000 \n")
+        
+            #        lines.remove('0.050000 \n')
+                
+            #     except:
+            #         continue 
+                
+            #     # print(lines)
+            #     # print(i)
+
+            # print(lines[596])
+                
+            
+            
+            dump_outarray=np.zeros((number_of_particles_per_dump,cols_per_dump))
+            #print(counter["ITEM: ENTRIES c_spring_f_d[1] c_spring_f_d[2] c_spring_f_d[3] c_spring_f_d[4] c_spring_f_d[5] c_spring_f_d[6]\n"])
+            #print(lines)
+            for i in range(len(lines)):
+                # print(i)
+                # print(lines[i])
+                dump_outarray[i,:]=lines[i].split(" ")[0:cols_per_dump]
+                #print(lines[i].split(" ")[0:cols_per_dump])
+                
+
+
+
+        return dump_outarray,box_vec_array
+
 def q_matrix_transform(box_vector_array_cfg,box_vec_array_upper_tri,
                       full_cfg_coord_after_sorted,posvel_from_dump_sing_sorted,
                        n_particles,n_plates,db_forces,db_dirns,k):
     
+    # inverting lammps frame box vectors 
     inv_box_vec_array=matinv(box_vec_array_upper_tri) 
 
+    # multiply  Q= FL^{-1}
     Q_matrix=np.matmul(box_vector_array_cfg.T,inv_box_vec_array) 
+    
     unscaled_cfg=np.zeros((n_particles,3))
     transform_dump_coords=np.zeros((n_particles,3))  
     transform_force_dump=np.zeros((n_plates,6))
 
-    for m in range(n_particles):
 
+    
+    for m in range(n_particles):
+        # convert scaled cfg coords to unscaled coords by multiplication by box vector from cfg
         unscaled_cfg[m]=np.matmul(box_vector_array_cfg.T,full_cfg_coord_after_sorted[m][0:3])
+        # transform dump coords by q matrix 
         transform_dump_coords[m]=np.matmul(Q_matrix,posvel_from_dump_sing_sorted[m][2:5])
+
+    
+    # compared unscaled cfg to transformed dump, they should match 
+    # this part needs more work
+    comparison=np.abs(unscaled_cfg-transform_dump_coords)
+
+
+    #apply Q matrix transform to force components and direction components 
     for m in range(n_plates):
         transform_force_dump[m,0:3]=np.matmul(Q_matrix,db_forces[k,m])
         transform_force_dump[m,3:6]=np.matmul(Q_matrix,db_dirns[k,m])
 
-    comparison=np.abs(unscaled_cfg-transform_dump_coords)
 
 
+   
 
-    if np.any(comparison>1e-3):
-        #print("comparison incorrect")
-         break
+
+    # if np.any(comparison>1e-3):
+    #     #print("comparison incorrect")
+    #      break
 
 
     
     return transform_dump_coords,transform_force_dump
 
+def q_matrix_transform_plate(box_vector_array_cfg,box_vec_array_upper_tri,
+                      full_cfg_coord_after_sorted,posvel_from_dump_sing_sorted,
+                       n_particles,n_plates,db_forces,db_dirns,k):
+    
+                    # inverting lammps frame box vectors 
+                    inv_box_vec_array=matinv(box_vec_array_upper_tri) 
+
+                    # multiply  Q= FL^{-1}
+                    Q_matrix=np.matmul(box_vector_array_cfg.T,inv_box_vec_array) 
+                    
+                    unscaled_cfg=np.zeros((n_particles,3))
+                    transform_dump_coords=np.zeros((n_particles,3))  
+                    transform_force_dump=np.zeros((n_plates*3,6))
+                    transform_dump_velocities=np.zeros((n_particles,3)) 
+
+
+                    
+                    for m in range(n_particles):
+                        # convert scaled cfg coords to unscaled coords by multiplication by box vector from cfg
+                        unscaled_cfg[m]=np.matmul(box_vector_array_cfg.T,full_cfg_coord_after_sorted[m][0:3])
+                        # transform dump coords by q matrix 
+                        transform_dump_coords[m]=np.matmul(Q_matrix,posvel_from_dump_sing_sorted[m][2:5])
+                        transform_dump_velocities[m]=np.matmul(Q_matrix,posvel_from_dump_sing_sorted[m][5:8])
+
+                    
+                    # compared unscaled cfg to transformed dump, they should match 
+                    # this part needs more work 
+                    # print(full_cfg_coord_after_sorted[0][0:3])
+                    # comparison=np.abs(unscaled_cfg-transform_dump_coords)
+                    # print(np.max(comparison))
+                    # plt.plot(comparison)
+                    # plt.show()
+                    # plt.plot(np.ravel(unscaled_cfg))
+                    # plt.show()
+                    # plt.plot(np.ravel(transform_dump_coords))
+                    # plt.show()
+
+
+
+                    #apply Q matrix transform to force components and direction components 
+                    for m in range(n_plates*3):
+                        transform_force_dump[m,0:3]=np.matmul(Q_matrix,db_forces[k,m])
+                        transform_force_dump[m,3:6]=np.matmul(Q_matrix,db_dirns[k,m])
+
+
+
+                    
+                    return transform_dump_coords,transform_force_dump,transform_dump_velocities

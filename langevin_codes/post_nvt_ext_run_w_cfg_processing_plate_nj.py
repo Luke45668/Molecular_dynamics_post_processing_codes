@@ -1,67 +1,39 @@
 ##!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-This code processes data from the continuous extension simulations of dumbells utlising cfg files to 
+This code processes data from the continuous extension simulations of plates utlising cfg files to 
 apply the correct transformation to the dump outputs
 
 
 """
-#%% 
+#
 import os
-
 from random import sample
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
 import regex as re
 import pandas as pd
 import sigfig
-plt.rcParams.update(plt.rcParamsDefault)
-# plt.rcParams["figure.figsize"] = (8,6 )
-# plt.rcParams.update({'font.size': 16})
-#plt.rcParams['text.usetex'] = True
-from mpl_toolkits import mplot3d
-from matplotlib.gridspec import GridSpec
 import scipy.stats
 from datetime import datetime
 import mmap
-import h5py as h5
 import math as m 
 import glob 
-os.chdir("/Users/luke_dev/Documents/molecular_dynamics_post_processing_codes/langevin_codes")
 from reading_lammps_module import *
-from fitter import Fitter, get_common_distributions, get_distributions
-path_2_post_proc_module= '/Users/luke_dev/Documents/molecular_dynamics_post_processing_codes/MPCD_codes/'
+path_2_post_proc_module= '/home/ucahlrl/python_scripts/MPCD_post_processing_codes'
 os.chdir(path_2_post_proc_module)
 import seaborn as sns
 import glob 
 from post_MPCD_MP_processing_module import *
-os.chdir("/Users/luke_dev/Documents/molecular_dynamics_post_processing_codes/langevin_codes")
 from post_langevin_module import * 
-
 import pickle as pck
 from numpy.linalg import norm
 from numpy.linalg import inv as matinv
 
-#%% simulation parameters
+# simulation parameters
 damp=0.035
 strain_total=100
 
-erate=np.array([0.005 , 0.01  , 0.02  , 0.04  , 0.06  , 0.08  , 0.1   , 0.125 ,
-       0.15  , 0.175 , 0.2   , 0.3   , 0.325 , 0.3375, 0.35  , 0.355 ,
-       0.36  , 0.365 , 0.37  , 0.3725, 0.375 , 0.4   , 0.45  , 0.5 ])
 
-no_timesteps=np.array([197175000,  98588000, 492939000, 246469000, 164313000, 123235000,
-        98588000, 788702000, 657252000, 563359000, 492939000, 328626000,
-       303347000, 292112000, 281679000, 277712000, 273855000, 270103000,
-       266453000, 264665000, 262901000, 246469000, 219084000, 197175000])
-
-timestep_multiplier=np.array(
-[0.00005,0.00005,0.00005,0.00005,
-0.00005,0.00005,0.00005,0.00005,0.00005,0.00005,
-0.00005,0.00005,0.00005,0.00005,0.00005,0.00005,0.00005,
-0.0005,0.0005,0.0005,0.0005,0.0005,0.005,
-0.005])*4
 
 erate=np.flip(np.linspace(0.5,0.005,24))
 no_timesteps=np.array([[ 394351000,   74345000,  410411000,  283440000,  216470000,
@@ -82,15 +54,14 @@ thermo_vars='         KinEng         PotEng         Press           Temp        
 dump_start_line ='ITEM: ENTRIES c_spring_f_d[1] c_spring_f_d[2] c_spring_f_d[3] c_spring_f_d[4] c_spring_f_d[5] c_spring_f_d[6]'
 dump_start_line_posvel = "ITEM: ATOMS id type x y z vx vy vz"
 
-K=25
+K=300
 j_=10
 box_size=100
-eq_spring_length=0.25
+eq_spring_length=3*np.cos(np.pi/6)
 mass_pol=5 
 n_plates=100
-n_particles=2*n_plates
-filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/db_runs/cfg_run/cfg_run/"
-filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/db_runs/final_dbext_run/cfg_run"
+n_particles=6*n_plates
+filepath="/home/ucahlrl/Scratch/output/nvt_runs/final_plate_runs/"
 path_2_log_files=filepath
 Path_2_dump=filepath
 
@@ -98,13 +69,13 @@ Path_2_dump=filepath
 
 log_general_name_string="log.*K_"+str(K)
 cfg_general_name_before_string="before*.cfg"
-cfg_general_name_after_string="after*K_"+str(K)+"_*.cfg"
+cfg_general_name_after_string="dump.*K_"+str(K)+"_*.cfg"
 log_general_name_string=("log.**K_"+str(K))
-posvel_dump_general_name_string="*_dump_*K_"+str(K)+".dump"
-force_dump_general_name_string="*_tensor_*K_"+str(K)+".dump"
+posvel_dump_general_name_string="*_UEF_flat_elastic_*K_"+str(K)+".dump"
+force_dump_general_name_string="*_UEF_FE_tensor_*K_"+str(K)+".dump"
 
 
-#%% grabbing file names and organising 
+# grabbing file names and organising 
 
 
 # grab file names 
@@ -126,15 +97,15 @@ force_dump_general_name_string="*_tensor_*K_"+str(K)+".dump"
 
 realisations_for_sorting_after_cfg=[]
 # first sort cfg via realisation and erate 
-realisation_split_index=7
-erate_index=16
+realisation_split_index=6
+erate_index=15
 realisation_name_after_sorted_final_cfg=org_names(realisations_for_sorting_after_cfg,
                                                       realisation_name_cfg_after,
                                                      realisation_split_index,
                                                      erate_index)
 # then sort cfg via timestep and erate 
-timestep_split_index=21
-erate_index=16
+timestep_split_index=20
+erate_index=15
 realisations_for_sorting_after_cfg=[]
 realisation_name_after_sorted_final_cfg=org_names(realisations_for_sorting_after_cfg,
                                                       realisation_name_after_sorted_final_cfg,
@@ -171,18 +142,78 @@ print(len(realisation_name_log_sorted_final))
 print(len(realisation_name_force_dump_sorted_final))
 print(len(realisation_name_posvel_dump_sorted_final))
 
+# check how many full sets of data we have 
+log_file_size_array=np.zeros((2,erate.size,j_))
+log_name_list=glob.glob("log.*K_"+str(K))
+count=np.zeros((erate.size)).astype("int")
+count_failed=np.zeros((erate.size)).astype("int")
+failed_files=[]
+passed_files=[]
+real_target=10
+# can scan all the files and produce a list of files that pass test
+# check number of files in log file, this will be more clear than size
+for file in log_name_list:
 
-#%% file processing loop
+    split_name=file.split('_')
+    erate_ind=int(np.where(erate==float(split_name[15]))[0][0])
+    
+    realisation_ind=int(split_name[6])
+    spring_stiff=int(split_name[19])
+
+
+    try:
+        file_size_rows=log2numpy_reader(file,
+                                filepath,
+                                thermo_vars).shape[0]
+        #print(file_size_rows)
+        log_file_size_array[0,erate_ind,count[erate_ind]]=file_size_rows
+        if count[erate_ind]==real_target:
+           
+            continue
+
+        elif file_size_rows<1000:
+            continue
+    
+        else:
+            passed_files.append(file)
+            count[erate_ind]+=1
+        
+       
+        
+
+    except:
+        # if count[erate_ind]==10:
+            failed_files.append(file)
+            count_failed[erate_ind]+=1
+
+            continue
+        
+              
+        # log_file_size_array[0,erate_ind,count[erate_ind]]=0
+        # count[erate_ind]+=1
+        # continue 
+
+print("count array",count)
+
+success_count=list(count).count(j_)
+
+print(success_count)
+
+
+
+
+# file processing loop
 Path_2_dump=filepath
 
 # tuples for storing info 
 spring_force_positon_tensor_tuple=()
 log_file_tuple=()
 dir_vector_tuple=()
-new_pos_vel_tuple=()
+transformed_vel_tuple=()
+transformed_pos_tuple=()
 
 e_in=0
-e_end=erate.size
+e_end=success_count
 count=e_in
 
 for i in range(e_in,e_end):
@@ -195,12 +226,12 @@ for i in range(e_in,e_end):
     outputdim_force_dump=dump2numpy_tensor_1tstep(dump_start_line,
                                     Path_2_dump,
                                      realisation_name_force_dump_sorted_final[i_],
-                                     n_plates,100,6).shape[0]
+                                     n_plates,300,6).shape[0]
     # check output dimension of pos vel dump   
     outputdim_posvel_dump=int(dump2numpy_f(dump_start_line_posvel,
                                     Path_2_dump,
                                     realisation_name_posvel_dump_sorted_final[i_],
-                                    n_plates*2).shape[0]/(n_plates*2))
+                                    n_plates*6).shape[0]/(n_plates*6))
 
     # outputdim_cfg_dump=cfg2numpy_coords(Path_2_dump,realisation_name_after_sorted_final_cfg[i_],
     #                   n_plates*2, 4).shape[0]
@@ -211,16 +242,18 @@ for i in range(e_in,e_end):
     
     # creating arrays to store output data 
 
-    spring_force_positon_array=np.zeros((j_,outputdim_force_dump,100,6))
-    pos_vel_array=((j_,outputdim_posvel_dump,8))
-    dirn_vector_array=np.zeros((j_,outputdim_force_dump,100,3))
+    spring_force_positon_array=np.zeros((j_,outputdim_force_dump,300,6))
+    transform_dump_array=np.zeros((j_,outputdim_posvel_dump,600,3))
+    transform_vel_array=np.zeros((j_,outputdim_posvel_dump,600,3))
+    dirn_vector_array=np.zeros((j_,outputdim_force_dump,300,3))
     log_file_array=np.zeros((j_,outputdim_log,8))
-
+    
 
     for j in range(j_):
             # define realisation index to ensure we are looking at correct section of list of realisation names
             # j_ * count skips the loop to the correct position 
             j_index=j+(j_*count)
+            print(j_index)
 
 
             # extract log file data for realisation
@@ -234,15 +267,15 @@ for i in range(e_in,e_end):
             posvel_from_dump_all=dump2numpy_f(dump_start_line_posvel,
                                     Path_2_dump,
                                     realisation_name_posvel_dump_sorted_final[j_index],
-                                    n_plates*2).astype("float")
+                                    n_plates*6).astype("float")
             # reshape to timesteps x n particles x n out puts 
-            posvel_from_dump_all=np.reshape(posvel_from_dump_all,(1000,200,8))
+            posvel_from_dump_all=np.reshape(posvel_from_dump_all,(1000,600,8))
 
             # extract forces and directions from force dump
             force_dirn_dump=dump2numpy_tensor_1tstep(dump_start_line,
                                     Path_2_dump,
                                     realisation_name_force_dump_sorted_final[j_index],
-                                    n_plates,100,6)
+                                    n_plates,300,6)
             # columns 1-3 are force components 
             db_forces=force_dirn_dump[:,:,0:3]
             # columns 4-6 are direction components 
@@ -266,12 +299,12 @@ for i in range(e_in,e_end):
 
                 box_vec_list_dump=dump2numpy_box_coords_1tstep( Path_2_dump,
                                                                 realisation_name_posvel_dump_sorted_final[j_index],
-                                                                200)[k][5:8]
+                                                                600)[k][5:8]
                 
                 #accquire cfg box vector and coordinates
                 full_cfg_coord_after,box_vector_array_cfg=cfg2numpy_coords(Path_2_dump,
                                                                             realisation_name_after_sorted_final_cfg[cfg_k_index],
-                                                                            n_plates*2, 4)
+                                                                            n_plates*6, 4)
                 
 
                 full_cfg_coord_after_sorted=full_cfg_coord_after[full_cfg_coord_after[:,3].argsort()]
@@ -304,22 +337,80 @@ for i in range(e_in,e_end):
                 
                 # calculate q transform and test against cfg
 
+                def q_matrix_transform_plate(box_vector_array_cfg,box_vec_array_upper_tri,
+                      full_cfg_coord_after_sorted,posvel_from_dump_sing_sorted,
+                       n_particles,n_plates,db_forces,db_dirns,k):
+    
+                    # inverting lammps frame box vectors 
+                    inv_box_vec_array=matinv(box_vec_array_upper_tri) 
+
+                    # multiply  Q= FL^{-1}
+                    Q_matrix=np.matmul(box_vector_array_cfg.T,inv_box_vec_array) 
+                    
+                    unscaled_cfg=np.zeros((n_particles,3))
+                    transform_dump_coords=np.zeros((n_particles,3))  
+                    transform_force_dump=np.zeros((n_plates*3,6))
+                    transform_dump_velocities=np.zeros((n_particles,3)) 
 
 
-                transform_dump_coords,transform_force_dump=q_matrix_transform(box_vector_array_cfg,box_vec_array_upper_tri,
+                    
+                    for m in range(n_particles):
+                        # convert scaled cfg coords to unscaled coords by multiplication by box vector from cfg
+                        unscaled_cfg[m]=np.matmul(box_vector_array_cfg.T,full_cfg_coord_after_sorted[m][0:3])
+                        # transform dump coords by q matrix 
+                        transform_dump_coords[m]=np.matmul(Q_matrix,posvel_from_dump_sing_sorted[m][2:5])
+                        transform_dump_velocities[m]=np.matmul(Q_matrix,posvel_from_dump_sing_sorted[m][5:8])
+
+                    
+                    # compared unscaled cfg to transformed dump, they should match 
+                    # this part needs more work 
+                    # print(full_cfg_coord_after_sorted[0][0:3])
+                    # comparison=np.abs(unscaled_cfg-transform_dump_coords)
+                    # print(np.max(comparison))
+                    # plt.plot(comparison)
+                    # plt.show()
+                    # plt.plot(np.ravel(unscaled_cfg))
+                    # plt.show()
+                    # plt.plot(np.ravel(transform_dump_coords))
+                    # plt.show()
+
+
+
+                    #apply Q matrix transform to force components and direction components 
+                    for m in range(n_plates*3):
+                        transform_force_dump[m,0:3]=np.matmul(Q_matrix,db_forces[k,m])
+                        transform_force_dump[m,3:6]=np.matmul(Q_matrix,db_dirns[k,m])
+
+
+
+                    
+                    return transform_dump_coords,transform_force_dump,transform_dump_velocities
+
+
+
+
+
+                transform_dump_coords,transform_force_dump,transform_dump_velocties=q_matrix_transform_plate(box_vector_array_cfg,box_vec_array_upper_tri,
                         full_cfg_coord_after_sorted,posvel_from_dump_sing_sorted
                         ,n_particles,n_plates,db_forces,db_dirns,k)
                 
+
+                
                 dump_data=transform_force_dump
                 dirn_vector_array[j,k]=dump_data[:,3:]
-    
+                transform_dump_array[j,k]=transform_dump_coords
+                transform_vel_array[j,k]=transform_dump_velocties
+                
+
+            
                 spring_force_positon_array[j,k,:,0]=-dump_data[:,0]*dump_data[:,3]#xx
                 spring_force_positon_array[j,k,:,1]=-dump_data[:,1]*dump_data[:,4]#yy
                 spring_force_positon_array[j,k,:,2]=-dump_data[:,2]*dump_data[:,5]#zz
                 spring_force_positon_array[j,k,:,3]=-dump_data[:,0]*dump_data[:,5]#xz
                 spring_force_positon_array[j,k,:,4]=-dump_data[:,0]*dump_data[:,4]#xy
                 spring_force_positon_array[j,k,:,5]=-dump_data[:,1]*dump_data[:,5]#yz
-                
+    
+    
     spring_force_positon_mean=np.mean(np.mean(spring_force_positon_array,axis=0),
                             axis=1)
     lgf_mean=np.mean(log_file_array,axis=0)    
@@ -327,6 +418,8 @@ for i in range(e_in,e_end):
     spring_force_positon_tensor_tuple=spring_force_positon_tensor_tuple+\
         (spring_force_positon_array,)
     dir_vector_tuple=dir_vector_tuple+(dirn_vector_array,)
+    transformed_pos_tuple=transformed_pos_tuple +(transform_dump_array,)
+    transformed_vel_tuple=transformed_vel_tuple +(transform_vel_array,)
     count+=1
             
                         
@@ -339,14 +432,9 @@ for i in range(e_in,e_end):
 
                    
 
-                     
+    
+# save tuples to avoid needing the next stage 
 
-
-        
-
-
-#%% save tuples to avoid needing the next stage 
-#make sure to comment this out after use
 label='damp_'+str(damp)+'_K_'+str(K)+'_'
 import pickle as pck
 
@@ -358,173 +446,13 @@ with open(label+'spring_force_positon_tensor_tuple.pickle', 'wb') as f:
 with open(label+'log_file_tuple.pickle', 'wb') as f:
     pck.dump(log_file_tuple, f)
 
+with open(label+'dirn_vector_tuple.pickle','wb') as f:
+    pck.dump(dir_vector_tuple,f)
 
-#%%
-folder_check_or_create(filepath,"saved_tuples")
+with open(label+'transformed_pos_tuple.pickle','wb') as f:
+    pck.dump(transformed_pos_tuple,f)
 
-
-label='damp_'+str(damp)+'_K_'+str(K)+'_'
-
-
-with open(label+'spring_force_positon_tensor_tuple.pickle', 'rb') as f:
-    spring_force_positon_tensor_tuple=pck.load(f)
-
-with open(label+'log_file_tuple.pickle', 'rb') as f:
-    log_file_tuple=pck.load(f)
+with open(label+'transformed_vel_tuple.pickle','wb') as f:
+     pck.dump(transformed_vel_tuple,f)
 
 
-#%%plot temp vs strain 
-thermal_damp_multiplier=np.flip(np.array([750,  750,  750,  650,  550,  450,  450,  450,  500,  500,  750,
-        750, 1000, 1500,  800,  550,  550,  600,  600,  600,  750,  750,
-       2500, 3000])*0.5 )
-column=4# temp 
-final_temp=np.zeros((erate.size))
-mean_temp_array=np.zeros((erate.size))
-pe_final_list=[]
-
-
-
-for i in range(0,len(log_file_tuple)):
-        
-    
-        strain_plot=np.linspace(0,strain_total,log_file_tuple[i][:,column].shape[0])
-        std_dev=np.std(log_file_tuple[i][:,column])
-        #column=4
-        plt.plot(strain_plot,log_file_tuple[i][:,column],label="$\dot{\gamma}="+\
-                 str(erate[i])+", tdamp=,"+str(thermal_damp_multiplier[i])+\
-                    ",t_{\sigma}="+str(std_dev)+"$")
-        #plt.plot(strain_plot,1-log_file_tuple[i][:,column],label='Convergence $\dot{\gamma}='+str(erate[i])+'$')
-        #print(i)
-       
-        plt.ylabel("$T$")
-        plt.xlabel("$\gamma$")
-        #plt.legend(bbox_to_anchor=(1.5,1))
-        #plt.yscale('log')
-        plt.legend()
-        plt.show() 
-
-
-        # column=5
-        # plt.plot(log_file_tuple[i][:,column],label="uef_temp")
-      
-
-        # column=5 # ecouple 
-        # plt.plot(log_file_tuple[i][:,column],label="Ecouple")
-        
-        # column=6 # econserve 
-        # plt.plot(log_file_tuple[i][:,column],label="Econserve")
-#%%
-
-for i in range(0,len(log_file_tuple)):   
-        column=2 # pe 
-        
-        plt.plot(strain_plot,log_file_tuple[i][:,column],label="$\dot{\gamma}="+str(erate[i])+"$")
-        #print(log_file_tuple[i][-1,column])
-        pe_final_list.append(log_file_tuple[i][-1,column])
-        plt.ylabel("$E_{p}$")
-        plt.xlabel("$\gamma$")
-        #plt.ylim(1e-10,10)       
-        plt.yscale('log')
-        plt.legend()
-        plt.show() 
-
-# for i in range(0,len(log_file_tuple)):  
-#         column=1 # ke 
-
-#         plt.plot(log_file_tuple[i][:,column], label="Kinetic E")
-#         # total_energy=log_file_tuple[i][:,1]+log_file_tuple[i][:,2]
-#         # plt.plot(total_energy,label="total energy")
-        
-#         plt.legend(loc='upper right')
-#         #plt.yscale('log')
-#         plt.show() 
-
-
-#%% mean temp
-column=7 # uef temp 
-final_temp=np.zeros((erate.size))
-mean_temp_array=np.zeros((erate.size))
-
-for i in range(e_in,e_end):
-        
-        # plt.plot(strainplot_tuple[i][:],log_file_batch_tuple[j][i][:,column])
-        # final_temp[i]=log_file_batch_tuple[j][i][-1,column]
-        
-        mean_temp_array[i]=np.mean(log_file_tuple[i][500:,column])
-#         plt.plot(log_file_tuple[i][:,column])
-# plt.show() 
-        #plt.axhline(np.mean(log_file_batch_tuple[j][i][:,column]))
-    #     plt.ylabel("$T$", rotation=0)
-    #     plt.xlabel("$\gamma$")
-    
-
-    # #   plt.savefig("temp_vs_strain_damp_"+str(damp)+"_gdot_"+str(erate[i])+"_.pdf",dpi=1200,bbox_inches='tight')
-    #     plt.show()
-
-#
-
-marker=['x','o','+','^',"1","X","d","*","P","v"]
-plt.scatter(erate[e_in:e_end],mean_temp_array[e_in:e_end])
-plt.ylabel("$T$", rotation=0)
-plt.xlabel('$\dot{\gamma}$')
-#plt.xscale('log')
-# plt.yscale('log')
-plt.axhline(np.mean(mean_temp_array[e_in:e_end]),label="$\\bar{T}="+str(sigfig.round(np.mean(mean_temp_array[e_in:e_end]),sigfigs=5))+"$")
-#plt.ylim(0.95,1.05)
-plt.legend()
-plt.tight_layout()
-plt.show()
-
-
-#%% computing stress distributions 
-import seaborn as sns
-from scipy.stats import norm
-from scipy.optimize import curve_fit
-marker=['x','o','+','^',"1","X","d","*","P","v"]
-aftcut=1
-cut=0.7
-
-labels_stress=["$\sigma_{xx}$",
-               "$\sigma_{yy}$",
-               "$\sigma_{zz}$",
-               "$\sigma_{xz}$",
-               "$\sigma_{xy}$",
-               "$\sigma_{yz}$"]
-
-stress_tensor,stress_tensor_std=stress_tensor_averaging(len(log_file_tuple),
-                            labels_stress,
-                            cut,
-                            aftcut,
-                            spring_force_positon_tensor_tuple,j_)
-
-
-plot_stress_tensor(0,3,
-                       stress_tensor,
-                       stress_tensor_std,
-                       j_,n_plates, labels_stress,marker,2,erate,e_end,'--')
-plt.show()
-
-
-plot_stress_tensor(3,6,
-                       stress_tensor,
-                       stress_tensor_std,
-                       j_,n_plates, labels_stress,marker,0,erate,e_end,'--')
-plt.show()
-
-#%%
-def ext_visc_compute(stress_tensor,stress_tensor_std,i1,i2,n_plates,e_end,e_in):
-    extvisc=(stress_tensor[:,i1]- stress_tensor[:,i2])/erate[e_in:e_end]/30.3
-    extvisc_error=np.sqrt(stress_tensor_std[:,i1]**2 +stress_tensor_std[:,i2]**2)/np.sqrt(j_*n_plates)
-
-    return extvisc,extvisc_error
-
-ext_visc_1,ext_visc_1_error=ext_visc_compute(stress_tensor,stress_tensor_std,0,2,n_plates,e_end,e_in)
-     
-
-cutoff=2
-plt.errorbar(erate[cutoff:e_end],ext_visc_1[cutoff:],yerr=ext_visc_1_error[cutoff:], label="$\eta_{1}$", linestyle='none', marker='x')
-#plt.plot(erate[:e_end],ext_visc_1,label="$\eta_{1}$", linestyle='none', marker='x')
-plt.ylabel("$\eta/\eta_{s}$", rotation=0, labelpad=20)
-plt.xlabel("$\dot{\gamma}$")
-plt.show()
-# %%
