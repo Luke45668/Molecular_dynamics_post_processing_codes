@@ -24,8 +24,8 @@ def stress_tensor_averaging(e_end,
                 data=np.ravel(spring_force_positon_tensor_tuple[i][j,cutoff:aftercutoff,:,l])
                 stress_tensor_reals[i,j,l]=np.mean(data)
                 stress_tensor_std_reals[i,j,l]=np.std(data)
-                stress_tensor=np.mean(stress_tensor_reals, axis=1)
-                stress_tensor_std=np.mean(stress_tensor_std_reals, axis=1)
+            stress_tensor=np.mean(stress_tensor_reals, axis=1)
+            stress_tensor_std=np.mean(stress_tensor_std_reals, axis=1)
     return stress_tensor,stress_tensor_std
 
 def stress_tensor_averaging_var_trunc(e_end,
