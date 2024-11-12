@@ -25,6 +25,7 @@ plt.rcParams.update({'font.size': 16})
 from mpl_toolkits import mplot3d
 from matplotlib.gridspec import GridSpec
 import scipy.stats
+
 from datetime import datetime
 import mmap
 import h5py as h5
@@ -49,9 +50,11 @@ linestyle_tuple = ['-',
 
 #%% 
 
+#note: currently we have one missing shear rate for k=30,60 so need to run them again with erate 0.02 to get the full picture 
+# I have k=20 downloaded, K=120 is running , need to produce run files for k=30,60
 
-damp=np.array([ 0.035, 0.035 ])
-K=np.array([ 30    , 60   ,
+damp=np.array([ 0.035, 0.035,0.035 ])
+K=np.array([  30    , 60   ,
             ])
 # K=np.array([  50   ,
 #             ])
@@ -104,6 +107,7 @@ conform_tensor_batch_tuple=()
 log_file_batch_tuple=()
 area_vector_spherical_batch_tuple=()
 interest_vectors_batch_tuple=()
+pos_vel_batch_tuple=()
 
 
 # loading all data into one 
@@ -118,6 +122,9 @@ for i in range(K.size):
     #                                                         "COM_velocity_tuple.pickle"),)
     # conform_tensor_batch_tuple=conform_tensor_batch_tuple+(batch_load_tuples(label,
     #                                                         "conform_tensor_tuple.pickle"),)
+    pos_vel_batch_tuple=pos_vel_batch_tuple+(batch_load_tuples(label,
+                                                            "new_pos_vel_tuple.pickle"),)
+
     log_file_batch_tuple=log_file_batch_tuple+(batch_load_tuples(label,
                                                             "log_file_tuple.pickle"),)
     area_vector_spherical_batch_tuple=area_vector_spherical_batch_tuple+(batch_load_tuples(label,"area_vector_tuple.pickle"),)
@@ -215,6 +222,78 @@ plt.tight_layout()
 plt.show()
 
 
+#%% plotting particle velocity against postion 
+for j in range(K.size):
+    for i in range(erate.size):
+
+
+        
+        z_position =np.mean(pos_vel_batch_tuple[j][i][:,:,0:3,2],axis=0)
+        x_vel=np.mean(pos_vel_batch_tuple[j][i][:,:,3:6,0],axis=0)
+        pred_x_vel=erate[i]* z_position
+        plt.scatter(z_position,x_vel, label="$\dot{\gamma}="+str(erate[i])+"$")
+        plt.plot(z_position,pred_x_vel)
+        plt.xlabel("$z$")
+        plt.ylabel("$v_{x}$")
+       # plt.legend()
+    plt.show()
+
+#%% plotting initial velocity distribution 
+f, axs = plt.subplots(1, 3, figsize=(16, 6),sharey=True,sharex=True)
+for j in range(K.size):
+    # only need the velocity distribution at gammadot=0
+    for i in range(1):
+        
+        x_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,0])
+        sns.kdeplot( data=x_vel, ax=axs[0])
+        
+        y_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,1])
+        sns.kdeplot( data=y_vel, ax=axs[1])
+       
+        z_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,2])
+        sns.kdeplot( data=z_vel, ax=axs[2])
+       
+        plt.show()
+
+#%%fitting gaussian for velocity component 
+for j in range(K.size):
+    # only need the velocity distribution at gammadot=0
+    for i in range(1):
+        maxwell = scipy.stats.norm
+        data = np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,0])
+
+        params = maxwell.fit(data)
+        print(params)
+        # (0, 4.9808603062591041)
+
+        plt.hist(data, bins=20,density=True)
+        x = np.linspace(np.min(data),np.max(data),data.size)
+        plt.plot(x, maxwell.pdf(x, *params), lw=3)
+        plt.show()
+
+#%% looking at maxwell_ botlzman  for speed dist 
+
+for j in range(K.size):
+    # only need the velocity distribution at gammadot=0
+    for i in range(1):
+        
+        x_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,0])
+       
+        
+        y_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,1])
+        
+       
+        z_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,2])
+        speed= np.sqrt(x_vel**2+ y_vel**2 + z_vel**2)
+        maxwell = scipy.stats.maxwell
+        params = maxwell.fit(speed)
+        print(params)
+        # (0, 4.9808603062591041)
+
+        plt.hist(speed, bins=20,density=True)
+        x = np.linspace(np.min(speed),np.max(speed),speed.size)
+        plt.plot(x, maxwell.pdf(x, *params), lw=3)
+        plt.show()
 
 
 #%% look at internal stresses
@@ -358,25 +437,25 @@ for j in range(K.size):
     plt.errorbar(erate[cutoff:e_end], n_1[j,cutoff:e_end], yerr =n_1_error[j,cutoff:e_end],
                   ls='none',label="$N_{1},K="+str(K[j])+"$",marker=marker[j] )
     popt,cov_matrix_n1=curve_fit(linearthru0,erate[cutoff:e_end], n_1[j,cutoff:e_end])
-    difference=np.sqrt(np.sum((n_1[j,cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
+    # difference=np.sqrt(np.sum((n_1[j,cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
 
-    plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])),ls=linestyle_tuple[j],#)#,
-            label="$N_{1,fit,K="+str(K[j])+"},m="+str(sigfig.round(popt[0],sigfigs=2))+\
-                ",\\varepsilon="+str(sigfig.round(difference,sigfigs=2))+"$")
+    # plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])),ls=linestyle_tuple[j],#)#,
+    #         label="$N_{1,fit,K="+str(K[j])+"},m="+str(sigfig.round(popt[0],sigfigs=2))+\
+    #             ",\\varepsilon="+str(sigfig.round(difference,sigfigs=2))+"$")
 
     #plt.xscale('log')
     #plt.show()
-    print(difference)
+    #print(difference)
 
     plt.errorbar(erate[cutoff:e_end], n_2[j,cutoff:e_end], yerr =n_2_error[j,cutoff:e_end],
                   ls='none',label="$N_{2},K="+str(K[j])+"$",marker=marker[j] )
-    popt,cov_matrix_n2=curve_fit(linearthru0,erate[cutoff:e_end], n_2[j,cutoff:e_end])
-    difference=np.sqrt(np.sum((n_2[j,cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
+    # popt,cov_matrix_n2=curve_fit(linearthru0,erate[cutoff:e_end], n_2[j,cutoff:e_end])
+    # difference=np.sqrt(np.sum((n_2[j,cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
 
-    plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])),ls=linestyle_tuple[j],#)#,
-            label="$N_{2,fit,K="+str(K[j])+"},m="+str(sigfig.round(popt[0],sigfigs=2))+\
-            ",\\varepsilon="+str(sigfig.round(difference,sigfigs=2))+"$")
-    # #
+    # plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])),ls=linestyle_tuple[j],#)#,
+    #         label="$N_{2,fit,K="+str(K[j])+"},m="+str(sigfig.round(popt[0],sigfigs=2))+\
+    #         ",\\varepsilon="+str(sigfig.round(difference,sigfigs=2))+"$")
+    # # #
 plt.legend(fontsize=legfont, frameon=False)
 #plt.xscale('log')
 plt.xlabel("$\dot{\gamma}$")
@@ -385,15 +464,15 @@ plt.yticks(n_y_ticks)
 plt.tight_layout()
 plt.savefig(path_2_log_files+"/plots/N1_N2_vs_gdot_plots.pdf",dpi=1200,bbox_inches='tight')
 plt.show()
-print(difference)
+#print(difference)
 
-#collapse N1 and N2 /K
-cutoff=0
+#collapse N1 and N2 /sigma_xz
+cutoff=1
 for j in range(K.size):
     #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
   
 
-    plt.errorbar(erate[cutoff:e_end], n_1[j,cutoff:e_end]/K[j], yerr =n_1_error[j,cutoff:e_end]/K[j],
+    plt.errorbar(erate[cutoff:e_end], n_1[j,cutoff:e_end]/stress_tensor[j,cutoff:e_end,3], yerr =np.abs(n_1_error[j,cutoff:e_end]/stress_tensor[j,cutoff:e_end,3]),
                   ls='none',label="$N_{1},K="+str(K[j])+"$",marker=marker[j] )
     # popt,cov_matrix_n1=curve_fit(linearthru0,erate[cutoff:e_end], n_1[j,cutoff:e_end])
     # difference=np.sqrt(np.sum((n_1[j,cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
@@ -404,10 +483,10 @@ for j in range(K.size):
 
     #plt.xscale('log')
     #plt.show()
-    print(difference)
+    #print(difference)
 
-    plt.errorbar(erate[cutoff:e_end], n_2[j,cutoff:e_end]/K[j], yerr =n_2_error[j,cutoff:e_end]/K[j],
-                  ls='none',label="$N_{2},K="+str(K[j])+"$",marker=marker[j] )
+    # plt.errorbar(erate[cutoff:e_end], n_2[j,cutoff:e_end]/K[j], yerr =n_2_error[j,cutoff:e_end]/K[j],
+    #               ls='none',label="$N_{2},K="+str(K[j])+"$",marker=marker[j] )
     # popt,cov_matrix_n2=curve_fit(linearthru0,erate[cutoff:e_end], n_2[j,cutoff:e_end])
     # difference=np.sqrt(np.sum((n_2[j,cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
 
@@ -416,13 +495,13 @@ for j in range(K.size):
     #         ",\\varepsilon="+str(sigfig.round(difference,sigfigs=3))+"$",ls=linestyle_tuple[j])
     #
     plt.legend(fontsize=legfont)
-    plt.ylabel("$N_{\\alpha}/K$",rotation=0)
-    plt.xscale('log')
+    plt.ylabel("$N_{1}/\sigma_{xz}$",rotation=0)
+    #plt.xscale('log')
     plt.xlabel("$\dot{\gamma}$")
 plt.tight_layout()
 plt.savefig(path_2_log_files+"/plots/N1_N2_scaled_K_vs_gdot_plots.pdf",dpi=1200,bbox_inches='tight')
 plt.show()
-print(difference)
+#print(difference)
 
 
 
@@ -805,7 +884,7 @@ for i in range(len(skip_array)):
                     #label ="$\dot{\gamma}="+str(erate[i])+"$")
 
         plt.subplot(1, 3, i+1)
-        sns.kdeplot(eq_spring_length-np.ravel(interest_vectors_batch_tuple[j][l][:,:,2:5]),
+        sns.kdeplot(np.ravel(interest_vectors_batch_tuple[j][l][:,:,2:5])-eq_spring_length,
                     label ="$\dot{\gamma}="+str(erate[l])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j])
         #NOTE: is this level of smoothing appropriate
         # plt.hist(eq_spring_length+0.125-np.ravel(interest_vectors_batch_tuple[j][i][:,:,2:5]),
@@ -896,17 +975,17 @@ f, axs = plt.subplots(1, 3, figsize=(10, 6),sharey=True,sharex=True)
 
 #for i in range(len(skip_array)):
     
-for j in range(1,2):
+for j in range(0,2):
         R_x=interest_vectors_batch_tuple[j][0][:,:,2]
         R_y=interest_vectors_batch_tuple[j][0][:,:,3]
         R_z=interest_vectors_batch_tuple[j][0][:,:,4]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
 
-        sns.kdeplot(eq_spring_length-np.ravel(R_x),
+        sns.kdeplot(np.ravel(R_x),
                     label ="$R_{x},\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[1], ax=axs[0])
-        sns.kdeplot(eq_spring_length-np.ravel(R_y),
+        sns.kdeplot(np.ravel(R_y),
                     label ="$R_{y},\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[2], ax=axs[0])
-        sns.kdeplot(eq_spring_length-np.ravel(R_z),
+        sns.kdeplot(np.ravel(R_z),
                     label ="$R_{z},\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[3], ax=axs[0])
 
         axs[0].legend(fontsize=legfont)
@@ -917,11 +996,11 @@ for j in range(1,2):
         R_z=interest_vectors_batch_tuple[j][9][:,:,4]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
        
-        sns.kdeplot(eq_spring_length-np.ravel(R_x),
+        sns.kdeplot(np.ravel(R_x),
                     label ="$R_{x},\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[1], ax=axs[1])
-        sns.kdeplot(eq_spring_length-np.ravel(R_y),
+        sns.kdeplot(np.ravel(R_y),
                     label ="$R_{y},\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[2], ax=axs[1])
-        sns.kdeplot(eq_spring_length-np.ravel(R_z),
+        sns.kdeplot(np.ravel(R_z),
                     label ="$R_{z},\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[3], ax=axs[1])
         axs[1].legend(fontsize=legfont)
         # axs[1].xticks(dist_xticks[1][:])
@@ -929,11 +1008,11 @@ for j in range(1,2):
         R_y=interest_vectors_batch_tuple[j][18][:,:,3]
         R_z=interest_vectors_batch_tuple[j][18][:,:,4]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
-        sns.kdeplot(eq_spring_length-np.ravel(R_x),
+        sns.kdeplot(np.ravel(R_x),
                     label ="$R_{x},\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[1], ax=axs[2])
-        sns.kdeplot(eq_spring_length-np.ravel(R_y),
+        sns.kdeplot(np.ravel(R_y),
                     label ="$R_{y},\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[2], ax=axs[2])
-        sns.kdeplot(eq_spring_length-np.ravel(R_z),
+        sns.kdeplot(np.ravel(R_z),
                     label ="$R_{z},\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[3], ax=axs[2])
         axs[2].legend(fontsize=legfont)
         # axs[2].xticks(dist_xticks[2][:])
@@ -963,7 +1042,7 @@ for j in range(K.size):
         R_z=interest_vectors_batch_tuple[j][0][:,:,4]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
 
-        sns.kdeplot(eq_spring_length-np.ravel(R_y),
+        sns.kdeplot(np.ravel(R_y),
                     label ="$\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[0])
         axs[0].legend(fontsize=legfont)
         # axs[0].xticks(dist_xticks[0][:])
@@ -973,7 +1052,7 @@ for j in range(K.size):
         R_z=interest_vectors_batch_tuple[j][9][:,:,4]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
        
-        sns.kdeplot(eq_spring_length-np.ravel(R_y),
+        sns.kdeplot(np.ravel(R_y),
                     label ="$\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[1])
         axs[1].legend(fontsize=legfont)
         # axs[1].xticks(dist_xticks[1][:])
@@ -981,7 +1060,7 @@ for j in range(K.size):
         R_y=interest_vectors_batch_tuple[j][18][:,:,3]
         R_z=interest_vectors_batch_tuple[j][18][:,:,4]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
-        sns.kdeplot(eq_spring_length-np.ravel(R_y),
+        sns.kdeplot(np.ravel(R_y),
                     label ="$\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[2])
         axs[2].legend(fontsize=legfont)
         # axs[2].xticks(dist_xticks[2][:])
@@ -1011,19 +1090,19 @@ f, axs = plt.subplots(1, 3, figsize=(10, 6),sharey=True,sharex=True)
     
 for j in range(K.size):
 
-        sns.kdeplot(eq_spring_length-np.ravel(interest_vectors_batch_tuple[j][0][:,:,4]),
+        sns.kdeplot(np.ravel(interest_vectors_batch_tuple[j][0][:,:,4]),
                     label ="$\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[0])
         axs[0].legend(fontsize=legfont)
         # axs[0].xticks(dist_xticks[0][:])
 
         
        
-        sns.kdeplot(eq_spring_length-np.ravel(interest_vectors_batch_tuple[j][9][:,:,4]),
+        sns.kdeplot(np.ravel(interest_vectors_batch_tuple[j][9][:,:,4]),
                     label ="$\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[1])
         axs[1].legend(fontsize=legfont)
         # axs[1].xticks(dist_xticks[1][:])
        
-        sns.kdeplot(eq_spring_length-np.ravel(interest_vectors_batch_tuple[j][18][:,:,4]),
+        sns.kdeplot(np.ravel(interest_vectors_batch_tuple[j][18][:,:,4]),
                     label ="$\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[2])
         axs[2].legend(fontsize=legfont)
         # axs[2].xticks(dist_xticks[2][:])

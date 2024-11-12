@@ -51,8 +51,8 @@ linestyle_tuple = ['-',
 marker=['x','+','^',"1","X","d","*","P","v","."]
 
 damp=np.array([ 0.035, 0.035 ,0.035,0.035])
-K=np.array([  100,300,600,1200 ])
-
+K=np.array([  60,100,150 ])
+#K=np.array([  100,300,600,1200 ])
 thermal_damp_multiplier=np.flip(np.array([25,25,25,25,25,25,25,100,100,100,100,100,
 100,100,100,100,250,250]))/10
 
@@ -65,12 +65,12 @@ n_plates=100
 
 strain_total=100
 
-
-path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/final_plate_runs_tuples"
+path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/final_plate_run_x_stretch/"
+#path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/final_plate_runs_tuples/"
 
 thermo_vars='         KinEng         PotEng         Press           Temp         Ecouple       Econserve    c_uniaxnvttemp'
 
-j_=10
+j_=5
 
 sim_fluid=30.315227255599112
 
@@ -132,7 +132,9 @@ for i in range(K.size):
     
     e_end.append(len(spring_force_positon_tensor_batch_tuple[i]))
     
-   
+
+# need to add velocity and speed distributions, but need an equilirbium simulation to verify 
+
 
      
 
@@ -152,6 +154,7 @@ def strain_plotting_points(total_strain,points_per_iv):
      strain_plotting_points=np.arange(0,total_strain,strain_unit)
      return  strain_plotting_points
 
+
 #%% fix tdamp vary k
 from fitter import Fitter
 #NOTE: have I included the phantom particles in the velocity distributions ?
@@ -166,8 +169,13 @@ plt.rcParams.update({'font.size': 16})
 for j in range(K.size):
 
     mean_temp_array=np.zeros((erate[:e_end[j]].size))
+
+    skip_array=np.array([7,8,9,10])
    
     for i in range(erate[:e_end[j]].size):
+    # for i in range(skip_array.size):
+    #         i=skip_array[i]
+        
            
 
         
@@ -194,7 +202,7 @@ for j in range(K.size):
             label="K="+str(K[j])+",$\\bar{grad}="+str(grad_mean)+"$")
             #plt.plot(strainplot_tuple[i][:],grad_pe)
             plt.ylabel("$E_{p}$")
-            plt.yscale('log')
+            #plt.yscale('log')
             plt.title("$\dot{\gamma}="+str(erate[i])+"$")
             #plt.legend(loc='upper right', bbox_to_anchor=(4.25,0.75))
             plt.legend()
@@ -253,14 +261,6 @@ for j in range(K.size):
 
             plt.xlabel("$v_{z}$")
 
-
-
-
-            
-           
-
-
-            
         
             #plt.axhline(np.mean(log_file_batch_tuple[j][i][:,column]))
            
@@ -299,20 +299,26 @@ plt.show()
 
 #%% time series plots of stress
 
-for j in range(3,4):
+for j in range(K.size):
     for i in range(e_end[j]):
          mean_stress_tensor=np.mean(spring_force_positon_tensor_batch_tuple[j][i],axis=0)
          mean_stress_tensor=np.mean(mean_stress_tensor,axis=1)
-         strain_plot=np.linspace(0,strain_total,mean_stress_tensor[:,l].size)
-         for l in range(0,1):
-             plt.plot(strain_plot,mean_stress_tensor[:,l])
-         plt.show()
+         
+         for l in range(1,2):
+             strain_plot=np.linspace(0,strain_total,mean_stress_tensor[:,l].size)
+             plt.plot(strain_plot,mean_stress_tensor[:,l],label="$\dot{\gamma}="+str(erate[i])+"$")
+    plt.legend(bbox_to_anchor=(1,1))
+    
+    plt.show()
+
+
 
 
 
 
 
 #%% look at internal stresses
+
 def stress_tensor_averaging(e_end,
                             labels_stress,
                             trunc1,
@@ -327,19 +333,22 @@ def stress_tensor_averaging(e_end,
             for j in range(j_):
                 cutoff=int(np.round(trunc1*spring_force_positon_tensor_tuple[i][j,:,:,l].shape[0]))
                 aftercutoff=int(np.round(trunc2*spring_force_positon_tensor_tuple[i][j,:,:,l].shape[0]))
-                # print(spring_force_positon_tensor_tuple[i][j,:,:,l].shape[0])
+                # print(spring_force_positon_tensor_tuple[i][j,:,:,l].shape)
                 # print(cutoff)
                 # print(aftercutoff)
                 data=np.ravel(spring_force_positon_tensor_tuple[i][j,cutoff:aftercutoff,:,l])
               
                 stress_tensor_reals[i,j,l]=np.mean(data)
                 stress_tensor_std_reals[i,j,l]=np.std(data)
-            stress_tensor=np.mean(stress_tensor_reals, axis=1)
-            stress_tensor_std=np.mean(stress_tensor_std_reals, axis=1)
+    stress_tensor=np.mean(stress_tensor_reals, axis=1)
+    stress_tensor_std=np.mean(stress_tensor_std_reals, axis=1)
     return stress_tensor,stress_tensor_std
 
+
+
+
 aftcut=1
-cut=0.9
+cut=0.8
 # aftcut=[1,1,1,1,1,1,1,1,1,1,1,1,1,1,0.25,0.25,0.2,0.2,0.175,0.15,0.15,0.1,0.1,0.1]
 # cut=[0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.1,0.1,0.075,0.075,0.075,0.075,0.075,0.05,0.05,0.05]
 
@@ -393,12 +402,13 @@ plt.rcParams["figure.figsize"] = (10,6 )
 plt.rcParams.update({'font.size': 16})
 # for j in range(thermal_damp_multiplier.size): 
 for j in range(K.size): 
-    for l in range(1):
+    for l in range(3):
         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[0])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
         
         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$tdamp="+str(thermal_damp_multiplier[j])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$tdamp="+str(thermal_damp_multiplier[j])+","+str(labels_stress[l]), marker=marker[j])
-        plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[j])+","+str(labels_stress[l]), marker=marker[j])
+        #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[j])+","+str(labels_stress[l]), marker=marker[j])
+        plt.errorbar(erate[:e_end[j]],stress_tensor_tuple[j][:,l],yerr=stress_tensor_std_tuple[j][:,l]/np.sqrt(n_plates*j_),label="$K="+str(K[j])+","+str(labels_stress[l]), marker=marker[j])
         
 
     #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
@@ -413,29 +423,30 @@ for j in range(K.size):
 plt.legend(loc='upper right', bbox_to_anchor=(1.5,1))
 plt.show()
 
-for j in range(K.size): 
-    for l in range(1,2):
-        #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[0])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
+
+# for j in range(K.size): 
+#     for l in range(1,2):
+#         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[0])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
         
-        #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$tdamp="+str(thermal_damp_multiplier[j])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
-        #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$tdamp="+str(thermal_damp_multiplier[j])+","+str(labels_stress[l]), marker=marker[j])
-        plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[j])+","+str(labels_stress[l]), marker=marker[j])
+#         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$tdamp="+str(thermal_damp_multiplier[j])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
+#         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$tdamp="+str(thermal_damp_multiplier[j])+","+str(labels_stress[l]), marker=marker[j])
+#         plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[j])+","+str(labels_stress[l]), marker=marker[j])
         
 
-    #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
+#     #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
        
-        plt.xlabel("$\dot{\gamma}$")
-        plt.ylabel("$\sigma_{\\alpha \\alpha}$")
-        #plt.yticks(y_ticks_stress)
-        #plt.ylim(0.9,1.3)
-        #plt.tight_layout()
-        #plt.xscale('log')
-        #plt.savefig(path_2_log_files+"/plots/stress_tensor_0_3_plots.pdf",dpi=1200,bbox_inches='tight') 
-plt.legend(loc='upper right', bbox_to_anchor=(1.5,1))
-plt.show()
+#         plt.xlabel("$\dot{\gamma}$")
+#         plt.ylabel("$\sigma_{\\alpha \\alpha}$")
+#         #plt.yticks(y_ticks_stress)
+#         #plt.ylim(0.9,1.3)
+#         #plt.tight_layout()
+#         #plt.xscale('log')
+#         #plt.savefig(path_2_log_files+"/plots/stress_tensor_0_3_plots.pdf",dpi=1200,bbox_inches='tight') 
+# plt.legend(loc='upper right', bbox_to_anchor=(1.5,1))
+# plt.show()
 
 for j in range(K.size): 
-    for l in range(2,3):
+    for l in range(3,6):
         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[0])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
         
         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$tdamp="+str(thermal_damp_multiplier[j])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
@@ -612,12 +623,18 @@ def conv_cart_2_spherical_coords(e_end,j,dirn_vector_batch_tuple,n_plates):
         z=area_vector_ray[:,:,:,2]
 
 
-        # radial coord
-        spherical_coords_array[:,:,:,0]=np.sqrt((x**2)+(y**2)+(z**2))
+        # # radial coord
+        # spherical_coords_array[:,:,:,0]=np.sqrt((x**2)+(y**2)+(z**2))
+        # #  theta coord 
+        # spherical_coords_array[:,:,:,1]=np.sign(y)*np.arccos(x/(np.sqrt((x**2)+(y**2))))
+        # # phi coord
+        # spherical_coords_array[:,:,:,2]=np.arccos(z/spherical_coords_array[:,:,:,0])
+          # radial coord
+        spherical_coords_array[:,:,:,0]=np.arccos(z/spherical_coords_array[:,:,:,0])
         #  theta coord 
         spherical_coords_array[:,:,:,1]=np.sign(y)*np.arccos(x/(np.sqrt((x**2)+(y**2))))
         # phi coord
-        spherical_coords_array[:,:,:,2]=np.arccos(z/spherical_coords_array[:,:,:,0])
+        spherical_coords_array[:,:,:,2]=np.sqrt((x**2)+(y**2)+(z**2))
 
         spherical_coords_tuple=spherical_coords_tuple+(spherical_coords_array,)
 
@@ -644,6 +661,8 @@ def theta_dist_plot(skip_array,spherical_coords_tuple):
     plt.ylabel('Density')
     plt.legend(bbox_to_anchor=[1.1, 0.45])
     plt.show()
+
+
      
 def phi_dist_plot(skip_array,spherical_coords_tuple):
         for i in range(skip_array.size):
@@ -664,49 +683,100 @@ def phi_dist_plot(skip_array,spherical_coords_tuple):
         plt.xlim(0,np.pi/2)
         plt.show()
 
+# time phi plot
+
+def phi_dist_plot_time(skip_array,spherical_coords_tuple):
+        for i in range(skip_array.size):
+
+                i=skip_array[i]
+
+                for k in range(1000):
+
+                    data=spherical_coords_tuple[i][:,k,:,2]
+                    periodic_data=np.array([data,np.pi-data])  
+                    sns.kdeplot( data=np.ravel(periodic_data),
+                                label ="$\dot{\gamma}="+str(erate[i])+"$")
+                            
+                    #plt.hist(np.ravel(spherical_coords_tuple[i][:,-1,:,2]))
+
+                plt.xlabel("$\Phi$")
+                plt.xticks(pi_phi_ticks,pi_phi_tick_labels)
+                plt.ylabel('Density')
+                #plt.legend(bbox_to_anchor=[1.1, 0.45])
+                plt.xlim(0,np.pi/2)
+                plt.show()
+
+skip_array=np.array([0,3,6,7])
+# phi_dist_plot_time(skip_array,spherical_coords_tuple)
+
 
 #%% now look at each k individually 
 
 # k=100
-skip_array=np.array([0,3,6,7])
-conv_cart_2_spherical_coords(e_end,0,dirn_vector_batch_tuple,n_plates)
+
+
+skip_array=np.array([0,1,2,3,4,5,6,7,8,9,10])
+spherical_coords_tuple=conv_cart_2_spherical_coords(e_end,0,dirn_vector_batch_tuple,n_plates)
 theta_dist_plot(skip_array,spherical_coords_tuple)
 phi_dist_plot(skip_array,spherical_coords_tuple)
 
+# skip_array=np.array([7,8,9,10])
+# spherical_coords_tuple=conv_cart_2_spherical_coords(e_end,0,dirn_vector_batch_tuple,n_plates)
+# theta_dist_plot(skip_array,spherical_coords_tuple)
+# phi_dist_plot(skip_array,spherical_coords_tuple)
 
-# k=300 point of interest one 
-skip_array=np.array([0,7,8,9,10])
-conv_cart_2_spherical_coords(e_end,1,dirn_vector_batch_tuple,n_plates)
-theta_dist_plot(skip_array,spherical_coords_tuple)
-phi_dist_plot(skip_array,spherical_coords_tuple)
+# skip_array=np.array([11,12,13,14])
+# spherical_coords_tuple=conv_cart_2_spherical_coords(e_end,1,dirn_vector_batch_tuple,n_plates)
+# theta_dist_plot(skip_array,spherical_coords_tuple)
+# phi_dist_plot(skip_array,spherical_coords_tuple)
 
-# k=300 point of interest two
-skip_array=np.array([0,12,13,14,15])
-conv_cart_2_spherical_coords(e_end,1,dirn_vector_batch_tuple,n_plates)
-theta_dist_plot(skip_array,spherical_coords_tuple)
-phi_dist_plot(skip_array,spherical_coords_tuple)
+# # k=300 point of interest one 
+# skip_array=np.array([0,7,8,9,10])
+# conv_cart_2_spherical_coords(e_end,1,dirn_vector_batch_tuple,n_plates)
+# theta_dist_plot(skip_array,spherical_coords_tuple)
+# phi_dist_plot(skip_array,spherical_coords_tuple)
+
+# # k=300 point of interest two
+# skip_array=np.array([0,12,13,14,15])
+# conv_cart_2_spherical_coords(e_end,1,dirn_vector_batch_tuple,n_plates)
+# theta_dist_plot(skip_array,spherical_coords_tuple)
+# phi_dist_plot(skip_array,spherical_coords_tuple)
 
 
-#k=1200
-skip_array=np.array([0,12,13,14,15])
-conv_cart_2_spherical_coords(e_end,3,dirn_vector_batch_tuple,n_plates)
-theta_dist_plot(skip_array,spherical_coords_tuple)
-phi_dist_plot(skip_array,spherical_coords_tuple)
+# # #k=1200
+# # skip_array=np.array([0,12,13,14,15])
+# # conv_cart_2_spherical_coords(e_end,3,dirn_vector_batch_tuple,n_plates)
+# # theta_dist_plot(skip_array,spherical_coords_tuple)
+# # phi_dist_plot(skip_array,spherical_coords_tuple)
 
+#%%
+for j in range(1):
+    skip_array=np.array([0,5,10,13])
+    for i in range(skip_array.size):
+        i=skip_array[i]
+
+        R_x=dirn_vector_batch_tuple[j][i][:,:,:,0]
+        R_y=dirn_vector_batch_tuple[j][i][:,:,:,1]
+        R_z=dirn_vector_batch_tuple[j][i][:,:,:,2]
+        magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
+        sns.kdeplot(np.ravel(magnitude_spring)-eq_spring_length,
+                    label ="$\dot{\gamma}="+str(erate[i])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j])
+    plt.legend(bbox_to_anchor=(1,1))
+    plt.show()
 
 
 # %% extension distribution 
 skip_array=[0,9,13,18]
 plt.rcParams["figure.figsize"] = (12,6 )
 
-dist_xticks=([[-1,0,1,2,3],[-3,-2,-1,0,1,2,3],[-7.5,-5,-2.5,0,2.5,5]])
+#dist_xticks=([[-1,0,1,2,3],[-3,-2,-1,0,1,2,3],[-7.5,-5,-2.5,0,2.5,5]])
 
 
 f, axs = plt.subplots(1, 4, figsize=(12, 6),sharey=True,sharex=True)
 legfont=12
 #for i in range(len(skip_array)):
 adjust=1
-for j in range(3,4):
+for j in range(K.size):
         R_x=dirn_vector_batch_tuple[j][0][:,:,:,0]
         R_y=dirn_vector_batch_tuple[j][0][:,:,:,1]
         R_z=dirn_vector_batch_tuple[j][0][:,:,:,2]
@@ -717,27 +787,27 @@ for j in range(3,4):
         axs[0].legend(fontsize=legfont)
         # axs[0].xticks(dist_xticks[0][:])
 
-        R_x=dirn_vector_batch_tuple[j][9][:,:,:,0]
-        R_y=dirn_vector_batch_tuple[j][9][:,:,:,1]
-        R_z=dirn_vector_batch_tuple[j][9][:,:,:,2]
+        R_x=dirn_vector_batch_tuple[j][5][:,:,:,0]
+        R_y=dirn_vector_batch_tuple[j][5][:,:,:,1]
+        R_z=dirn_vector_batch_tuple[j][5][:,:,:,2]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
        
         sns.kdeplot(np.ravel(magnitude_spring)-eq_spring_length,
                     label ="$\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[1])
         axs[1].legend(fontsize=legfont)
         # axs[1].xticks(dist_xticks[1][:])
-        R_x=dirn_vector_batch_tuple[j][13][:,:,:,0]
-        R_y=dirn_vector_batch_tuple[j][13][:,:,:,1]
-        R_z=dirn_vector_batch_tuple[j][13][:,:,:,2]
+        R_x=dirn_vector_batch_tuple[j][10][:,:,:,0]
+        R_y=dirn_vector_batch_tuple[j][10][:,:,:,1]
+        R_z=dirn_vector_batch_tuple[j][10][:,:,:,2]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
         sns.kdeplot(np.ravel(magnitude_spring)-eq_spring_length,
                     label ="$\dot{\gamma}="+str(erate[13])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[2])
         axs[2].legend(fontsize=legfont)
         # axs[2].xticks(dist_xticks[2][:])
         #plt.legend(fontsize=legfont) 
-        R_x=dirn_vector_batch_tuple[j][18][:,:,:,0]
-        R_y=dirn_vector_batch_tuple[j][18][:,:,:,1]
-        R_z=dirn_vector_batch_tuple[j][18][:,:,:,2]
+        R_x=dirn_vector_batch_tuple[j][13][:,:,:,0]
+        R_y=dirn_vector_batch_tuple[j][13][:,:,:,1]
+        R_z=dirn_vector_batch_tuple[j][13][:,:,:,2]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
         sns.kdeplot(np.ravel(magnitude_spring)-eq_spring_length,
                     label ="$\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[3])
