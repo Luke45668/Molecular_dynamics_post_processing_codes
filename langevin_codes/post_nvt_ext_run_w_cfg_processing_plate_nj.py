@@ -36,32 +36,31 @@ strain_total=100
 
 
 erate=np.flip(np.linspace(0.5,0.005,24))
-no_timesteps=np.array([[ 394351000,   74345000,  410411000,  283440000,  216470000,
-         175098000,  147003000, 1266770000, 1112892000,  992349000,
-         895367000,  815654000,  748974000,  692372000,  643724000,
-         601464000,  564410000,  531657000,  502497000,  476369000,
-         452824000,  431497000,  412089000,  394351000]])
-
-timestep_multiplier=np.array(
-[0.00005,0.00005,0.00005,0.00005,
-0.00005,0.00005,0.00005,0.00005,0.00005,0.00005,
-0.00005,0.00005,0.00005,0.00005,0.00005,0.00005,0.00005,
-0.0005,0.0005,0.0005,0.0005,0.0005,0.005,
-0.005])*4
+no_timesteps=np.array([1999999000, 1999999000, 1999999000, 1999999000, 1999999000,
+        1999999000, 1999999000, 1999999000, 1999999000, 1999999000,
+        1999999000, 1999999000, 1999999000, 1999999000, 1999999000,
+        1999999000, 1999999000, 1999999000, 1999999000, 1999999000,
+        1999999000, 1999999000, 1999999000, 1999999000 ])
+timestep_multiplier=np.array([1.97175579e-05, 2.06044448e-05, 2.15748730e-05, 2.26412297e-05,
+        2.38184785e-05, 2.51248660e-05, 2.65828740e-05, 2.82205246e-05,
+        3.00731983e-05, 3.21862194e-05, 3.46186131e-05, 3.74487061e-05,
+        4.07827186e-05, 4.47683940e-05, 4.96174870e-05, 5.56446418e-05,
+        6.33385239e-05, 7.35014313e-05, 8.75490021e-05, 1.08234805e-04,
+        1.41719947e-04, 2.05205353e-04, 3.71724452e-04, 1.97175579e-03])
 md_step=0.005071624521210362*timestep_multiplier
 thermo_vars='         KinEng         PotEng         Press           Temp         Ecouple       Econserve    c_uniaxnvttemp'
 
 dump_start_line ='ITEM: ENTRIES c_spring_f_d[1] c_spring_f_d[2] c_spring_f_d[3] c_spring_f_d[4] c_spring_f_d[5] c_spring_f_d[6]'
 dump_start_line_posvel = "ITEM: ATOMS id type x y z vx vy vz"
 
-K=300
-j_=10
+K=sys.argv[1]
+j_=5
 box_size=100
 eq_spring_length=3*np.cos(np.pi/6)
-mass_pol=5 
+mass_pol=5
 n_plates=100
 n_particles=6*n_plates
-filepath="/home/ucahlrl/Scratch/output/nvt_runs/final_plate_runs/"
+filepath="/home/ucahlrl/Scratch/output/nvt_runs/final_plate_run_100_small_tstep/"
 path_2_log_files=filepath
 Path_2_dump=filepath
 
@@ -77,6 +76,83 @@ force_dump_general_name_string="*_UEF_FE_tensor_*K_"+str(K)+".dump"
 
 # grabbing file names and organising 
 
+
+log_file_size_array=np.zeros((2,erate.size,j_))
+log_name_list=glob.glob("log.*K_"+str(K))
+count=np.zeros((erate.size)).astype("int")
+count_failed=np.zeros((erate.size)).astype("int")
+failed_files=[]
+passed_files=[]
+real_target=j_
+# can scan all the files and produce a list of files that pass test
+# check number of files in log file, this will be more clear than size
+for file in log_name_list:
+
+    split_name=file.split('_')
+    erate_ind=int(np.where(erate==float(split_name[15]))[0][0])
+    
+    realisation_ind=int(split_name[6])
+    spring_stiff=int(split_name[19])
+
+
+    try:
+        file_size_rows=log2numpy_reader(file,
+                                filepath,
+                                thermo_vars).shape[0]
+        #print(file_size_rows)
+        log_file_size_array[0,erate_ind,count[erate_ind]]=file_size_rows
+        if count[erate_ind]==real_target:
+           
+            continue
+
+        elif file_size_rows<1000:
+            continue
+    
+        else:
+            passed_files.append(file)
+            count[erate_ind]+=1
+        
+       
+        
+
+    except:
+        # if count[erate_ind]==10:
+            failed_files.append(file)
+            count_failed[erate_ind]+=1
+
+            continue
+        
+              
+        # log_file_size_array[0,erate_ind,count[erate_ind]]=0
+        # count[erate_ind]+=1
+        # continue 
+
+print("count array",count)
+
+success_count=list(count).count(j_)
+
+print(success_count)
+
+#
+folder_check_or_create_no_enter(filepath,"sucessful_runs_"+str(real_target)+"_reals")
+# need to put in check if file exists test
+for file in passed_files:
+    unique_barcode=file.split('_')[5]
+    realisation_ind=file.split('_')[6]
+    timestep=file.split('_')[12]
+   
+    os.system("cp -r log*_"+str(int(unique_barcode))+"_"+str(realisation_ind)+"_*"+str(timestep)+"*K_"+str(K)+" sucessful_runs_"+str(real_target)+"_reals/")
+   
+    os.system("cp -r *_"+str(int(unique_barcode))+"_"+str(realisation_ind)+"_*"+str(timestep)+"*K_"+str(K)+".dump sucessful_runs_"+str(real_target)+"_reals/")
+    
+    os.system("cp -r *_"+str(int(unique_barcode))+"_"+str(realisation_ind)+"_*"+str(timestep)+"*K_"+str(K)+"*cfg sucessful_runs_"+str(real_target)+"_reals/")
+   
+
+os.chdir("sucessful_runs_"+str(real_target)+"_reals")
+
+# grabbing file names and organising 
+path_2_log_files=filepath+"sucessful_runs_"+str(real_target)+"_reals"
+Path_2_dump=filepath+"sucessful_runs_"+str(real_target)+"_reals"
 
 # grab file names 
 (realisation_name_force_dump,
@@ -141,63 +217,6 @@ print(len(realisation_name_after_sorted_final_cfg))
 print(len(realisation_name_log_sorted_final))
 print(len(realisation_name_force_dump_sorted_final))
 print(len(realisation_name_posvel_dump_sorted_final))
-
-# check how many full sets of data we have 
-log_file_size_array=np.zeros((2,erate.size,j_))
-log_name_list=glob.glob("log.*K_"+str(K))
-count=np.zeros((erate.size)).astype("int")
-count_failed=np.zeros((erate.size)).astype("int")
-failed_files=[]
-passed_files=[]
-real_target=10
-# can scan all the files and produce a list of files that pass test
-# check number of files in log file, this will be more clear than size
-for file in log_name_list:
-
-    split_name=file.split('_')
-    erate_ind=int(np.where(erate==float(split_name[15]))[0][0])
-    
-    realisation_ind=int(split_name[6])
-    spring_stiff=int(split_name[19])
-
-
-    try:
-        file_size_rows=log2numpy_reader(file,
-                                filepath,
-                                thermo_vars).shape[0]
-        #print(file_size_rows)
-        log_file_size_array[0,erate_ind,count[erate_ind]]=file_size_rows
-        if count[erate_ind]==real_target:
-           
-            continue
-
-        elif file_size_rows<1000:
-            continue
-    
-        else:
-            passed_files.append(file)
-            count[erate_ind]+=1
-        
-       
-        
-
-    except:
-        # if count[erate_ind]==10:
-            failed_files.append(file)
-            count_failed[erate_ind]+=1
-
-            continue
-        
-              
-        # log_file_size_array[0,erate_ind,count[erate_ind]]=0
-        # count[erate_ind]+=1
-        # continue 
-
-print("count array",count)
-
-success_count=list(count).count(j_)
-
-print(success_count)
 
 
 

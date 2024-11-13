@@ -73,14 +73,14 @@ dump_start_line ='ITEM: ENTRIES c_spring_f_d[1] c_spring_f_d[2] c_spring_f_d[3] 
 dump_start_line_posvel = "ITEM: ATOMS id type x y z vx vy vz"
 
 K=300
-j_=10
+j_=5
 box_size=100
 eq_spring_length=3*np.cos(np.pi/6)
 mass_pol=5 
 n_plates=100
 n_particles=6*n_plates
 filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/db_runs/cfg_run/cfg_run/"
-filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/final_plate_runs"
+filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/final_plate_runs/"
 path_2_log_files=filepath
 Path_2_dump=filepath
 
@@ -92,10 +92,85 @@ cfg_general_name_after_string="dump.*K_"+str(K)+"_*.cfg"
 log_general_name_string=("log.**K_"+str(K))
 posvel_dump_general_name_string="*_UEF_flat_elastic_*K_"+str(K)+".dump"
 force_dump_general_name_string="*_UEF_FE_tensor_*K_"+str(K)+".dump"
+os.chdir(filepath)
 
+#%% check how many full sets of data we have then move them to success file 
+log_file_size_array=np.zeros((2,erate.size,j_))
+log_name_list=glob.glob("log.*K_"+str(K))
+count=np.zeros((erate.size)).astype("int")
+count_failed=np.zeros((erate.size)).astype("int")
+failed_files=[]
+passed_files=[]
+real_target=j_
+# can scan all the files and produce a list of files that pass test
+# check number of files in log file, this will be more clear than size
+for file in log_name_list:
+
+    split_name=file.split('_')
+    erate_ind=int(np.where(erate==float(split_name[15]))[0][0])
+    
+    realisation_ind=int(split_name[6])
+    spring_stiff=int(split_name[19])
+
+
+    try:
+        file_size_rows=log2numpy_reader(file,
+                                filepath,
+                                thermo_vars).shape[0]
+        #print(file_size_rows)
+        log_file_size_array[0,erate_ind,count[erate_ind]]=file_size_rows
+        if count[erate_ind]==real_target:
+           
+            continue
+
+        elif file_size_rows<1000:
+            continue
+    
+        else:
+            passed_files.append(file)
+            count[erate_ind]+=1
+        
+       
+        
+
+    except:
+        # if count[erate_ind]==10:
+            failed_files.append(file)
+            count_failed[erate_ind]+=1
+
+            continue
+        
+              
+        # log_file_size_array[0,erate_ind,count[erate_ind]]=0
+        # count[erate_ind]+=1
+        # continue 
+
+print("count array",count)
+
+success_count=list(count).count(j_)
+
+print(success_count)
+
+#%%
+folder_check_or_create_no_enter(filepath,"sucessful_runs_"+str(real_target)+"_reals")
+# need to put in check if file exists test
+for file in passed_files:
+    unique_barcode=file.split('_')[5]
+    realisation_ind=file.split('_')[6]
+    timestep=file.split('_')[12]
+   
+    os.system("cp -r log*_"+str(int(unique_barcode))+"_"+str(realisation_ind)+"_*"+str(timestep)+"*K_"+str(K)+" sucessful_runs_"+str(real_target)+"_reals/")
+   
+    os.system("cp -r *_"+str(int(unique_barcode))+"_"+str(realisation_ind)+"_*"+str(timestep)+"*K_"+str(K)+".dump sucessful_runs_"+str(real_target)+"_reals/")
+    
+    os.system("cp -r *_"+str(int(unique_barcode))+"_"+str(realisation_ind)+"_*"+str(timestep)+"*K_"+str(K)+"*cfg sucessful_runs_"+str(real_target)+"_reals/")
+   
+
+os.chdir("sucessful_runs_"+str(real_target)+"_reals")
 
 #%% grabbing file names and organising 
-
+path_2_log_files=filepath+"sucessful_runs_"+str(real_target)+"_reals"
+Path_2_dump=filepath+"sucessful_runs_"+str(real_target)+"_reals"
 
 # grab file names 
 (realisation_name_force_dump,
@@ -161,64 +236,13 @@ print(len(realisation_name_log_sorted_final))
 print(len(realisation_name_force_dump_sorted_final))
 print(len(realisation_name_posvel_dump_sorted_final))
 
-#%% check how many full sets of data we have 
-log_file_size_array=np.zeros((2,erate.size,j_))
-log_name_list=glob.glob("log.*K_"+str(K))
-count=np.zeros((erate.size)).astype("int")
-count_failed=np.zeros((erate.size)).astype("int")
-failed_files=[]
-passed_files=[]
-real_target=10
-# can scan all the files and produce a list of files that pass test
-# check number of files in log file, this will be more clear than size
-for file in log_name_list:
 
-    split_name=file.split('_')
-    erate_ind=int(np.where(erate==float(split_name[15]))[0][0])
-    
-    realisation_ind=int(split_name[6])
-    spring_stiff=int(split_name[19])
-
-
-    try:
-        file_size_rows=log2numpy_reader(file,
-                                filepath,
-                                thermo_vars).shape[0]
-        #print(file_size_rows)
-        log_file_size_array[0,erate_ind,count[erate_ind]]=file_size_rows
-        if count[erate_ind]==real_target:
-           
-            continue
-
-        elif file_size_rows<1000:
-            continue
-    
-        else:
-            passed_files.append(file)
-            count[erate_ind]+=1
-        
-       
-        
-
-    except:
-        # if count[erate_ind]==10:
-            failed_files.append(file)
-            count_failed[erate_ind]+=1
-
-            continue
-        
-              
-        # log_file_size_array[0,erate_ind,count[erate_ind]]=0
-        # count[erate_ind]+=1
-        # continue 
-
-print("count array",count)
 
 #%% debug cell
 
 
 #%% file processing loop
-Path_2_dump=filepath
+
 
 # tuples for storing info 
 spring_force_positon_tensor_tuple=()

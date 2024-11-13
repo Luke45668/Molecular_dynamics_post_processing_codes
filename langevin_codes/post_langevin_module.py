@@ -143,6 +143,20 @@ def folder_check_or_create(filepath,folder):
           os.chdir(filepath)
           os.mkdir(folder)
           os.chdir(filepath+"/"+folder)
+
+def folder_check_or_create_no_enter(filepath,folder):
+     os.chdir(filepath)
+     # combine file name with wd path
+     check_path=filepath+"/"+folder
+     print((check_path))
+     if os.path.exists(check_path) == 1:
+          print("file exists, proceed")
+         # os.chdir(check_path)
+     else:
+          print("file does not exist, making new directory")
+          os.chdir(filepath)
+          os.mkdir(folder)
+         # os.chdir(filepath+"/"+folder)
   
 def window_averaging(i,window_size,input_tuple,array_size,outdim1,outdim3):
     
