@@ -7,6 +7,7 @@ apply the correct transformation to the dump outputs
 
 """
 #
+import sys
 import os
 from random import sample
 import numpy as np
@@ -63,7 +64,7 @@ n_particles=6*n_plates
 filepath="/home/ucahlrl/Scratch/output/nvt_runs/final_plate_run_100_small_tstep/"
 path_2_log_files=filepath
 Path_2_dump=filepath
-
+os.chdir(filepath)
 # file name search strings
 
 log_general_name_string="log.*K_"+str(K)
@@ -221,8 +222,7 @@ print(len(realisation_name_posvel_dump_sorted_final))
 
 
 
-# file processing loop
-Path_2_dump=filepath
+
 
 # tuples for storing info 
 spring_force_positon_tensor_tuple=()

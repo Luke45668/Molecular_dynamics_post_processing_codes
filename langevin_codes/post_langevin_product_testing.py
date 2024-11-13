@@ -222,78 +222,7 @@ plt.tight_layout()
 plt.show()
 
 
-#%% plotting particle velocity against postion 
-for j in range(K.size):
-    for i in range(erate.size):
 
-
-        
-        z_position =np.mean(pos_vel_batch_tuple[j][i][:,:,0:3,2],axis=0)
-        x_vel=np.mean(pos_vel_batch_tuple[j][i][:,:,3:6,0],axis=0)
-        pred_x_vel=erate[i]* z_position
-        plt.scatter(z_position,x_vel, label="$\dot{\gamma}="+str(erate[i])+"$")
-        plt.plot(z_position,pred_x_vel)
-        plt.xlabel("$z$")
-        plt.ylabel("$v_{x}$")
-       # plt.legend()
-    plt.show()
-
-#%% plotting initial velocity distribution 
-f, axs = plt.subplots(1, 3, figsize=(16, 6),sharey=True,sharex=True)
-for j in range(K.size):
-    # only need the velocity distribution at gammadot=0
-    for i in range(1):
-        
-        x_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,0])
-        sns.kdeplot( data=x_vel, ax=axs[0])
-        
-        y_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,1])
-        sns.kdeplot( data=y_vel, ax=axs[1])
-       
-        z_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,2])
-        sns.kdeplot( data=z_vel, ax=axs[2])
-       
-        plt.show()
-
-#%%fitting gaussian for velocity component 
-for j in range(K.size):
-    # only need the velocity distribution at gammadot=0
-    for i in range(1):
-        maxwell = scipy.stats.norm
-        data = np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,0])
-
-        params = maxwell.fit(data)
-        print(params)
-        # (0, 4.9808603062591041)
-
-        plt.hist(data, bins=20,density=True)
-        x = np.linspace(np.min(data),np.max(data),data.size)
-        plt.plot(x, maxwell.pdf(x, *params), lw=3)
-        plt.show()
-
-#%% looking at maxwell_ botlzman  for speed dist 
-
-for j in range(K.size):
-    # only need the velocity distribution at gammadot=0
-    for i in range(1):
-        
-        x_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,0])
-       
-        
-        y_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,1])
-        
-       
-        z_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,2])
-        speed= np.sqrt(x_vel**2+ y_vel**2 + z_vel**2)
-        maxwell = scipy.stats.maxwell
-        params = maxwell.fit(speed)
-        print(params)
-        # (0, 4.9808603062591041)
-
-        plt.hist(speed, bins=20,density=True)
-        x = np.linspace(np.min(speed),np.max(speed),speed.size)
-        plt.plot(x, maxwell.pdf(x, *params), lw=3)
-        plt.show()
 
 
 #%% look at internal stresses
@@ -1118,4 +1047,81 @@ f.tight_layout()
 plt.savefig(path_2_log_files+"/plots/deltar_z_dist_.pdf",dpi=1200,bbox_inches='tight')
    
 plt.show()
+
+#%% plotting particle velocity against postion 
+for j in range(K.size):
+    for i in range(erate.size):
+
+
+        
+        z_position =np.mean(pos_vel_batch_tuple[j][i][:,:,0:3,2],axis=0)
+        x_vel=np.mean(pos_vel_batch_tuple[j][i][:,:,3:6,0],axis=0)
+        pred_x_vel=erate[i]* z_position
+        plt.scatter(z_position,x_vel, label="$\dot{\gamma}="+str(erate[i])+"$")
+        plt.plot(z_position,pred_x_vel)
+        plt.xlabel("$z$")
+        plt.ylabel("$v_{x}$")
+        
+    plt.legend(bbox_to_anchor=(1,1))
+    plt.show()
+
+#%% plotting initial velocity distribution 
+f, axs = plt.subplots(1, 3, figsize=(16, 6),sharey=True,sharex=True)
+for j in range(K.size):
+    # only need the velocity distribution at gammadot=0
+    for i in range(1):
+        
+        x_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,0])
+        sns.kdeplot( data=x_vel, ax=axs[0])
+        
+        y_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,1])
+        sns.kdeplot( data=y_vel, ax=axs[1])
+       
+        z_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,2])
+        sns.kdeplot( data=z_vel, ax=axs[2])
+       
+        plt.show()
+
+#%%fitting gaussian for velocity component 
+for j in range(K.size):
+    # only need the velocity distribution at gammadot=0
+    for i in range(1):
+        maxwell = scipy.stats.norm
+        data = np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,0])
+
+        params = maxwell.fit(data)
+        print(params)
+        # (0, 4.9808603062591041)
+
+        plt.hist(data, bins=20,density=True)
+        x = np.linspace(np.min(data),np.max(data),data.size)
+        plt.plot(x, maxwell.pdf(x, *params), lw=3)
+
+        plt.show()
+
+#%% looking at maxwell_ botlzman  for speed dist 
+
+for j in range(K.size):
+    # only need the velocity distribution at gammadot=0
+    for i in range(1):
+        
+        x_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,0])
+       
+        
+        y_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,1])
+        
+       
+        z_vel=np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,2])
+        speed= np.sqrt(x_vel**2+ y_vel**2 + z_vel**2)
+        maxwell = scipy.stats.maxwell
+        params = maxwell.fit(speed)
+        print(params)
+        # (0, 4.9808603062591041)
+
+        plt.hist(speed, bins=20,density=True)
+        x = np.linspace(np.min(speed),np.max(speed),speed.size)
+        plt.plot(x, maxwell.pdf(x, *params), lw=3)
+        plt.xlabel("$|v|$")
+        plt.ylabel("Density")
+        plt.show()
 # %%

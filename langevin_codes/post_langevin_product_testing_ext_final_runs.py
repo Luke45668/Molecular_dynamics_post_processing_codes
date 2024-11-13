@@ -629,11 +629,18 @@ def conv_cart_2_spherical_coords(e_end,j,dirn_vector_batch_tuple,n_plates):
         # spherical_coords_array[:,:,:,1]=np.sign(y)*np.arccos(x/(np.sqrt((x**2)+(y**2))))
         # # phi coord
         # spherical_coords_array[:,:,:,2]=np.arccos(z/spherical_coords_array[:,:,:,0])
-          # radial coord
+          
+        
+        #phi coord
+    
         spherical_coords_array[:,:,:,0]=np.arccos(z/spherical_coords_array[:,:,:,0])
-        #  theta coord 
+        # swapping nan for 0 
+        spherical_coords_array[:,:,:,0]=np.nan_to_num(spherical_coords_array[:,:,:,0], copy=False, nan=0.0,posinf=np.pi, neginf=0)
+         #  theta coord 
         spherical_coords_array[:,:,:,1]=np.sign(y)*np.arccos(x/(np.sqrt((x**2)+(y**2))))
-        # phi coord
+        # swapping nan for 0 
+        spherical_coords_array[:,:,:,1]=np.nan_to_num(spherical_coords_array[:,:,:,1], copy=False, nan=0.0,posinf=np.pi, neginf=0)
+        # radial coord
         spherical_coords_array[:,:,:,2]=np.sqrt((x**2)+(y**2)+(z**2))
 
         spherical_coords_tuple=spherical_coords_tuple+(spherical_coords_array,)
@@ -683,6 +690,35 @@ def phi_dist_plot(skip_array,spherical_coords_tuple):
         plt.xlim(0,np.pi/2)
         plt.show()
 
+def phi_dist_plot_find_minima(skip_array,spherical_coords_tuple):
+        for i in range(skip_array.size):
+
+                i=skip_array[i]
+
+                data=np.ravel(spherical_coords_tuple[i][:,500:,:,2])
+                periodic_data=np.array([data,np.pi-data])  
+                ax=sns.kdeplot( data=np.ravel(periodic_data),
+                            label ="$\dot{\gamma}="+str(erate[i])+"$")
+                x = ax.lines[0].get_xdata() # Get the x data of the distribution
+                y = ax.lines[0].get_ydata() # Get the y data of the distribution
+                xy = [[x[j], y[j]] for j in range(len(x))]
+                peak_coord = [xy[j] for j in find_peaks(-y)[0]]
+                sorted_peak = sorted(peak_coord, key=lambda x: x[1])
+
+                # sort peak based on its `y` coord
+                sorted_peak.reverse() 
+                print(sorted_peak)
+                                
+                                        
+                #plt.hist(np.ravel(spherical_coords_tuple[i][:,-1,:,2]))
+
+        plt.xlabel("$\Phi$")
+        plt.xticks(pi_phi_ticks,pi_phi_tick_labels)
+        plt.ylabel('Density')
+        plt.legend(bbox_to_anchor=[1.1, 0.45])
+        plt.xlim(0,np.pi/2)
+        plt.show()
+
 # time phi plot
 
 def phi_dist_plot_time(skip_array,spherical_coords_tuple):
@@ -715,10 +751,12 @@ skip_array=np.array([0,3,6,7])
 # k=100
 
 
-skip_array=np.array([0,1,2,3,4,5,6,7,8,9,10])
+skip_array=np.array([7,8,9,10])
 spherical_coords_tuple=conv_cart_2_spherical_coords(e_end,0,dirn_vector_batch_tuple,n_plates)
 theta_dist_plot(skip_array,spherical_coords_tuple)
 phi_dist_plot(skip_array,spherical_coords_tuple)
+
+
 
 # skip_array=np.array([7,8,9,10])
 # spherical_coords_tuple=conv_cart_2_spherical_coords(e_end,0,dirn_vector_batch_tuple,n_plates)
@@ -748,6 +786,31 @@ phi_dist_plot(skip_array,spherical_coords_tuple)
 # # conv_cart_2_spherical_coords(e_end,3,dirn_vector_batch_tuple,n_plates)
 # # theta_dist_plot(skip_array,spherical_coords_tuple)
 # # phi_dist_plot(skip_array,spherical_coords_tuple)
+
+#%% split theta based on minimum of phi
+# find minimum in density curve 
+from scipy.signal import find_peaks
+
+
+skip_array=np.array([7,8,9,10])
+spherical_coords_tuple=conv_cart_2_spherical_coords(e_end,0,dirn_vector_batch_tuple,n_plates)
+#theta_dist_plot(skip_array,spherical_coords_tuple)
+#phi_dist_plot_find_minima(skip_array,spherical_coords_tuple)
+# phi< min from plot
+
+
+for i in range(len(spherical_coords_tuple)):
+    phi_data=np.ravel(spherical_coords_tuple[i][:,:,:,0])
+    theta_data=np.ravel(spherical_coords_tuple[i][:,:,:,1])
+   
+   
+    phi_theta=np.stack((phi_data,theta_data),axis=0)
+    # sort based on phi column 
+    # bollocks give up for today
+
+    
+
+     
 
 #%%
 for j in range(1):
