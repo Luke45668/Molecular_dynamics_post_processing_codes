@@ -83,7 +83,7 @@ n_plates=100
 
 strain_total=100
 
-path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/final_plate_run_x_stretch/"
+path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/final_plate_runs_biax_x_y_stretch/"
 #path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/final_plate_runs_tuples/"
 
 thermo_vars='         KinEng         PotEng         Press           Temp         Ecouple       Econserve    c_uniaxnvttemp'
@@ -334,11 +334,11 @@ for j in range(K.size):
          mean_stress_tensor=np.mean(spring_force_positon_tensor_batch_tuple[j][i],axis=0)
          mean_stress_tensor=np.mean(mean_stress_tensor,axis=1)
          
-         for l in range(3,6):
+         for l in range(0,1):
              strain_plot=np.linspace(0,strain_total,mean_stress_tensor[:,l].size)
              plt.plot(strain_plot,mean_stress_tensor[:,l],label="$\dot{\gamma}="+str(erate[i])+"$")
     plt.legend(bbox_to_anchor=(1,1))
-    
+    #plt.yscale('log')
     plt.show()
 
 
@@ -432,16 +432,16 @@ plt.rcParams["figure.figsize"] = (10,6 )
 plt.rcParams.update({'font.size': 16})
 # for j in range(thermal_damp_multiplier.size): 
 for j in range(K.size): 
-    for l in range(1):
+    for l in range(3):
         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[0])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
         
         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$tdamp="+str(thermal_damp_multiplier[j])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$tdamp="+str(thermal_damp_multiplier[j])+","+str(labels_stress[l]), marker=marker[j])
-        plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[j])+","+str(labels_stress[l]),linestyle=linestyle_tuple[j][1], marker=marker[j])
-        # plt.errorbar(erate[:e_end[j]],stress_tensor_tuple[j][:,l],
-        #              yerr=stress_tensor_std_tuple[j][:,l]/np.sqrt(n_plates*j_)
-        #              ,label="$K="+str(K[j])+","+str(labels_stress[l]),linestyle=linestyle_tuple[j][1],
-        #                marker=marker[j])
+        #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[j])+","+str(labels_stress[l]),linestyle=linestyle_tuple[j][1], marker=marker[j])
+        plt.errorbar(erate[:e_end[j]],stress_tensor_tuple[j][:,l],
+                     yerr=stress_tensor_std_tuple[j][:,l]/np.sqrt(n_plates*j_)
+                     ,label="$K="+str(K[j])+","+str(labels_stress[l]),linestyle=linestyle_tuple[j][1],
+                       marker=marker[j])
         
 
     #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
@@ -457,6 +457,27 @@ plt.legend(loc='upper right', bbox_to_anchor=(1.3,1))
 plt.savefig(path_2_log_files+"/stress_tensor_0_3_plots.pdf",dpi=1200,bbox_inches='tight') 
 plt.show()
 
+
+# for j in range(K.size): 
+#     for l in range(1,2):
+#         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[0])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
+        
+#         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$tdamp="+str(thermal_damp_multiplier[j])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
+#         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$tdamp="+str(thermal_damp_multiplier[j])+","+str(labels_stress[l]), marker=marker[j])
+#         plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[j])+","+str(labels_stress[l]), marker=marker[j])
+        
+
+#     #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
+       
+#         plt.xlabel("$\dot{\gamma}$")
+#         plt.ylabel("$\sigma_{\\alpha \\alpha}$")
+#         #plt.yticks(y_ticks_stress)
+#         #plt.ylim(0.9,1.3)
+#         #plt.tight_layout()
+#         #plt.xscale('log')
+#         #plt.savefig(path_2_log_files+"/plots/stress_tensor_0_3_plots.pdf",dpi=1200,bbox_inches='tight') 
+# plt.legend(loc='upper right', bbox_to_anchor=(1.5,1))
+# plt.show()
 #%%
 for j in range(K.size): 
     for l in range(3,6):
@@ -481,7 +502,29 @@ for j in range(K.size):
     plt.legend(loc='upper right', bbox_to_anchor=(1.5,1))
     plt.show()
 
+#%%
+plt.rcParams["figure.figsize"] = (10,6 )
+plt.rcParams.update({'font.size': 16})
+#for j in range(thermal_damp_multiplier.size): 
+for j in range(K.size): 
+    for l in range(3,6):
+         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[0])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
+        #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$tdamp="+str(thermal_damp_multiplier[j])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
+        plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[j])+","+str(labels_stress[l]), marker=marker[j])
+        
+    #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
+        plt.legend(fontsize=10) 
+        plt.xlabel("$\dot{\gamma}$")
+        plt.ylabel("$\sigma_{\\alpha \\beta}$")
+        #plt.yticks(y_ticks_stress)
+        #plt.ylim(0.9,1.3)
+        #plt.xscale('log')
+        #plt.tight_layout()
 
+        #plt.savefig(path_2_log_files+"/plots/stress_tensor_0_3_plots.pdf",dpi=1200,bbox_inches='tight') 
+    
+#plt.ylim(-3,3)
+plt.show()
 
 #%%
 def ext_visc_compute(stress_tensor,stress_tensor_std,i1,i2,n_plates,e_end):
@@ -761,72 +804,96 @@ skip_array=np.array([0,3,6,7])
 #%% now look at each k individually 
 
 # k=100
-
-j=0
+skip_array=np.array([[0,2,4,6,8,9],
+                         [0,4,6,8,11,13],
+                         [0,4,8,12,14,15],
+                         [0,6,8,12,14,17],
+                         [0,6,10,14,18,21],
+                         [0,6,10,14,18,23]])
 cutoff=800
 skip_array=np.array([0,2,4,6,8,9])
 spherical_coords_tuple=conv_cart_2_spherical_coords(cutoff,e_end,0,dirn_vector_batch_tuple,n_plates)
-theta_dist_plot(skip_array,spherical_coords_tuple,j)
-phi_dist_plot(skip_array,spherical_coords_tuple,j)
-j=1
+theta_dist_plot(skip_array,spherical_coords_tuple,0)
+phi_dist_plot(skip_array,spherical_coords_tuple,0)
+
+
+
 skip_array=np.array([0,4,6,8,11,13])
 spherical_coords_tuple=conv_cart_2_spherical_coords(cutoff,e_end,1,dirn_vector_batch_tuple,n_plates)
-theta_dist_plot(skip_array,spherical_coords_tuple,j)
-phi_dist_plot(skip_array,spherical_coords_tuple,j)
-j=2
+theta_dist_plot(skip_array,spherical_coords_tuple,1)
+phi_dist_plot(skip_array,spherical_coords_tuple,1)
+
 skip_array=np.array([0,4,8,12,14,15])
 spherical_coords_tuple=conv_cart_2_spherical_coords(cutoff,e_end,2,dirn_vector_batch_tuple,n_plates)
-theta_dist_plot(skip_array,spherical_coords_tuple,j)
-phi_dist_plot(skip_array,spherical_coords_tuple,j)
-j=3
+theta_dist_plot(skip_array,spherical_coords_tuple,2)
+phi_dist_plot(skip_array,spherical_coords_tuple,2)
+
 skip_array=np.array([0,6,8,12,14,17])
 spherical_coords_tuple=conv_cart_2_spherical_coords(cutoff,e_end,3,dirn_vector_batch_tuple,n_plates)
-theta_dist_plot(skip_array,spherical_coords_tuple,j)
-phi_dist_plot(skip_array,spherical_coords_tuple,j)
+theta_dist_plot(skip_array,spherical_coords_tuple,3)
+phi_dist_plot(skip_array,spherical_coords_tuple,3)
+
+# skip_array=np.array([0,6,10,14,18,21])
+# spherical_coords_tuple=conv_cart_2_spherical_coords(e_end,4,dirn_vector_batch_tuple,n_plates)
+# theta_dist_plot(skip_array,spherical_coords_tuple)
+# phi_dist_plot(skip_array,spherical_coords_tuple)
 
 
+# skip_array=np.array([0,6,10,14,18,23])
+# spherical_coords_tuple=conv_cart_2_spherical_coords(e_end,5,dirn_vector_batch_tuple,n_plates)
+# theta_dist_plot(skip_array,spherical_coords_tuple)
+# phi_dist_plot(skip_array,spherical_coords_tuple)
+# # #k=1200
+# # skip_array=np.array([0,12,13,14,15])
+# # conv_cart_2_spherical_coords(e_end,3,dirn_vector_batch_tuple,n_plates)
+# # theta_dist_plot(skip_array,spherical_coords_tuple)
+# # phi_dist_plot(skip_array,spherical_coords_tuple)
 
-  #%% inspecting discontinuities  
-j=1
-skip_array=np.array([1,2,3,4,5,6,7])
-spherical_coords_tuple=conv_cart_2_spherical_coords(cutoff,e_end,j,dirn_vector_batch_tuple,n_plates)
-theta_dist_plot(skip_array,spherical_coords_tuple,j)
-phi_dist_plot(skip_array,spherical_coords_tuple,j) 
+#%% split theta based on minimum of phi
+# find minimum in density curve 
+from scipy.signal import find_peaks
 
-j=2
-skip_array=np.array([5,6,7])
-spherical_coords_tuple=conv_cart_2_spherical_coords(cutoff,e_end,j,dirn_vector_batch_tuple,n_plates)
-theta_dist_plot(skip_array,spherical_coords_tuple,j)
-phi_dist_plot(skip_array,spherical_coords_tuple,j)
 
-j=3
-skip_array=np.array([14,15,16,17,18,19])
-spherical_coords_tuple=conv_cart_2_spherical_coords(cutoff,e_end,3,dirn_vector_batch_tuple,n_plates)
-theta_dist_plot(skip_array,spherical_coords_tuple,j)
-phi_dist_plot(skip_array,spherical_coords_tuple,j)
+skip_array=np.array([7,8,9,10])
+spherical_coords_tuple=conv_cart_2_spherical_coords(e_end,0,dirn_vector_batch_tuple,n_plates)
+#theta_dist_plot(skip_array,spherical_coords_tuple)
+#phi_dist_plot_find_minima(skip_array,spherical_coords_tuple)
+# phi< min from plot
+
+
+for i in range(len(spherical_coords_tuple)):
+    phi_data=np.ravel(spherical_coords_tuple[i][:,:,:,0])
+    theta_data=np.ravel(spherical_coords_tuple[i][:,:,:,1])
+   
+   
+    phi_theta=np.stack((phi_data,theta_data),axis=0)
+    # sort based on phi column 
+    # bollocks give up for today
+
+    
 
      
 
 #%% produce skipped extension distributions 
 
-f, axs = plt.subplots(1, 4, figsize=(16, 6),sharey=True,sharex=True)
+f, axs = plt.subplots(1, 4, figsize=(20, 6),sharey=True,sharex=True)
 for j in range(K.size):
-    for i in range(e_end[j]):
-    # skip_array=np.array([[0,2,4,6,8,9],
-    #                      [0,4,6,8,11,13],
-    #                      [0,4,8,12,14,15],
-    #                      [0,6,8,12,14,17],
-    #                      [0,6,10,14,18,21],
-    #                      [0,6,10,14,18,23]])
-    # for i in range(skip_array.shape[1]):
-    #     i=skip_array[j,i]
+    #for i in range(e_end[j]):
+    skip_array=np.array([[0,2,4,6,8,9],
+                         [0,4,6,8,11,13],
+                         [0,4,8,12,14,15],
+                         [0,6,8,12,14,17],
+                         [0,6,10,14,18,21],
+                         [0,6,10,14,18,23]])
+    for i in range(skip_array.shape[1]):
+        i=skip_array[j,i]
 
         R_x=dirn_vector_batch_tuple[j][i][:,:,:,0]
         R_y=dirn_vector_batch_tuple[j][i][:,:,:,1]
         R_z=dirn_vector_batch_tuple[j][i][:,:,:,2]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
         sns.kdeplot(np.ravel(magnitude_spring)-eq_spring_length,
-                    label ="$\dot{\gamma}="+str(sigfig.round(erate[i],sigfigs=3))+"$",ax=axs[j])
+                    label ="$\dot{\gamma}="+str(sigfig.round(erate[i],sigfigs=3))+"$",linestyle=linestyle_tuple[j][1],ax=axs[j])
 plt.legend(bbox_to_anchor=(1,1))
 # plt.xlabel("$\Delta x$")
 f.supxlabel("$\Delta x$")
@@ -850,7 +917,7 @@ for j in range(K.size):
         R_z=dirn_vector_batch_tuple[j][i][:,:,:,2]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
         sns.kdeplot(np.ravel(magnitude_spring),
-                    label ="$\dot{\gamma}="+str(erate[i])+",K="+str(K[j])+"$")
+                    label ="$\dot{\gamma}="+str(erate[i])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j][1])
     plt.legend(bbox_to_anchor=(1,1))
     plt.show()
 
@@ -1021,7 +1088,7 @@ for j in range(K.size):
 
        
 
-        data=np.ravel( spherical_coords_array[:,:,:,1])
+        data=np.ravel(spherical_coords_array[:,:,:,1])
         periodic_data=np.array([data-2*np.pi,data,data+2*np.pi])  
 
         sns.kdeplot( data=np.ravel(periodic_data),
@@ -1047,7 +1114,7 @@ for j in range(K.size):
         ell_2=reshaped_coords[:,:,:,0] - reshaped_coords[:,:,:,2]
 
 
-        area_vector=np.cross(ell_1,ell_2,axisa=3,axisb=3)
+        area_vector=np.cross(ell_1,ell_2,axis=3)
         
         # detect all z coords less than 0 and multiply all 3 coords by -1
         area_vector[area_vector[:,:,:,0]<0]*=-1
@@ -1080,14 +1147,13 @@ for j in range(K.size):
         data=np.ravel(spherical_coords_array[:,:,:,0])
       
 
-        sns.kdeplot( data=data,
+        sns.kdeplot( data=np.ravel(data),
                     label ="$\dot{\gamma}="+str(erate[i],)+"$")#bw_adjust=0.1
     
         # bw adjust effects the degree of smoothing , <1 smoothes less
 plt.xlabel("$\\rho$")
 # plt.xticks(pi_theta_ticks,pi_theta_tick_labels)
 #plt.xlim(-np.pi,np.pi)
-#plt.xlim(-10,25)
 plt.ylabel('Density')
 #plt.legend(bbox_to_anchor=[1.1, 0.45])
 plt.show()

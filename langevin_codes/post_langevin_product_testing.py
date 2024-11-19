@@ -54,17 +54,24 @@ linestyle_tuple = ['-',
 # I have k=20 downloaded, K=120 is running , need to produce run files for k=30,60
 
 damp=np.array([ 0.035, 0.035,0.035 ])
-K=np.array([  30    , 60   ,
+K=np.array([  30,  60  ,90
+            ])
+K=np.array([ 20, 30,  60  
             ])
 # K=np.array([  50   ,
 #             ])
-erate=np.flip(np.array([1,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.175,0.15,0.125,0.1,0.08,
-                0.06,0.04,0.01,0.005,0]))
+erate=np.flip(np.array([1.   , 0.9  , 0.8  , 0.7  , 0.6  , 0.5  , 0.4  , 0.3  , 0.2  ,
+       0.175, 0.15 , 0.125, 0.1  , 0.08 , 0.06 , 0.04 , 0.02 , 0.01 ,
+       0.005, 0.  ]))
 
-no_timesteps=np.flip(np.array([ 3944000,  4382000,  4929000,  5634000,  6573000,  7887000,
-         9859000, 13145000, 19718000,  2253000,  2629000,  3155000,
-         3944000,  4929000,  6573000,  9859000, 39435000,
-        78870000, 10000000]))
+erate=np.flip(np.array([1.   , 0.9  , 0.8  , 0.7  , 0.6  , 0.5  , 0.4  , 0.3  , 0.2  ,
+       0.175, 0.15 , 0.125, 0.1  , 0.08 , 0.06 , 0.04  , 0.01 ,
+       0.005, 0.  ]))
+
+no_timesteps=np.flip(np.array([ 157740000,  175267000,  197175000,  225343000,  262901000,
+         315481000,  394351000,  525801000,  788702000,   90137000,
+         105160000,  126192000,  157740000,  197175000,  262901000,
+         394351000,  394351000,  788702000, 1577404000,   10000000]))
 
 e_in=0
 e_end=erate.size
@@ -74,6 +81,7 @@ strain_total=100
 
 path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/run_279865/saved_tuples"
 #path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/dumbell_run/log_tensor_files/saved_tuples"
+#path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/final_tuples"
 
 
 thermo_vars='         KinEng         PotEng         Press         c_myTemp        c_bias         TotEng    '
@@ -174,7 +182,7 @@ for j in range(K.size):
 
         plt.subplot(1,2,2)
         plt.plot(strainplot_tuple[i][:],log_file_batch_tuple[j][i][:,column])
-        plt.yscale('log')
+       # plt.yscale('log')
         plt.xlabel("$\gamma$")
         plt.ylabel("$T$")
         plt.title("$K="+str(K[j])+"$")
@@ -221,6 +229,7 @@ plt.tight_layout()
 
 plt.show()
 
+#%
 
 
 
@@ -249,7 +258,7 @@ legfont=12
 folder="stress_tensor_plots"
 marker=['x','+','^',"1","X","d","*","P","v"]
 aftcut=1
-cut=0.5
+cut=0.8
 folder_check_or_create(path_2_log_files,folder)
 labels_stress=np.array(["$\sigma_{xx}$",
                "$\sigma_{yy}$",
@@ -296,7 +305,7 @@ for j in range(K.size):
     plt.legend(fontsize=legfont) 
     plt.title("$K="+str(K[j])+"$")
     plt.tight_layout()
-    plt.savefig(path_2_log_files+"/plots/"+str(K[j])+"_SS_grad_plots.pdf",dpi=1200,bbox_inches='tight')       
+    #plt.savefig(path_2_log_files+"/plots/"+str(K[j])+"_SS_grad_plots.pdf",dpi=1200,bbox_inches='tight')       
    
     plt.show()
 
@@ -312,7 +321,7 @@ plt.legend(fontsize=legfont)
 #plt.yticks(y_ticks_stress)
 #plt.ylim(0.9,1.3)
 plt.tight_layout()
-plt.savefig(path_2_log_files+"/plots/stress_tensor_0_3_plots.pdf",dpi=1200,bbox_inches='tight') 
+#plt.savefig(path_2_log_files+"/plots/stress_tensor_0_3_plots.pdf",dpi=1200,bbox_inches='tight') 
 plt.show()
 
 for j in range(K.size): 
@@ -325,7 +334,7 @@ plt.legend(fontsize=legfont)
 #plt.yticks(y_ticks_stress)
 plt.tight_layout()
 
-plt.savefig(path_2_log_files+"/plots/_stress_tensor_3_6_plots.pdf",dpi=1200,bbox_inches='tight') 
+#plt.savefig(path_2_log_files+"/plots/_stress_tensor_3_6_plots.pdf",dpi=1200,bbox_inches='tight') 
 plt.show()
 
 #%% collapse plot
@@ -389,9 +398,9 @@ plt.legend(fontsize=legfont, frameon=False)
 #plt.xscale('log')
 plt.xlabel("$\dot{\gamma}$")
 plt.ylabel("$N_{\\alpha}$",rotation=0)
-plt.yticks(n_y_ticks)
+#plt.yticks(n_y_ticks)
 plt.tight_layout()
-plt.savefig(path_2_log_files+"/plots/N1_N2_vs_gdot_plots.pdf",dpi=1200,bbox_inches='tight')
+#plt.savefig(path_2_log_files+"/plots/N1_N2_vs_gdot_plots.pdf",dpi=1200,bbox_inches='tight')
 plt.show()
 #print(difference)
 
@@ -428,7 +437,7 @@ for j in range(K.size):
     #plt.xscale('log')
     plt.xlabel("$\dot{\gamma}$")
 plt.tight_layout()
-plt.savefig(path_2_log_files+"/plots/N1_N2_scaled_K_vs_gdot_plots.pdf",dpi=1200,bbox_inches='tight')
+#plt.savefig(path_2_log_files+"/plots/N1_N2_scaled_K_vs_gdot_plots.pdf",dpi=1200,bbox_inches='tight')
 plt.show()
 #print(difference)
 
@@ -450,16 +459,16 @@ for j in range(2):
     plt.legend()
     #plt.xscale('log')
     plt.legend(fontsize=legfont) 
-    plt.yticks(n_y_ticks)
+    #plt.yticks(n_y_ticks)
     plt.tight_layout()
 
-    plt.savefig(path_2_log_files+"/plots/N1_N2_multi_vs_gdot_plots.pdf",dpi=1200,bbox_inches='tight')
+   # plt.savefig(path_2_log_files+"/plots/N1_N2_multi_vs_gdot_plots.pdf",dpi=1200,bbox_inches='tight')
     plt.show()
 
 
 #%%viscosity for plate 
 
-cutoff=1 
+cutoff=1
 for j in range(K.size):
     xz_stress= stress_tensor[j,cutoff:,3]
     xz_stress_std=stress_tensor_std[j,:,3]/np.sqrt(j_*n_plates)
@@ -481,7 +490,7 @@ for j in range(K.size):
     plt.tight_layout()
 # plt.xscale('log')
 # plt.yscale('log')
-plt.savefig(path_2_log_files+"/plots/eta_vs_K_"+str(K[j])+"gdot_plots.pdf",dpi=1200,bbox_inches='tight')
+#plt.savefig(path_2_log_files+"/plots/eta_vs_K_"+str(K[j])+"gdot_plots.pdf",dpi=1200,bbox_inches='tight')
 plt.show() 
 
 #%%viscosity for dumbell
@@ -581,6 +590,9 @@ for j in range(K.size):
         x_mean=np.mean(area_vector_ray[:,cutoff:,:,0],axis=1)
         y_mean=np.mean(area_vector_ray[:,cutoff:,:,1],axis=1)
         z_mean=np.mean(area_vector_ray[:,cutoff:,:,2],axis=1)
+        # x_mean=area_vector_ray[:,cutoff:,:,0]
+        # y_mean=area_vector_ray[:,cutoff:,:,1]
+        # z_mean=area_vector_ray[:,cutoff:,:,2]
         x=np.ravel(x_mean)
         y=np.ravel(y_mean)
         z=np.ravel(z_mean)
@@ -814,7 +826,7 @@ for i in range(len(skip_array)):
 
         plt.subplot(1, 3, i+1)
         sns.kdeplot(np.ravel(interest_vectors_batch_tuple[j][l][:,:,2:5])-eq_spring_length,
-                    label ="$\dot{\gamma}="+str(erate[l])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j])
+                    label ="$\dot{\gamma}="+str(erate[l])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j])
         #NOTE: is this level of smoothing appropriate
         # plt.hist(eq_spring_length+0.125-np.ravel(interest_vectors_batch_tuple[j][i][:,:,2:5]),
         #         histtype='step', stacked=True,
