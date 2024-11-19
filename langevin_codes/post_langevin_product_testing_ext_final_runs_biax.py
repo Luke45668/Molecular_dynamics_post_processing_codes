@@ -916,9 +916,12 @@ for j in range(K.size):
         R_y=dirn_vector_batch_tuple[j][i][:,:,:,1]
         R_z=dirn_vector_batch_tuple[j][i][:,:,:,2]
         magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
-        sns.kdeplot(np.ravel(magnitude_spring),
+        sns.kdeplot(np.ravel(magnitude_spring)-eq_spring_length,
                     label ="$\dot{\gamma}="+str(erate[i])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j][1])
+        mean=np.mean(np.ravel(magnitude_spring)-eq_spring_length) 
+        plt.axvline(mean,label="$\dot{\gamma}="+str(erate[i])+", mean="+str(mean)+"$")
     plt.legend(bbox_to_anchor=(1,1))
+    plt.xlabel("$\Delta x$")
     plt.show()
 
 # %% extension distribution 
