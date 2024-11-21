@@ -584,30 +584,26 @@ for j in range(K.size):
 
         
         area_vector_ray=area_vector_spherical_batch_tuple[j][i]
-        # x_mean=np.mean(np.mean(area_vector_ray[:,:,:,0],axis=0),axis=0)
-        # y_mean=np.mean(np.mean(area_vector_ray[:,:,:,1],axis=0),axis=0)
-        # z_mean=np.mean(np.mean(area_vector_ray[:,:,:,2],axis=0),axis=0)
-        x_mean=np.mean(area_vector_ray[:,cutoff:,:,0],axis=1)
-        y_mean=np.mean(area_vector_ray[:,cutoff:,:,1],axis=1)
-        z_mean=np.mean(area_vector_ray[:,cutoff:,:,2],axis=1)
-        # x_mean=area_vector_ray[:,cutoff:,:,0]
-        # y_mean=area_vector_ray[:,cutoff:,:,1]
-        # z_mean=area_vector_ray[:,cutoff:,:,2]
-        x=np.ravel(x_mean)
-        y=np.ravel(y_mean)
-        z=np.ravel(z_mean)
+        area_vector_ray[area_vector_ray[:,:,:,2]<0]*=-1
+        
+        x=area_vector_ray[:,cutoff:,:,0]
+        y=area_vector_ray[:,cutoff:,:,1]
+        z=area_vector_ray[:,cutoff:,:,2]
+        # x=np.ravel(x_mean)
+        # y=np.ravel(y_mean)
+        # z=np.ravel(z_mean)
 
-        spherical_coords_array=np.zeros((z.shape[0],3))
+        spherical_coords_array=np.zeros((j_,area_vector_ray.shape[1]-cutoff,n_plates,3))
        
         
-        for k in range(z.shape[0]):
-            if z[k]<0:
-                z[k]=-1*z[k]
-                y[k]=-1*y[k]
-                x[k]=-1*x[k]
+        # for k in range(z.shape[0]):
+        #     if z[k]<0:
+        #         z[k]=-1*z[k]
+        #         y[k]=-1*y[k]
+        #         x[k]=-1*x[k]
 
-            else:
-                continue
+        #     else:
+        #         continue
         
         # detect all z coords less than 0 and multiply all 3 coords by -1
 
@@ -620,13 +616,15 @@ for j in range(K.size):
 
 
         # radial coord
-        spherical_coords_array[:,0]=np.sqrt((x**2)+(y**2)+(z**2))
+        spherical_coords_array[:,:,:,0]=np.sqrt((x**2)+(y**2)+(z**2))
 
         #  theta coord 
-        spherical_coords_array[:,1]=np.sign(y)*np.arccos(x/(np.sqrt((x**2)+(y**2))))
+        spherical_coords_array[:,:,:,1]=np.sign(y)*np.arccos(x/(np.sqrt((x**2)+(y**2))))
         # phi coord
         # print(spherical_coords_array[spherical_coords_array[:,:,:,0]==0])
-        spherical_coords_array[:,2]=np.arccos(z/np.sqrt((x**2)+(y**2)+(z**2)))
+        spherical_coords_array[:,:,:,2]=np.arccos(z/np.sqrt((x**2)+(y**2)+(z**2)))
+
+        #spherical_coords_mean=np.mean(spherical_coords_array, axis=0)
 
 
         spherical_coords_tuple=spherical_coords_tuple+(spherical_coords_array,)
@@ -643,7 +641,7 @@ for j in range(K.size):
         
         
         
-        data=np.ravel(spherical_coords_tuple[l][-sample_cut:,1])
+        data=np.ravel(spherical_coords_tuple[l][:,:,:,1])
         periodic_data=np.array([data-2*np.pi,data,data+2*np.pi])  
 
         sns.kdeplot( data=np.ravel(periodic_data),
@@ -673,7 +671,7 @@ for j in range(K.size):
         #              label="output_range:"+str(skip_array_2[j]))
         # sns.kdeplot( data=np.ravel(spherical_coords_tuple[i][:,-1,:,2]),
         #              label ="$\dot{\gamma}="+str(erate[i])+"$")
-        data=np.ravel(spherical_coords_tuple[l][-sample_cut:,2])
+        data=np.ravel(spherical_coords_tuple[l][:,:,:,2])
         #periodic_data=np.array([data,0.5*np.pi+data])  
         #NOTE ask helen about this 
         periodic_data=np.ravel(np.array([data,np.pi-data]))
@@ -692,7 +690,7 @@ for j in range(K.size):
     plt.xlabel("$\Phi$")
     plt.xticks(pi_phi_ticks,pi_phi_tick_labels)
     #
-    plt.yticks(phi_y_ticks)
+    #plt.yticks(phi_y_ticks)
     plt.ylabel('Density')
     plt.legend(fontsize=legfont,loc='upper right') 
     plt.xlim(0,np.pi/2)
