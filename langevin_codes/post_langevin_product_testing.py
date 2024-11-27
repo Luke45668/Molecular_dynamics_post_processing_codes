@@ -565,18 +565,20 @@ plt.rc("ytick", labelsize=SIZE_DEFAULT)  # fontsize of the tick labels
 
 pi_theta_ticks=[ -np.pi, -np.pi/2, 0, np.pi/2,np.pi]
 pi_theta_tick_labels=['-π','-π/2','0', 'π/2', 'π'] 
-phi_y_ticks=[0,0.1,0.2,0.3,0.4,0.5,0.6]
+phi_y_ticks=[0,0.2,0.4,0.6,0.8,1,1.2]
 pi_phi_ticks=[ 0,np.pi/8,np.pi/4,3*np.pi/8, np.pi/2]
 pi_phi_tick_labels=[ '0','π/8','π/4','3π/8', 'π/2']
 theta_y_ticks=[0,0.02,0.04,0.06,0.08,0.1]
 skip_array=[0,6,12,18]
 spherical_coords_tuple=()
 sample_cut=0
-cutoff=3000
-bin_count=27
+cutoff=8000
+bin_count=31
+adjust_factor=1 #100 #0.125
 spherical_coords_batch_tuple=()
 # fig = plt.figure(constrained_layout=True)
 # spec = gridspec.GridSpec(ncols=2, nrows=2, figure=fig)
+
 for j in range(K.size):
     spherical_coords_tuple=()
     for i in range(len(skip_array)):
@@ -620,6 +622,10 @@ for j in range(K.size):
 
         #  theta coord 
         spherical_coords_array[:,:,:,1]=np.sign(y)*np.arccos(x/(np.sqrt((x**2)+(y**2))))
+
+        #spherical_coords_array[:,:,:,1]=np.sign(x)*np.arccos(y/(np.sqrt((x**2)+(y**2))))
+        #spherical_coords_array[:,:,:,1]=np.arctan(y/x)
+        
         # phi coord
         # print(spherical_coords_array[spherical_coords_array[:,:,:,0]==0])
         spherical_coords_array[:,:,:,2]=np.arccos(z/np.sqrt((x**2)+(y**2)+(z**2)))
@@ -632,71 +638,110 @@ for j in range(K.size):
 
 
 
-    plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$")
-    for l in range(4):
-    #for j in range(j_):
+    # plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$")
+    # for l in range(4):
+    # #for j in range(j_):
 
 
-        #l=skip_array[l]
+    #     #l=skip_array[l]
         
         
         
-        data=np.ravel(spherical_coords_tuple[l][:,:,:,1])
-        periodic_data=np.array([data-2*np.pi,data,data+2*np.pi])  
-
-        sns.kdeplot( data=np.ravel(periodic_data),
-                    label ="$\dot{\gamma}="+str(erate[skip_array[l]],)+"$",linestyle=linestyle_tuple[l])#bw_adjust=0.1
-        # plt.hist(np.ravel(periodic_data),bins=bin_count,label="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",
-        #          histtype='step',
-        #             stacked=True, fill=False, density=True, linestyle=linestyle_tuple[l])
+    #     data=np.ravel(spherical_coords_tuple[l][:,:,:,0])
        
+
+    #     sns.kdeplot( data=np.ravel(data),
+    #                 label ="$\dot{\gamma}="+str(erate[skip_array[l]],)+"$",linestyle=linestyle_tuple[l])#bw_adjust=0.1
+      
+       
+    # plt.xlabel("$\\rho$")
+    # #plt.xticks(pi_theta_ticks,pi_theta_tick_labels)
+    # #plt.yticks(theta_y_ticks)
+    # #plt.xlim(-np.pi,np.pi)
+
+    # plt.ylabel('Density')
+    # plt.legend(fontsize=legfont) 
+    # plt.tight_layout()
+    # #plt.savefig(path_2_log_files+"/plots/theta_dist_K_"+str(K[j])+"_.pdf",dpi=1200,bbox_inches='tight')
+    # plt.show()
+    plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$") 
+
+    for l in range(1):
+    #     skip_tstep=np.array([0,50,500,1000,1500,1999])
+    #     for k in range(skip_tstep.size):
+   
+    #         k=skip_tstep[k]
+  
+            data=spherical_coords_tuple[l][:,:,:,1]
+             
+            periodic_data=np.ravel(np.array([data-2*np.pi,data,data+2*np.pi]) )
+            #periodic_data=np.ravel(data)
+            # scotts factor 
+            adjust=adjust_factor*periodic_data.size**(-1/5)
+            #adjust=2
+            # with smoothing
+            sns.kdeplot( data=periodic_data,
+                        label ="$\dot{\gamma}="+str(erate[skip_array[l]],)+"$",linestyle=linestyle_tuple[l],bw_adjust=adjust)
+            
+            # # with default smoothing 
+            # sns.kdeplot( data=periodic_data,
+            #             label ="$\dot{\gamma}="+str(erate[skip_array[l]],)+"$",linestyle=linestyle_tuple[l])
+            
+
+
+            plt.hist(periodic_data,bins=bin_count,label="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",
+                 histtype='step',
+                    stacked=True, fill=False, density=True, linestyle=linestyle_tuple[l])
+            
+            
+            
     plt.xlabel("$\Theta$")
     plt.xticks(pi_theta_ticks,pi_theta_tick_labels)
     #plt.yticks(theta_y_ticks)
     plt.xlim(-np.pi,np.pi)
 
     plt.ylabel('Density')
-    plt.legend(fontsize=legfont) 
+    #plt.legend(fontsize=legfont) 
     plt.tight_layout()
-    plt.savefig(path_2_log_files+"/plots/theta_dist_K_"+str(K[j])+"_.pdf",dpi=1200,bbox_inches='tight')
+    #plt.savefig(path_2_log_files+"/plots/theta_dist_K_"+str(K[j])+"_.pdf",dpi=1200,bbox_inches='tight')
     plt.show()
  
     plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$")  
-    for l in range(4):
-    #for j in range(skip_array_2.size):
-        #l=skip_array[l]
+    for l in range(1):
+        # skip_tstep=np.array([0,50,500,1000,1500,1999])
+        # for k in range(skip_tstep.size):
+   
+        #     k=skip_tstep[k]
         
 
-        # sns.kdeplot( data=np.ravel(spherical_coords_tuple[i][:,skip_array_2[j],:,2]),
-        #              label="output_range:"+str(skip_array_2[j]))
-        # sns.kdeplot( data=np.ravel(spherical_coords_tuple[i][:,-1,:,2]),
-        #              label ="$\dot{\gamma}="+str(erate[i])+"$")
-        data=np.ravel(spherical_coords_tuple[l][:,:,:,2])
-        #periodic_data=np.array([data,0.5*np.pi+data])  
-        #NOTE ask helen about this 
-        periodic_data=np.ravel(np.array([data,np.pi-data]))
+            
+            data=spherical_coords_tuple[l][:,:,:,2]
+          
+            periodic_data=np.ravel(np.array([data,np.pi-data]))
+            
+            # scotts factor 
+            adjust=adjust_factor*periodic_data.size**(-1/5)
+            #adjust=2
 
-        
-        #periodic_data=data
-        #periodic_data[periodic_data==np.pi*0.5]=0
-        sns.kdeplot( data=periodic_data,
-                      label ="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",linestyle=linestyle_tuple[l])
-                   
-        # plt.hist(periodic_data,bins=bin_count,
-        #           label="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",histtype='step',
-        #             stacked=True, fill=False, density=True, linestyle=linestyle_tuple[l])
-        # bincheck=np.histogram(data,bins=40)
+          
+            sns.kdeplot( data=periodic_data,
+                        label ="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",linestyle=linestyle_tuple[l],bw_adjust=adjust)
+                    
+            plt.hist(periodic_data,bins=bin_count,
+                      label="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",histtype='step',
+                        stacked=True, fill=False, density=True, linestyle=linestyle_tuple[l])
+            #bincheck=np.histogram(data,bins=40)
    
     plt.xlabel("$\Phi$")
     plt.xticks(pi_phi_ticks,pi_phi_tick_labels)
     #
     #plt.yticks(phi_y_ticks)
     plt.ylabel('Density')
-    plt.legend(fontsize=legfont,loc='upper right') 
+    #plt.legend(fontsize=legfont,loc='upper right') 
     plt.xlim(0,np.pi/2)
-    #plt.xlim(0,np.pi)
+
     plt.tight_layout()
-   
+
     plt.savefig(path_2_log_files+"/plots/phi_dist_K_"+str(K[j])+"_.pdf",dpi=1200,bbox_inches='tight')
     plt.show()
 

@@ -871,6 +871,14 @@ def convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tup
             ell_1=reshaped_coords[:,:,:,0] - reshaped_coords[:,:,:,1]
             ell_2=reshaped_coords[:,:,:,0] - reshaped_coords[:,:,:,2]
 
+            mag_ell_1= np.sqrt(np.sum(ell_1**2,axis=3))
+            mag_ell_2= np.sqrt(np.sum(ell_2**2,axis=3))
+            
+            ell_1[mag_ell_1>50]=float('NaN')
+            ell_2[mag_ell_2>50]=float('NaN')
+
+
+
             area_vector=np.cross(ell_1,ell_2,axis=3)
             print("percent of data with faulty rho vector",100*np.count_nonzero(area_vector[:,:,:,0]>50)/area_vector[:,:,:,0].size)
             
@@ -892,7 +900,7 @@ def convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tup
             #phi coord
             spherical_coords_array[:,:,:,2]=np.arccos(x/spherical_coords_array[:,:,:,0])
 
-            spherical_coords_array[spherical_coords_array[:,:,:,0]>50]=float('NaN')
+            #spherical_coords_array[spherical_coords_array[:,:,:,0]>50]=float('NaN')
 
                 
             #spherical_coords_mean=np.mean(spherical_coords_array,axis=0)
@@ -901,20 +909,134 @@ def convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tup
 
     return spherical_coords_tuple
 
-def theta_dist_plot(skip_array,spherical_coords_tuple,j):
+def convert_cart_2_spherical_y_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff):
+    spherical_coords_tuple=()
+     
+    #for j in range(K.size):
+    #for i in range(e_end[j]):
+    for i in range(skip_array.shape[1]):
+            k=skip_array[j,i]
+            reshaped_coords=np.reshape(transformed_pos_batch_tuple[j][k],(5,1000,100,6,3))
+            ell_1=reshaped_coords[:,:,:,0] - reshaped_coords[:,:,:,1]
+            ell_2=reshaped_coords[:,:,:,0] - reshaped_coords[:,:,:,2]
+
+            mag_ell_1= np.sqrt(np.sum(ell_1**2,axis=3))
+            mag_ell_2= np.sqrt(np.sum(ell_2**2,axis=3))
+            
+            ell_1[mag_ell_1>50]=float('NaN')
+            ell_2[mag_ell_2>50]=float('NaN')
+
+
+
+            area_vector=np.cross(ell_1,ell_2,axis=3)
+            print("percent of data with faulty rho vector",100*np.count_nonzero(area_vector[:,:,:,0]>50)/area_vector[:,:,:,0].size)
+            
+            # detect all z coords less than 0 and multiply all 3 coords by -1
+            area_vector[area_vector[:,:,:,1]<0]*=-1
+            spherical_coords_array=np.zeros((j_,area_vector.shape[1]-cutoff,n_plates,3))
+            
+            x=area_vector[:,cutoff:,:,0]
+            y=area_vector[:,cutoff:,:,1]
+            z=area_vector[:,cutoff:,:,2]
+
+        
+            
+            # using x as inclination
+             # radial coord  
+            spherical_coords_array[:,:,:,0]=np.sqrt((x**2)+(y**2)+(z**2))
+              #  theta coord 
+            spherical_coords_array[:,:,:,1]=np.sign(z)*np.arccos(x/(np.sqrt((z**2)+(x**2))))
+            #phi coord
+            spherical_coords_array[:,:,:,2]=np.arccos(y/spherical_coords_array[:,:,:,0])
+
+            #spherical_coords_array[spherical_coords_array[:,:,:,0]>50]=float('NaN')
+
+                
+            #spherical_coords_mean=np.mean(spherical_coords_array,axis=0)
+
+            spherical_coords_tuple=spherical_coords_tuple+(spherical_coords_array,)
+
+    return spherical_coords_tuple
+
+def convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff):
+    spherical_coords_tuple=()
+     
+    #for j in range(K.size):
+    #for i in range(e_end[j]):
+    for i in range(skip_array.shape[1]):
+            k=skip_array[j,i]
+            reshaped_coords=np.reshape(transformed_pos_batch_tuple[j][k],(5,1000,100,6,3))
+            ell_1=reshaped_coords[:,:,:,0] - reshaped_coords[:,:,:,1]
+            ell_2=reshaped_coords[:,:,:,0] - reshaped_coords[:,:,:,2]
+
+            mag_ell_1= np.sqrt(np.sum(ell_1**2,axis=3))
+            mag_ell_2= np.sqrt(np.sum(ell_2**2,axis=3))
+            
+            ell_1[mag_ell_1>50]=float('NaN')
+            ell_2[mag_ell_2>50]=float('NaN')
+
+
+
+            area_vector=np.cross(ell_1,ell_2,axis=3)
+            print("percent of data with faulty rho vector",100*np.count_nonzero(area_vector[:,:,:,0]>50)/area_vector[:,:,:,0].size)
+            
+            # detect all z coords less than 0 and multiply all 3 coords by -1
+            area_vector[area_vector[:,:,:,2]<0]*=-1
+            spherical_coords_array=np.zeros((j_,area_vector.shape[1]-cutoff,n_plates,3))
+            
+            x=area_vector[:,cutoff:,:,0]
+            y=area_vector[:,cutoff:,:,1]
+            z=area_vector[:,cutoff:,:,2]
+
+        
+            #using z as inclination 
+            # radial coord
+            spherical_coords_array[:,:,:,0]=np.sqrt((x**2)+(y**2)+(z**2))
+            #  theta coord 
+            spherical_coords_array[:,:,:,1]=np.sign(y)*np.arccos(x/(np.sqrt((x**2)+(y**2))))
+            # phi coord
+            spherical_coords_array[:,:,:,2]=np.arccos(z/spherical_coords_array[:,:,:,0])
+
+            # # using x as inclination
+            #  # radial coord  
+            # spherical_coords_array[:,:,:,0]=np.sqrt((x**2)+(y**2)+(z**2))
+            #   #  theta coord 
+            # spherical_coords_array[:,:,:,1]=np.sign(z)*np.arccos(y/(np.sqrt((z**2)+(y**2))))
+            # #phi coord
+            # spherical_coords_array[:,:,:,2]=np.arccos(x/spherical_coords_array[:,:,:,0])
+
+            #spherical_coords_array[spherical_coords_array[:,:,:,0]>50]=float('NaN')
+
+            
+                 
+
+                
+            #spherical_coords_mean=np.mean(spherical_coords_array,axis=0)
+
+            #spherical_coords_tuple=spherical_coords_tuple+(spherical_coords_mean,)
+            spherical_coords_tuple=spherical_coords_tuple+(spherical_coords_array,)
+
+    return spherical_coords_tuple
+
+def theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor):
     for i in range(len(spherical_coords_tuple)):
+            
+        # skip_tstep=np.array([0,30,60,90,120,150])
+        # for k in range(skip_tstep.size):
+            #k=skip_tstep[k]
     
 
 
            
             
             
-            data=np.ravel(spherical_coords_tuple[i][:,:,:,1])
+            data=spherical_coords_tuple[i][:,:,:,1]
             #data=np.ravel(spherical_coords_tuple[i][:,:,1])
-            periodic_data=np.array([data-2*np.pi,data,data+2*np.pi])  
+            periodic_data=np.ravel(np.array([data-2*np.pi,data,data+2*np.pi]) )
+            adjust=adjfactor*periodic_data.size**(-1/5)
 
-            sns.kdeplot( data=np.ravel(periodic_data),
-                        label ="$\dot{\gamma}="+str(erate[skip_array[j,i]])+"$")#bw_adjust=0.1
+            sns.kdeplot( data=periodic_data,
+                        label ="$\dot{\gamma}="+str(erate[skip_array[j,i]])+"$",bw_adjust=adjust)#bw_adjust=0.1
       
             # bw adjust effects the degree of smoothing , <1 smoothes less
     plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$")
@@ -923,20 +1045,28 @@ def theta_dist_plot(skip_array,spherical_coords_tuple,j):
     plt.xlim(-np.pi,np.pi)
     plt.ylabel('Density')
     plt.legend(bbox_to_anchor=[1.1, 0.45])
-    plt.show()
+    #plt.show()
 
 
      
-def phi_dist_plot(skip_array,spherical_coords_tuple,j):
+def phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor):
         for i in range(len(spherical_coords_tuple)):
+                 
+            # skip_tstep=np.array([0,30,60,90,120,150])
+            # for k in range(skip_tstep.size):
+            #     k=skip_tstep[k]
+    
+
 
                 
 
-                data=np.ravel(spherical_coords_tuple[i][:,:,:,2])
+                data=spherical_coords_tuple[i][:,:,:,2]
                 #data=np.ravel(spherical_coords_tuple[i][:,:,2])
-                periodic_data=np.array([data,np.pi-data])  
+                periodic_data=np.ravel(np.array([data,np.pi-data]))
+                adjust=adjfactor*periodic_data.size**(-1/5)
+                
                 sns.kdeplot( data=np.ravel(periodic_data),
-                            label ="$\dot{\gamma}="+str(erate[skip_array[j,i]])+"$")
+                            label ="$\dot{\gamma}="+str(erate[skip_array[j,i]])+"$",bw_adjust=adjust)
                         
                 #plt.hist(np.ravel(spherical_coords_tuple[i][:,-1,:,2]))
         plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$")
@@ -945,7 +1075,8 @@ def phi_dist_plot(skip_array,spherical_coords_tuple,j):
         plt.ylabel('Density')
         plt.legend(bbox_to_anchor=[1.1, 0.45])
         plt.xlim(0,np.pi/2)
-        plt.show()
+        #plt.show()
+
 
 
 
@@ -1018,27 +1149,60 @@ for j in range(K.size):
     plt.show()  
 
 #%% now look at each k individually 
+pi_theta_ticks=[ -np.pi, -np.pi/2, 0, np.pi/2,np.pi]
+pi_theta_tick_labels=['-π','-π/2','0', 'π/2', 'π'] 
+pi_phi_ticks=[ 0,np.pi/8,np.pi/4,3*np.pi/8, np.pi/2]
+pi_phi_tick_labels=[ '0','π/8','π/4','3π/8', 'π/2']
+skip_array=np.array([[0,2,4,6,8,9],
+                         [0,4,6,8,11,13],
+                         [0,4,8,12,14,15],
+                         [0,6,8,12,14,17],
+                         [0,6,10,14,18,21],
+                         [0,6,10,14,18,23]])
+# skip_array=np.array([[0,2],
+#                          [0,4],
+#                          [0,4],
+#                          [0,6],
+#                          [0,6],
+#                          [0,6]])
 
 j=0
 cutoff=800
+adjfactor=1
+
 
 spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
-theta_dist_plot(skip_array,spherical_coords_tuple,j)
-phi_dist_plot(skip_array,spherical_coords_tuple,j)
-j=1
+phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+plt.title("Phi inclined to x axis")
+plt.show()
+
+spherical_coords_tuple=convert_cart_2_spherical_y_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
+phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+plt.title("Phi inclined to y axis")
+plt.show()
 
 spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
-theta_dist_plot(skip_array,spherical_coords_tuple,j)
-phi_dist_plot(skip_array,spherical_coords_tuple,j)
-j=2
+theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+plt.title("Theta on yz plane")
+plt.show()
+spherical_coords_tuple=convert_cart_2_spherical_y_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
+theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+plt.title("Theta on xz plane")
+plt.show()
+# j=1
 
-spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
-theta_dist_plot(skip_array,spherical_coords_tuple,j)
-phi_dist_plot(skip_array,spherical_coords_tuple,j)
-j=3
+# spherical_coords_tuple=convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
+# theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+# phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+# j=2
 
-spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
-theta_dist_plot(skip_array,spherical_coords_tuple,j)
-phi_dist_plot(skip_array,spherical_coords_tuple,j)
+# spherical_coords_tuple=convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
+# theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+# phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+# j=3
+
+# spherical_coords_tuple=convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
+# theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+# phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
 
 # %%
