@@ -1033,7 +1033,7 @@ def theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor):
             data=spherical_coords_tuple[i][:,:,:,1]
             #data=np.ravel(spherical_coords_tuple[i][:,:,1])
             periodic_data=np.ravel(np.array([data-2*np.pi,data,data+2*np.pi]) )
-            adjust=adjfactor*periodic_data.size**(-1/5)
+            adjust=adjfactor#*periodic_data.size**(-1/5)
 
             sns.kdeplot( data=periodic_data,
                         label ="$\dot{\gamma}="+str(erate[skip_array[j,i]])+"$",bw_adjust=adjust)#bw_adjust=0.1
@@ -1063,7 +1063,7 @@ def phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor):
                 data=spherical_coords_tuple[i][:,:,:,2]
                 #data=np.ravel(spherical_coords_tuple[i][:,:,2])
                 periodic_data=np.ravel(np.array([data,np.pi-data]))
-                adjust=adjfactor*periodic_data.size**(-1/5)
+                adjust=adjfactor#*periodic_data.size**(-1/5)
                 
                 sns.kdeplot( data=np.ravel(periodic_data),
                             label ="$\dot{\gamma}="+str(erate[skip_array[j,i]])+"$",bw_adjust=adjust)
@@ -1168,7 +1168,7 @@ skip_array=np.array([[0,2,4,6,8,9],
 
 j=0
 cutoff=800
-adjfactor=1
+adjfactor=2
 
 
 spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
@@ -1180,6 +1180,13 @@ spherical_coords_tuple=convert_cart_2_spherical_y_incline(j_,j,skip_array,transf
 phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
 plt.title("Phi inclined to y axis")
 plt.show()
+
+# spherical_coords_tuple=convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
+# phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+# plt.title("Phi inclined to z axis")
+# plt.show()
+
+
 
 spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
 theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)

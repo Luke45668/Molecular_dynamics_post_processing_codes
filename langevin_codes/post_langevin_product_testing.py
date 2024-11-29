@@ -573,8 +573,9 @@ skip_array=[0,6,12,18]
 spherical_coords_tuple=()
 sample_cut=0
 cutoff=8000
-bin_count=31
-adjust_factor=1 #100 #0.125
+sample_size=500
+
+adjust_factor=0.005 #for all data # 4 smooths the data out 
 spherical_coords_batch_tuple=()
 # fig = plt.figure(constrained_layout=True)
 # spec = gridspec.GridSpec(ncols=2, nrows=2, figure=fig)
@@ -666,22 +667,52 @@ for j in range(K.size):
     # plt.show()
     plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$") 
 
-    for l in range(1):
-    #     skip_tstep=np.array([0,50,500,1000,1500,1999])
-    #     for k in range(skip_tstep.size):
+    for l in range(4):
+        # skip_tstep=np.array([0,50,500,1000,1500,1999])
+        # for k in range(skip_tstep.size):
    
-    #         k=skip_tstep[k]
+        #     k=skip_tstep[k]
   
             data=spherical_coords_tuple[l][:,:,:,1]
+            
+
              
             periodic_data=np.ravel(np.array([data-2*np.pi,data,data+2*np.pi]) )
             #periodic_data=np.ravel(data)
+            if l==0:
+                KS_test_result=[]
+                MW_test_result=[]
+                for m in range(1000):                
+                                # scotts factor 
+                                np.random.seed(m)
+                                uniform=np.random.uniform(low=np.min(periodic_data), high=np.max(periodic_data),size=periodic_data.size)
+                                sample1 = np.random.choice(uniform,size=sample_size, replace = True, p = None)
+                                periodic_sample=np.random.choice( np.ravel(periodic_data) , size = sample_size, replace = True, p = None)
+                                print(f'Uniform vs. My data: {scipy.stats.ks_2samp( periodic_sample,sample1)}')
+                                KS_test_result.append(scipy.stats.ks_2samp(  periodic_sample,sample1)[1])
+                                MW_test_result.append(scipy.stats.mannwhitneyu(  periodic_sample,sample1)[1])
+                                
+                            
+                plt.plot(MW_test_result,label="MW_test_theta")
+                plt.axhline(np.mean(MW_test_result),label="MWmean$="+str(np.mean(MW_test_result))+",\pm"+str(np.std(MW_test_result))+"$",color="red",linestyle="dashed")
+                plt.legend()
+                plt.ylabel("pvalue")
+                plt.show()
+                plt.plot(KS_test_result,label="KS_test_theta")
+                plt.axhline(np.mean(KS_test_result),label="KSmean$="+str(np.mean(KS_test_result))+",\pm"+str(np.std(KS_test_result))+"$",color="green",linestyle="dotted")
+                plt.ylabel("pvalue")
+                plt.legend()
+                plt.show()
+            
+           
             # scotts factor 
-            adjust=adjust_factor*periodic_data.size**(-1/5)
+            adjust=adjust_factor#*periodic_data.size**(-1/5)
             #adjust=2
             # with smoothing
             sns.kdeplot( data=periodic_data,
-                        label ="$\dot{\gamma}="+str(erate[skip_array[l]],)+"$",linestyle=linestyle_tuple[l],bw_adjust=adjust)
+                        label ="$\dot{\gamma}="+str(erate[skip_array[l]],)+"$",linestyle=linestyle_tuple[l],bw_method="silverman",bw_adjust=adjust)
+            sns.kdeplot( data=uniform,
+                        label ="$\dot{\gamma}="+str(erate[skip_array[l]],)+"$",linestyle=linestyle_tuple[l],bw_method="silverman",bw_adjust=adjust)
             
             # # with default smoothing 
             # sns.kdeplot( data=periodic_data,
@@ -689,9 +720,9 @@ for j in range(K.size):
             
 
 
-            plt.hist(periodic_data,bins=bin_count,label="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",
-                 histtype='step',
-                    stacked=True, fill=False, density=True, linestyle=linestyle_tuple[l])
+            # plt.hist(periodic_data,bins=bin_count,label="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",
+            #      histtype='step',
+            #         stacked=True, fill=False, density=True, linestyle=linestyle_tuple[l])
             
             
             
@@ -707,7 +738,7 @@ for j in range(K.size):
     plt.show()
  
     plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$")  
-    for l in range(1):
+    for l in range(4):
         # skip_tstep=np.array([0,50,500,1000,1500,1999])
         # for k in range(skip_tstep.size):
    
@@ -718,18 +749,66 @@ for j in range(K.size):
             data=spherical_coords_tuple[l][:,:,:,2]
           
             periodic_data=np.ravel(np.array([data,np.pi-data]))
-            
-            # scotts factor 
-            adjust=adjust_factor*periodic_data.size**(-1/5)
-            #adjust=2
+           
+            # could put in spencers PRNG 
 
+            if l==0:
+
+                def producing_random_points_with_theta(number_of_points,rand_int):
+
+                    rng = np.random.default_rng(rand_int)
+                    Phi=np.arccos(1-2*(rng.random((number_of_points))))
+                    
+                    Theta=2*np.pi*rng.random((number_of_points))
+                    rho=1#7.7942286341
+                    A=Phi
+                    B=Theta
+                    R=np.array([rho*np.sin(A)*np.cos(B),rho*np.sin(B)*np.sin(A),rho*np.cos(A)])
+
+
+                    return Phi,Theta,R
+                
+                # scotts factor 
+                KS_test_result=[]
+                MW_test_result=[]
+                for m in range(1000):                
+                               
+                                Phi,Theta,R=producing_random_points_with_theta(periodic_data.size,m)
+
+                                sample_sin=np.random.choice( Phi , size = sample_size, replace = True, p = None)
+                                periodic_sample=np.random.choice( np.ravel(periodic_data) , size = sample_size, replace = True, p = None)
+                                KS_test_result.append(scipy.stats.ks_2samp( periodic_sample,sample_sin)[1])
+                                MW_test_result.append(scipy.stats.mannwhitneyu( periodic_sample,sample_sin)[1])
+                                
+                                print(f'sampled sine vs. My data sample KS test: {scipy.stats.ks_2samp( periodic_sample,sample_sin)}')
+                                print(f'sampled sine vs. My data sample Mannwhitney test: {scipy.stats.mannwhitneyu( periodic_sample,sample_sin)}')
+                                print(f'sampled sine vs. My data sample ranksums test: {scipy.stats.ranksums( periodic_sample,sample_sin)}')
+
+                plt.plot(MW_test_result,label="MW_test_phi")
+                plt.axhline(np.mean(MW_test_result),label="MWmean$="+str(np.mean(MW_test_result))+",\pm"+str(np.std(MW_test_result))+"$",color="red",linestyle="dashed")
+                plt.ylabel("pvalue")
+                plt.legend()
+                plt.show()
+                plt.plot(KS_test_result,label="KS_test_phi")
+                plt.axhline(np.mean(KS_test_result),label="KSmean$="+str(np.mean(KS_test_result))+",\pm"+str(np.std(KS_test_result))+"$",color="green",linestyle="dotted")
+                plt.ylabel("pvalue")
+                plt.legend()
+                plt.show()
+
+
+           
+           
+            adjust=adjust_factor#*periodic_data.size**(-1/5)
           
             sns.kdeplot( data=periodic_data,
-                        label ="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",linestyle=linestyle_tuple[l],bw_adjust=adjust)
-                    
-            plt.hist(periodic_data,bins=bin_count,
-                      label="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",histtype='step',
-                        stacked=True, fill=False, density=True, linestyle=linestyle_tuple[l])
+                        label ="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",linestyle=linestyle_tuple[l],bw_method="silverman",bw_adjust=adjust)
+            # sns.kdeplot( data=Phi,
+            #             label ="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",linestyle=linestyle_tuple[l],bw_method="silverman",bw_adjust=adjust)
+            # plt.hist(Phi,label="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",
+            #      histtype='step',
+            #         stacked=True, fill=False, density=True, linestyle=linestyle_tuple[l])
+           
+            
             #bincheck=np.histogram(data,bins=40)
    
     plt.xlabel("$\Phi$")

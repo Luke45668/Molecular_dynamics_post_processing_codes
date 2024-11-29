@@ -857,6 +857,9 @@ def theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor):
 
             sns.kdeplot( data=periodic_data,
                         label ="$\dot{\gamma}="+str(erate[skip_array[j,i]])+"$",bw_adjust=adjust)#bw_adjust=0.1
+            
+           
+            plt.axhline(1/(6*np.pi))
       
             # bw adjust effects the degree of smoothing , <1 smoothes less
     plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$")
@@ -867,6 +870,9 @@ def theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor):
     plt.legend(bbox_to_anchor=[1.1, 0.45])
     #plt.show()
 
+
+
+# Plot the probability density
 
      
 def phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor):
@@ -884,6 +890,9 @@ def phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor):
                 #data=np.ravel(spherical_coords_tuple[i][:,:,2])
                 periodic_data=np.ravel(np.array([data,np.pi-data]))
                 adjust=adjfactor#*periodic_data.size**(-1/5)
+                t = np.linspace(0, np.pi/2, data.size)
+                pdf = 0.5 * np.sin(t)
+                plt.plot(t, pdf)
                 
                 sns.kdeplot( data=np.ravel(periodic_data),
                             label ="$\dot{\gamma}="+str(erate[skip_array[j,i]])+"$",bw_adjust=adjust)
@@ -992,7 +1001,7 @@ skip_array=np.array([[0,2,4,6,8,9],
 
 j=0
 cutoff=800
-adjfactor=1
+adjfactor=0.1
 
 
 spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
@@ -1000,18 +1009,29 @@ phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
 plt.title("Phi inclined to x axis")
 plt.show()
 
+spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
+theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+plt.title("Theta on yz plane")
+plt.show()
+
 spherical_coords_tuple=convert_cart_2_spherical_y_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
 phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
 plt.title("Phi inclined to y axis")
 plt.show()
 
-spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
-theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
-plt.title("Theta on yz plane")
-plt.show()
 spherical_coords_tuple=convert_cart_2_spherical_y_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
 theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
 plt.title("Theta on xz plane")
+plt.show()
+
+spherical_coords_tuple=convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
+phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+plt.title("Phi inclined to z axis")
+plt.show()
+
+spherical_coords_tuple=convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
+theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+plt.title("Theta on xy plane")
 plt.show()
 # j=1
 
