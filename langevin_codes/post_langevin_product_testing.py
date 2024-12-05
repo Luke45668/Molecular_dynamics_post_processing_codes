@@ -73,7 +73,7 @@ no_timesteps=np.flip(np.array([ 157740000,  175267000,  197175000,  225343000,  
          105160000,  126192000,  157740000,  197175000,  262901000,
          394351000,  394351000,  788702000, 1577404000,   10000000]))
 
-e_in=0
+e_in=1
 e_end=erate.size
 n_plates=100
 
@@ -544,7 +544,118 @@ plt.show()
 
 
 #%% area vector plots 
+def convert_cart_2_spherical_z_inc(j,skip_array,area_vector_spherical_batch_tuple,
+                                       n_plates,cutoff):
+        spherical_coords_tuple=()
+        for i in range(len(skip_array)):
+            i=skip_array[i]
+
+            
+            area_vector_ray=area_vector_spherical_batch_tuple[j][i]
+            area_vector_ray[area_vector_ray[:,:,:,2]<0]*=-1
+            
+            x=area_vector_ray[:,cutoff:,:,0]
+            y=area_vector_ray[:,cutoff:,:,1]
+            z=area_vector_ray[:,cutoff:,:,2]
+        
+
+            spherical_coords_array=np.zeros((j_,area_vector_ray.shape[1]-cutoff,n_plates,3))
+        
+
+
+
+            # radial coord
+            spherical_coords_array[:,:,:,0]=np.sqrt((x**2)+(y**2)+(z**2))
+
+            #  theta coord 
+            spherical_coords_array[:,:,:,1]=np.sign(y)*np.arccos(x/(np.sqrt((x**2)+(y**2))))
+
+            #spherical_coords_array[:,:,:,1]=np.sign(x)*np.arccos(y/(np.sqrt((x**2)+(y**2))))
+            #spherical_coords_array[:,:,:,1]=np.arctan(y/x)
+            
+            # phi coord
+            # print(spherical_coords_array[spherical_coords_array[:,:,:,0]==0])
+            spherical_coords_array[:,:,:,2]=np.arccos(z/np.sqrt((x**2)+(y**2)+(z**2)))
+
+        
+
+            spherical_coords_tuple=spherical_coords_tuple+(spherical_coords_array,)
+
+        return spherical_coords_tuple
+
+def stat_test_on_theta(periodic_data,sample_size):
+    KS_test_result=[]
+    MW_test_result=[]
+    for m in range(30):                
+                    # scotts factor 
+                    np.random.seed(m)
+                    uniform=np.random.uniform(low=np.min(periodic_data), high=np.max(periodic_data),size=periodic_data.size)
+                    sample1 = np.random.choice(uniform,size=sample_size, replace = True, p = None)
+                    periodic_sample=np.random.choice( np.ravel(periodic_data) , size = sample_size, replace = True, p = None)
+                    print(f'Uniform vs. My data: {scipy.stats.ks_2samp( periodic_sample,sample1)}')
+                    KS_test_result.append(scipy.stats.ks_2samp(  periodic_sample,sample1)[1])
+                   # MW_test_result.append(scipy.stats.mannwhitneyu(  periodic_sample,sample1)[1])
+
+    return KS_test_result,MW_test_result
+
+
+                                    
+                   
 #sns.set_theme(font_scale=1.5, rc={'text.usetex' : True})
+
+def producing_random_points_with_theta(number_of_points,rand_int):
+
+    rng = np.random.default_rng(rand_int)
+    Phi=np.arccos(1-2*(rng.random((number_of_points))))
+    
+    Theta=2*np.pi*rng.random((number_of_points))
+    rho=1#7.7942286341
+    A=Phi
+    B=Theta
+    R=np.array([rho*np.sin(A)*np.cos(B),rho*np.sin(B)*np.sin(A),rho*np.cos(A)])
+
+
+    return Phi,Theta,R
+                
+                # scotts factor 
+def stat_test_on_phi(periodic_data,sample_size):
+    KS_test_result=[]
+    MW_test_result=[]
+    for m in range(30):                
+                
+                    Phi,Theta,R=producing_random_points_with_theta(periodic_data.size,m)
+
+                    sample_sin=np.random.choice( Phi , size = sample_size, replace = True, p = None)
+                    periodic_sample=np.random.choice( np.ravel(periodic_data) , size = sample_size, replace = True, p = None)
+                    KS_test_result.append(scipy.stats.ks_2samp( periodic_sample,sample_sin)[1])
+                    #MW_test_result.append(scipy.stats.mannwhitneyu( periodic_sample,sample_sin)[1])
+                    
+                    print(f'sampled sine vs. My data sample KS test: {scipy.stats.ks_2samp( periodic_sample,sample_sin)}')
+                    #MW only makes sense in ordinal data - no natural ranking 
+                   # print(f'sampled sine vs. My data sample Mannwhitney test: {scipy.stats.mannwhitneyu( periodic_sample,sample_sin)}')
+                   # print(f'sampled sine vs. My data sample ranksums test: {scipy.stats.ranksums( periodic_sample,sample_sin)}')
+
+    return KS_test_result,MW_test_result
+
+
+def plot_MW_test(MW_test_result):
+
+    plt.plot(MW_test_result,label="MW_test_phi")
+    plt.axhline(np.mean(MW_test_result),label="MWmean$="+str(np.mean(MW_test_result))+",\pm"+str(np.std(MW_test_result))+"$",color="red",linestyle="dashed")
+    plt.ylabel("pvalue")
+    plt.legend()
+    plt.show()
+
+def plot_KS_test(KS_test_result):
+
+    plt.plot(KS_test_result,label="KS_test_phi")
+    plt.axhline(np.mean(KS_test_result),label="KSmean$="+str(np.mean(KS_test_result))+",\pm"+str(np.std(KS_test_result))+"$",color="green",linestyle="dotted")
+    plt.ylabel("pvalue")
+    plt.legend()
+    plt.show()
+
+
+    
 
 plt.rcParams["figure.figsize"] = (6,4 )
 plt.rcParams.update({'font.size': 14})
@@ -581,97 +692,15 @@ spherical_coords_batch_tuple=()
 # spec = gridspec.GridSpec(ncols=2, nrows=2, figure=fig)
 
 for j in range(K.size):
-    spherical_coords_tuple=()
-    for i in range(len(skip_array)):
-        i=skip_array[i]
 
-        
-        area_vector_ray=area_vector_spherical_batch_tuple[j][i]
-        area_vector_ray[area_vector_ray[:,:,:,2]<0]*=-1
-        
-        x=area_vector_ray[:,cutoff:,:,0]
-        y=area_vector_ray[:,cutoff:,:,1]
-        z=area_vector_ray[:,cutoff:,:,2]
-        # x=np.ravel(x_mean)
-        # y=np.ravel(y_mean)
-        # z=np.ravel(z_mean)
+    spherical_coords_tuple=convert_cart_2_spherical_z_inc(j,skip_array,area_vector_spherical_batch_tuple,
+                                       n_plates,cutoff)
 
-        spherical_coords_array=np.zeros((j_,area_vector_ray.shape[1]-cutoff,n_plates,3))
-       
-        
-        # for k in range(z.shape[0]):
-        #     if z[k]<0:
-        #         z[k]=-1*z[k]
-        #         y[k]=-1*y[k]
-        #         x[k]=-1*x[k]
-
-        #     else:
-        #         continue
-        
-        # detect all z coords less than 0 and multiply all 3 coords by -1
-
-        # area_vector_ray[area_vector_ray[:,:,:,2]<0]=area_vector_ray[:,:,:,0]*-1
-        # area_vector_ray[area_vector_ray[:,:,:,2]<0]=area_vector_ray[:,:,:,1]*-1
-        #area_vector_ray[area_vector_ray[:,:,:,2]<0]*=-1
-        #area_vector_ray[area_vector_ray[:,:,:,2]<0]*=-1
-        
-       
-
-
-        # radial coord
-        spherical_coords_array[:,:,:,0]=np.sqrt((x**2)+(y**2)+(z**2))
-
-        #  theta coord 
-        spherical_coords_array[:,:,:,1]=np.sign(y)*np.arccos(x/(np.sqrt((x**2)+(y**2))))
-
-        #spherical_coords_array[:,:,:,1]=np.sign(x)*np.arccos(y/(np.sqrt((x**2)+(y**2))))
-        #spherical_coords_array[:,:,:,1]=np.arctan(y/x)
-        
-        # phi coord
-        # print(spherical_coords_array[spherical_coords_array[:,:,:,0]==0])
-        spherical_coords_array[:,:,:,2]=np.arccos(z/np.sqrt((x**2)+(y**2)+(z**2)))
-
-        #spherical_coords_mean=np.mean(spherical_coords_array, axis=0)
-
-
-        spherical_coords_tuple=spherical_coords_tuple+(spherical_coords_array,)
-
-
-
-
-    # plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$")
-    # for l in range(4):
-    # #for j in range(j_):
-
-
-    #     #l=skip_array[l]
-        
-        
-        
-    #     data=np.ravel(spherical_coords_tuple[l][:,:,:,0])
-       
-
-    #     sns.kdeplot( data=np.ravel(data),
-    #                 label ="$\dot{\gamma}="+str(erate[skip_array[l]],)+"$",linestyle=linestyle_tuple[l])#bw_adjust=0.1
-      
-       
-    # plt.xlabel("$\\rho$")
-    # #plt.xticks(pi_theta_ticks,pi_theta_tick_labels)
-    # #plt.yticks(theta_y_ticks)
-    # #plt.xlim(-np.pi,np.pi)
-
-    # plt.ylabel('Density')
-    # plt.legend(fontsize=legfont) 
-    # plt.tight_layout()
-    # #plt.savefig(path_2_log_files+"/plots/theta_dist_K_"+str(K[j])+"_.pdf",dpi=1200,bbox_inches='tight')
-    # plt.show()
-    plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$") 
+   
+   
 
     for l in range(4):
-        # skip_tstep=np.array([0,50,500,1000,1500,1999])
-        # for k in range(skip_tstep.size):
-   
-        #     k=skip_tstep[k]
+    
   
             data=spherical_coords_tuple[l][:,:,:,1]
             
@@ -679,72 +708,45 @@ for j in range(K.size):
              
             periodic_data=np.ravel(np.array([data-2*np.pi,data,data+2*np.pi]) )
             #periodic_data=np.ravel(data)
-            if l==0:
-                KS_test_result=[]
-                MW_test_result=[]
-                for m in range(1000):                
-                                # scotts factor 
-                                np.random.seed(m)
-                                uniform=np.random.uniform(low=np.min(periodic_data), high=np.max(periodic_data),size=periodic_data.size)
-                                sample1 = np.random.choice(uniform,size=sample_size, replace = True, p = None)
-                                periodic_sample=np.random.choice( np.ravel(periodic_data) , size = sample_size, replace = True, p = None)
-                                print(f'Uniform vs. My data: {scipy.stats.ks_2samp( periodic_sample,sample1)}')
-                                KS_test_result.append(scipy.stats.ks_2samp(  periodic_sample,sample1)[1])
-                                MW_test_result.append(scipy.stats.mannwhitneyu(  periodic_sample,sample1)[1])
-                                
-                            
-                plt.plot(MW_test_result,label="MW_test_theta")
-                plt.axhline(np.mean(MW_test_result),label="MWmean$="+str(np.mean(MW_test_result))+",\pm"+str(np.std(MW_test_result))+"$",color="red",linestyle="dashed")
-                plt.legend()
-                plt.ylabel("pvalue")
-                plt.show()
-                plt.plot(KS_test_result,label="KS_test_theta")
-                plt.axhline(np.mean(KS_test_result),label="KSmean$="+str(np.mean(KS_test_result))+",\pm"+str(np.std(KS_test_result))+"$",color="green",linestyle="dotted")
-                plt.ylabel("pvalue")
-                plt.legend()
-                plt.show()
-            
+            if l==0 or l==3:
+                
+                
+                KS_test_result,MW_test_result=stat_test_on_theta(periodic_data,sample_size)
+
+                # plt.title("$\dot{\gamma}="+str(erate[skip_array[l]])+",K="+str(K[j])+"$")
+                # plot_MW_test(MW_test_result)
+                plt.title("$\dot{\gamma}="+str(erate[skip_array[l]])+",K="+str(K[j])+"$")
+                plot_KS_test(KS_test_result)
            
-            # scotts factor 
+    for l in range(4):
+    
+  
+            data=spherical_coords_tuple[l][:,:,:,1]
+            periodic_data=np.ravel(np.array([data-2*np.pi,data,data+2*np.pi]) )
             adjust=adjust_factor#*periodic_data.size**(-1/5)
             #adjust=2
             # with smoothing
             sns.kdeplot( data=periodic_data,
                         label ="$\dot{\gamma}="+str(erate[skip_array[l]],)+"$",linestyle=linestyle_tuple[l],bw_method="silverman",bw_adjust=adjust)
-            sns.kdeplot( data=uniform,
-                        label ="$\dot{\gamma}="+str(erate[skip_array[l]],)+"$",linestyle=linestyle_tuple[l],bw_method="silverman",bw_adjust=adjust)
+            # sns.kdeplot( data=uniform,
+            #             label ="$\dot{\gamma}="+str(erate[skip_array[l]],)+"$",linestyle=linestyle_tuple[l],bw_method="silverman",bw_adjust=adjust)
             
-            # # with default smoothing 
-            # sns.kdeplot( data=periodic_data,
-            #             label ="$\dot{\gamma}="+str(erate[skip_array[l]],)+"$",linestyle=linestyle_tuple[l])
-            
-
-
-            # plt.hist(periodic_data,bins=bin_count,label="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",
-            #      histtype='step',
-            #         stacked=True, fill=False, density=True, linestyle=linestyle_tuple[l])
-            
-            
-            
+   
+    plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$")         
     plt.xlabel("$\Theta$")
     plt.xticks(pi_theta_ticks,pi_theta_tick_labels)
     #plt.yticks(theta_y_ticks)
     plt.xlim(-np.pi,np.pi)
 
     plt.ylabel('Density')
-    #plt.legend(fontsize=legfont) 
-    plt.tight_layout()
+    plt.legend(fontsize=legfont) 
+    #plt.tight_layout()
     #plt.savefig(path_2_log_files+"/plots/theta_dist_K_"+str(K[j])+"_.pdf",dpi=1200,bbox_inches='tight')
     plt.show()
  
-    plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$")  
+    
     for l in range(4):
-        # skip_tstep=np.array([0,50,500,1000,1500,1999])
-        # for k in range(skip_tstep.size):
-   
-        #     k=skip_tstep[k]
-        
-
+       
             
             data=spherical_coords_tuple[l][:,:,:,2]
           
@@ -752,76 +754,36 @@ for j in range(K.size):
            
             # could put in spencers PRNG 
 
-            if l==0:
+            if l==0 or l==3:
+                 
+                KS_test_result,MW_test_result=stat_test_on_phi(periodic_data,sample_size)
 
-                def producing_random_points_with_theta(number_of_points,rand_int):
+                # plt.title("$\dot{\gamma}="+str(erate[skip_array[l]])+",K="+str(K[j])+"$")
+                # plot_MW_test(MW_test_result)
+                plt.title("$\dot{\gamma}="+str(erate[skip_array[l]])+",K="+str(K[j])+"$")
+                plot_KS_test(KS_test_result)
 
-                    rng = np.random.default_rng(rand_int)
-                    Phi=np.arccos(1-2*(rng.random((number_of_points))))
-                    
-                    Theta=2*np.pi*rng.random((number_of_points))
-                    rho=1#7.7942286341
-                    A=Phi
-                    B=Theta
-                    R=np.array([rho*np.sin(A)*np.cos(B),rho*np.sin(B)*np.sin(A),rho*np.cos(A)])
-
-
-                    return Phi,Theta,R
-                
-                # scotts factor 
-                KS_test_result=[]
-                MW_test_result=[]
-                for m in range(1000):                
-                               
-                                Phi,Theta,R=producing_random_points_with_theta(periodic_data.size,m)
-
-                                sample_sin=np.random.choice( Phi , size = sample_size, replace = True, p = None)
-                                periodic_sample=np.random.choice( np.ravel(periodic_data) , size = sample_size, replace = True, p = None)
-                                KS_test_result.append(scipy.stats.ks_2samp( periodic_sample,sample_sin)[1])
-                                MW_test_result.append(scipy.stats.mannwhitneyu( periodic_sample,sample_sin)[1])
-                                
-                                print(f'sampled sine vs. My data sample KS test: {scipy.stats.ks_2samp( periodic_sample,sample_sin)}')
-                                print(f'sampled sine vs. My data sample Mannwhitney test: {scipy.stats.mannwhitneyu( periodic_sample,sample_sin)}')
-                                print(f'sampled sine vs. My data sample ranksums test: {scipy.stats.ranksums( periodic_sample,sample_sin)}')
-
-                plt.plot(MW_test_result,label="MW_test_phi")
-                plt.axhline(np.mean(MW_test_result),label="MWmean$="+str(np.mean(MW_test_result))+",\pm"+str(np.std(MW_test_result))+"$",color="red",linestyle="dashed")
-                plt.ylabel("pvalue")
-                plt.legend()
-                plt.show()
-                plt.plot(KS_test_result,label="KS_test_phi")
-                plt.axhline(np.mean(KS_test_result),label="KSmean$="+str(np.mean(KS_test_result))+",\pm"+str(np.std(KS_test_result))+"$",color="green",linestyle="dotted")
-                plt.ylabel("pvalue")
-                plt.legend()
-                plt.show()
-
-
-           
-           
+    for l in range(4):
+       
+            
+            data=spherical_coords_tuple[l][:,:,:,2]
+          
+            periodic_data=np.ravel(np.array([data,np.pi-data]))
             adjust=adjust_factor#*periodic_data.size**(-1/5)
           
             sns.kdeplot( data=periodic_data,
                         label ="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",linestyle=linestyle_tuple[l],bw_method="silverman",bw_adjust=adjust)
             # sns.kdeplot( data=Phi,
             #             label ="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",linestyle=linestyle_tuple[l],bw_method="silverman",bw_adjust=adjust)
-            # plt.hist(Phi,label="$\dot{\gamma}="+str(erate[skip_array[l]])+"$",
-            #      histtype='step',
-            #         stacked=True, fill=False, density=True, linestyle=linestyle_tuple[l])
-           
-            
-            #bincheck=np.histogram(data,bins=40)
-   
+
+    plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$")        
     plt.xlabel("$\Phi$")
     plt.xticks(pi_phi_ticks,pi_phi_tick_labels)
-    #
-    #plt.yticks(phi_y_ticks)
     plt.ylabel('Density')
-    #plt.legend(fontsize=legfont,loc='upper right') 
+    plt.legend(fontsize=legfont,loc='upper right') 
     plt.xlim(0,np.pi/2)
-
-    plt.tight_layout()
-
-    plt.savefig(path_2_log_files+"/plots/phi_dist_K_"+str(K[j])+"_.pdf",dpi=1200,bbox_inches='tight')
+    # plt.tight_layout()
+    # plt.savefig(path_2_log_files+"/plots/phi_dist_K_"+str(K[j])+"_.pdf",dpi=1200,bbox_inches='tight')
     plt.show()
 
     spherical_coords_batch_tuple=spherical_coords_batch_tuple+(spherical_coords_tuple,)

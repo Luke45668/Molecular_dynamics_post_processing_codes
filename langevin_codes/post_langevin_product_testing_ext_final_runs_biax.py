@@ -83,7 +83,7 @@ n_plates=100
 
 strain_total=100
 
-path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/final_plate_runs_biax_x_y_stretch/"
+path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/final_plate_runs_biax_x_y_stretch/noise_250timestep"
 #path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/final_plate_runs_tuples/"
 
 thermo_vars='         KinEng         PotEng         Press           Temp         Ecouple       Econserve    c_uniaxnvttemp'
@@ -378,7 +378,7 @@ def stress_tensor_averaging(e_end,
 
 
 aftcut=1
-cut=0.8
+cut=0.875
 # aftcut=[1,1,1,1,1,1,1,1,1,1,1,1,1,1,0.25,0.25,0.2,0.2,0.175,0.15,0.15,0.1,0.1,0.1]
 # cut=[0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.1,0.1,0.075,0.075,0.075,0.075,0.075,0.05,0.05,0.05]
 
@@ -438,6 +438,7 @@ for j in range(K.size):
         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$tdamp="+str(thermal_damp_multiplier[j])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$tdamp="+str(thermal_damp_multiplier[j])+","+str(labels_stress[l]), marker=marker[j])
         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[j])+","+str(labels_stress[l]),linestyle=linestyle_tuple[j][1], marker=marker[j])
+      
         plt.errorbar(erate[:e_end[j]],stress_tensor_tuple[j][:,l],
                      yerr=stress_tensor_std_tuple[j][:,l]/np.sqrt(n_plates*j_)
                      ,label="$K="+str(K[j])+","+str(labels_stress[l]),linestyle=linestyle_tuple[j][1],
@@ -446,16 +447,16 @@ for j in range(K.size):
 
     #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
        
-        plt.xlabel("$\dot{\gamma}$")
+        plt.xlabel("$\dot{\\varepsilon}$")
         plt.ylabel("$\sigma_{\\alpha \\alpha}$")
         #plt.yticks(y_ticks_stress)
         #plt.ylim(0.9,1.3)
-plt.tight_layout()
-        #plt.xscale('log')
+    plt.tight_layout()
+            #plt.xscale('log')
 
-plt.legend(loc='upper right', bbox_to_anchor=(1.3,1))
-plt.savefig(path_2_log_files+"/stress_tensor_0_3_plots.pdf",dpi=1200,bbox_inches='tight') 
-plt.show()
+    plt.legend(loc='upper right', bbox_to_anchor=(1.3,1))
+    plt.savefig(path_2_log_files+"/stress_tensor_0_3_plots.pdf",dpi=1200,bbox_inches='tight') 
+    plt.show()
 
 
 # for j in range(K.size): 
@@ -870,6 +871,43 @@ def theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor):
     plt.legend(bbox_to_anchor=[1.1, 0.45])
     #plt.show()
 
+def theta_dist_plot_timestep(skip_array,spherical_coords_tuple,j,adjfactor,skip_steps):
+    for i in range(len(spherical_coords_tuple)):
+        
+            for k in range(5):
+                l=skip_steps[k]
+            
+            
+        # skip_tstep=np.array([0,30,60,90,120,150])
+        # for k in range(skip_tstep.size):
+            #k=skip_tstep[k]
+    
+
+
+           
+            
+            
+                data=spherical_coords_tuple[i][:,l,:,1]
+                #data=np.ravel(spherical_coords_tuple[i][:,:,1])
+                periodic_data=np.ravel(np.array([data-2*np.pi,data,data+2*np.pi]) )
+                adjust=adjfactor#*periodic_data.size**(-1/5)
+
+                sns.kdeplot( data=periodic_data,
+                            label ="$\dot{\gamma}="+str(erate[skip_array[j,i]])+",step= "+str(skip_steps[k])+"$",bw_adjust=adjust)#bw_adjust=0.1
+                
+            
+               
+        
+                # bw adjust effects the degree of smoothing , <1 smoothes less
+            plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$")
+            plt.axhline(1/(6*np.pi),label="Ref_uniform", linestyle='dashed')
+            plt.xlabel("$\Theta$")
+            plt.xticks(pi_theta_ticks,pi_theta_tick_labels)
+            plt.xlim(-np.pi,np.pi)
+            plt.ylabel('Density')
+            plt.legend(bbox_to_anchor=[1.1, 0.45])
+            plt.show()
+
 
 
 # Plot the probability density
@@ -906,6 +944,36 @@ def phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor):
         plt.xlim(0,np.pi/2)
         #plt.show()
 
+def phi_dist_plot_timstep(skip_array,spherical_coords_tuple,j,adjfactor,skip_steps):
+        for i in range(len(spherical_coords_tuple)):
+            
+            
+
+            for k in range(5):
+                l=skip_steps[k]
+            
+         
+
+                data=spherical_coords_tuple[i][:,l,:,2]
+                #data=np.ravel(spherical_coords_tuple[i][:,:,2])
+                periodic_data=np.ravel(np.array([data,np.pi-data]))
+                adjust=adjfactor#*periodic_data.size**(-1/5)
+               
+                
+                sns.kdeplot( data=np.ravel(periodic_data),
+                            label ="$\dot{\gamma}="+str(erate[skip_array[j,i]])+",step= "+str(skip_steps[k])+"$",bw_adjust=adjust)
+                        
+                #plt.hist(np.ravel(spherical_coords_tuple[i][:,-1,:,2]))
+            t = np.linspace(0, np.pi/2, data.size)
+            pdf = 0.5 * np.sin(t)
+            plt.plot(t, pdf, label="Ref_sin", linestyle='dashed')
+            plt.plot(0,0,marker='none',ls="none",color='grey',label="$K="+str(K[j])+"$")
+            plt.xlabel("$\Phi$")
+            plt.xticks(pi_phi_ticks,pi_phi_tick_labels)
+            plt.ylabel('Density')
+            plt.legend(bbox_to_anchor=[1.1, 0.45])
+            plt.xlim(0,np.pi/2)
+            plt.show()
 
 
 #%% phi, theta dists with phi against theta 
@@ -998,54 +1066,57 @@ skip_array=np.array([[0,2,4,6,8,9],
 #                          [0,6],
 #                          [0,6],
 #                          [0,6]])
+sns.color_palette("viridis", as_cmap=True)
+
+cutoff=0
+skip_steps=[0,850,900,980,999]
+adjfactor=1#0.1
 
 j=0
-cutoff=800
-adjfactor=0.1
+spherical_coords_tuple=convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
+
+phi_dist_plot_timstep(skip_array,spherical_coords_tuple,j,adjfactor,skip_steps)
+plt.title("Phi inclined to z axis selection of steps")
 
 
-spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
-phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
-plt.title("Phi inclined to x axis")
-plt.show()
+plt.title("Theta on xy plane selection of steps")
+theta_dist_plot_timestep(skip_array,spherical_coords_tuple,j,adjfactor,skip_steps)
 
-spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
-theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
-plt.title("Theta on yz plane")
-plt.show()
 
-spherical_coords_tuple=convert_cart_2_spherical_y_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
-phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
-plt.title("Phi inclined to y axis")
-plt.show()
+j=1
+spherical_coords_tuple=convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
 
-spherical_coords_tuple=convert_cart_2_spherical_y_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
-theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
-plt.title("Theta on xz plane")
-plt.show()
+phi_dist_plot_timstep(skip_array,spherical_coords_tuple,j,adjfactor,skip_steps)
+plt.title("Phi inclined to z axis selection of steps")
+
+
+plt.title("Theta on xy plane selection of steps")
+theta_dist_plot_timestep(skip_array,spherical_coords_tuple,j,adjfactor,skip_steps)
+
+j=2
 
 spherical_coords_tuple=convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
-phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
-plt.title("Phi inclined to z axis")
-plt.show()
+
+phi_dist_plot_timstep(skip_array,spherical_coords_tuple,j,adjfactor,skip_steps)
+plt.title("Phi inclined to z axis selection of steps")
+
+
+plt.title("Theta on xy plane selection of steps")
+theta_dist_plot_timestep(skip_array,spherical_coords_tuple,j,adjfactor,skip_steps)
+
+j=3
 
 spherical_coords_tuple=convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
-theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
-plt.title("Theta on xy plane")
-plt.show()
-# j=1
 
-# spherical_coords_tuple=convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
-# theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
-# phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
-# j=2
+phi_dist_plot_timstep(skip_array,spherical_coords_tuple,j,adjfactor,skip_steps)
+plt.title("Phi inclined to z axis selection of steps")
 
-# spherical_coords_tuple=convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
-# theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
-# phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
-# j=3
 
-# spherical_coords_tuple=convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
-# theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
-# phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+plt.title("Theta on xy plane selection of steps")
+theta_dist_plot_timestep(skip_array,spherical_coords_tuple,j,adjfactor,skip_steps)
+
+
+
+
+
 # %%
