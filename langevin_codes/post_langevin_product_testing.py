@@ -53,11 +53,13 @@ linestyle_tuple = ['-',
 #note: currently we have one missing shear rate for k=30,60 so need to run them again with erate 0.02 to get the full picture 
 # I have k=20 downloaded, K=120 is running , need to produce run files for k=30,60
 
-damp=np.array([ 0.035, 0.035,0.035 ])
+damp=np.array([ 0.035, 0.035,0.035,0.035 ])
 K=np.array([  30,  60  ,90
             ])
-K=np.array([ 20, 30,  60  
+K=np.array([  20, 40, 60  
             ])
+
+
 # K=np.array([  50   ,
 #             ])
 erate=np.flip(np.array([1.   , 0.9  , 0.8  , 0.7  , 0.6  , 0.5  , 0.4  , 0.3  , 0.2  ,
@@ -68,12 +70,12 @@ erate=np.flip(np.array([1.   , 0.9  , 0.8  , 0.7  , 0.6  , 0.5  , 0.4  , 0.3  , 
        0.175, 0.15 , 0.125, 0.1  , 0.08 , 0.06 , 0.04  , 0.01 ,
        0.005, 0.  ]))
 
-no_timesteps=np.flip(np.array([ 157740000,  175267000,  197175000,  225343000,  262901000,
-         315481000,  394351000,  525801000,  788702000,   90137000,
-         105160000,  126192000,  157740000,  197175000,  262901000,
-         394351000,  394351000,  788702000, 1577404000,   10000000]))
+# no_timesteps=np.flip(np.array([ 157740000,  175267000,  197175000,  225343000,  262901000,
+#          315481000,  394351000,  525801000,  788702000,   90137000,
+#          105160000,  126192000,  157740000,  197175000,  262901000,
+#          394351000,  394351000,  788702000, 1577404000,   10000000]))
 
-e_in=1
+e_in=0
 e_end=erate.size
 n_plates=100
 
@@ -92,8 +94,13 @@ eq_spring_length=3*np.sqrt(3)/2
 mass_pol=5 
 damp_ratio=mass_pol/damp
 
+def one_term_poly(x,a,b):
+     return b*(x**a)
 
-#%% save tuples
+def quadratic_no_constant(x,a,b):
+     return a*x + b*(x**2)
+     
+#%% load in tuples
 label='damp_'+str(damp)+'_K_'+str(K)+'_'
 
 
@@ -117,28 +124,68 @@ area_vector_spherical_batch_tuple=()
 interest_vectors_batch_tuple=()
 pos_vel_batch_tuple=()
 
-
+pop_index=3
 # loading all data into one 
 for i in range(K.size):
+
     label='damp_'+str(damp[i])+'_K_'+str(K[i])+'_'
 
-    spring_force_positon_tensor_batch_tuple= spring_force_positon_tensor_batch_tuple+(batch_load_tuples(label,
-                                                            "spring_force_positon_tensor_tuple.pickle"),)
-    # erate_velocity_batch_tuple=erate_velocity_batch_tuple+(batch_load_tuples(label,
-    #                                                         "erate_velocity_tuple.pickle"),)
-    # COM_velocity_batch_tuple=COM_velocity_batch_tuple+(batch_load_tuples(label,
-    #                                                         "COM_velocity_tuple.pickle"),)
-    # conform_tensor_batch_tuple=conform_tensor_batch_tuple+(batch_load_tuples(label,
-    #                                                         "conform_tensor_tuple.pickle"),)
-    pos_vel_batch_tuple=pos_vel_batch_tuple+(batch_load_tuples(label,
-                                                            "new_pos_vel_tuple.pickle"),)
+    if i==0: # for the 20 run with too many things in 
 
-    log_file_batch_tuple=log_file_batch_tuple+(batch_load_tuples(label,
-                                                            "log_file_tuple.pickle"),)
-    area_vector_spherical_batch_tuple=area_vector_spherical_batch_tuple+(batch_load_tuples(label,"area_vector_tuple.pickle"),)
-    
-    interest_vectors_batch_tuple=interest_vectors_batch_tuple+(batch_load_tuples(label,
-                                                                                 "interest_vectors_tuple.pickle"),)
+      
+        spring_force_positon_tensor_list= list(batch_load_tuples(label,
+                                                                "spring_force_positon_tensor_tuple.pickle"))
+        spring_force_positon_tensor_list.pop(pop_index)
+        spring_force_positon_tensor_tuple=tuple(spring_force_positon_tensor_list)
+        spring_force_positon_tensor_batch_tuple= spring_force_positon_tensor_batch_tuple+(spring_force_positon_tensor_tuple,)
+
+       
+        pos_vel_list= list(batch_load_tuples(label,
+                                                    "new_pos_vel_tuple.pickle"))
+        pos_vel_list.pop(pop_index)
+        pos_vel_tuple=tuple(pos_vel_list)
+        pos_vel_batch_tuple=pos_vel_batch_tuple+(pos_vel_tuple,)
+
+
+        log_file_tuple=list(batch_load_tuples(label,
+                                                                "log_file_tuple.pickle"))
+        log_file_tuple.pop(pop_index)
+        log_file_tuple=tuple(log_file_tuple)
+        log_file_batch_tuple=log_file_batch_tuple+(log_file_tuple,)
+
+        area_vector_list=list(batch_load_tuples(label,"area_vector_tuple.pickle"))
+        area_vector_list.pop(pop_index)
+        area_vector_tuple=tuple(area_vector_list)
+        area_vector_spherical_batch_tuple=area_vector_spherical_batch_tuple+(area_vector_tuple,)
+
+
+        interest_vectors_list=list(batch_load_tuples(label,
+                                                    "interest_vectors_tuple.pickle"))
+        interest_vectors_list.pop(pop_index)
+        interest_vector_tuple=tuple(interest_vectors_list)
+        interest_vectors_batch_tuple=interest_vectors_batch_tuple+(interest_vector_tuple,)
+
+    else:
+        spring_force_positon_tensor_batch_tuple= spring_force_positon_tensor_batch_tuple+(batch_load_tuples(label,
+                                                                "spring_force_positon_tensor_tuple.pickle"),)
+        # erate_velocity_batch_tuple=erate_velocity_batch_tuple+(batch_load_tuples(label,
+        #                                                         "erate_velocity_tuple.pickle"),)
+        # COM_velocity_batch_tuple=COM_velocity_batch_tuple+(batch_load_tuples(label,
+        #                                                         "COM_velocity_tuple.pickle"),)
+        # conform_tensor_batch_tuple=conform_tensor_batch_tuple+(batch_load_tuples(label,
+        #                                                         "conform_tensor_tuple.pickle"),)
+        pos_vel_batch_tuple=pos_vel_batch_tuple+(batch_load_tuples(label,
+                                                                "new_pos_vel_tuple.pickle"),)
+
+        log_file_batch_tuple=log_file_batch_tuple+(batch_load_tuples(label,
+                                                                "log_file_tuple.pickle"),)
+        area_vector_spherical_batch_tuple=area_vector_spherical_batch_tuple+(batch_load_tuples(label,"area_vector_tuple.pickle"),)
+        
+        interest_vectors_batch_tuple=interest_vectors_batch_tuple+(batch_load_tuples(label,
+                                                                                    "interest_vectors_tuple.pickle"),)
+
+
+                                                                                        
 
     
 
@@ -169,7 +216,9 @@ for j in range(K.size):
     for i in range(erate.size):
         column=2
         plt.subplot(1,2,1)
-        plt.plot(strainplot_tuple[i][:],log_file_batch_tuple[j][i][:,column])
+        #plt.plot(strainplot_tuple[i][:],log_file_batch_tuple[j][i][:,column])
+        strainplot= np.linspace(0,strain_total,log_file_batch_tuple[j][i].shape[0])
+        plt.plot(strainplot,log_file_batch_tuple[j][i][:,column])
     #plt.yscale('log')
         plt.xlabel("$\gamma$")
         plt.ylabel("$E_{p}$")
@@ -181,7 +230,7 @@ for j in range(K.size):
         column=5
 
         plt.subplot(1,2,2)
-        plt.plot(strainplot_tuple[i][:],log_file_batch_tuple[j][i][:,column])
+        plt.plot(strainplot[1000:],log_file_batch_tuple[j][i][1000:,column])
        # plt.yscale('log')
         plt.xlabel("$\gamma$")
         plt.ylabel("$T$")
@@ -237,8 +286,8 @@ plt.show()
 #%% look at internal stresses
 sns.set_palette('colorblind')
 # sns.color_palette("mako", as_cmap=True)
-# sns.color_palette("viridis", as_cmap=True)
-# sns.set_palette('virdris')
+# sns.color_palette("viridis")
+#sns.set_palette('virdris')
 plt.rcParams["figure.figsize"] = (8,6 )
 plt.rcParams.update({'font.size': 14})
 SIZE_DEFAULT = 14
@@ -254,7 +303,7 @@ plt.rc("ytick", labelsize=SIZE_DEFAULT)  # fontsize of the tick labels
 
 plt.rcParams['axes.spines.top'] = False
 plt.rcParams['axes.spines.right'] = False 
-legfont=12
+legfont=14
 folder="stress_tensor_plots"
 marker=['x','+','^',"1","X","d","*","P","v"]
 aftcut=1
@@ -310,18 +359,18 @@ for j in range(K.size):
     plt.show()
 
 
-
+#%% stress plots
 for j in range(K.size): 
     plot_stress_tensor(0,3,
                        stress_tensor[j],
                        stress_tensor_std[j],
                        j_,n_plates, labels_stress,marker,0,erate,e_end,linestyle_tuple[j])
     plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
-plt.legend(fontsize=legfont) 
+plt.legend(fontsize=legfont,frameon=False,bbox_to_anchor=(1,1)) 
 #plt.yticks(y_ticks_stress)
 #plt.ylim(0.9,1.3)
 plt.tight_layout()
-#plt.savefig(path_2_log_files+"/plots/stress_tensor_0_3_plots.pdf",dpi=1200,bbox_inches='tight') 
+plt.savefig(path_2_log_files+"/plots/stress_tensor_0_3_plots.pdf",dpi=1200,bbox_inches='tight') 
 plt.show()
 
 for j in range(K.size): 
@@ -330,94 +379,219 @@ for j in range(K.size):
                        stress_tensor_std[j],
                        j_,n_plates, labels_stress,marker,0,erate,e_end,linestyle_tuple[j])
     plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
-plt.legend(fontsize=legfont) 
+plt.legend(fontsize=legfont,frameon=False,bbox_to_anchor=(1,1)) 
 #plt.yticks(y_ticks_stress)
 plt.tight_layout()
-
-#plt.savefig(path_2_log_files+"/plots/_stress_tensor_3_6_plots.pdf",dpi=1200,bbox_inches='tight') 
+plt.savefig(path_2_log_files+"/plots/_stress_tensor_3_6_plots.pdf",dpi=1200,bbox_inches='tight') 
 plt.show()
-
-#%% collapse plot
-for j in range(K.size): 
-    plot_stress_tensor(0,3,
-                       stress_tensor[j]/K[j],
-                       stress_tensor_std[j]/K[j],
-                       j_,n_plates, labels_stress,marker,0,erate,e_end,linestyle_tuple[j])
-    plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
-plt.ylabel("$\sigma_{\\alpha\\beta}/K$",rotation=0,labelpad=25)
-plt.legend(fontsize=legfont) 
-plt.tight_layout()
-plt.savefig(path_2_log_files+"/plots/stress_tensor_K_scaled_0_3_plots.pdf",dpi=1200,bbox_inches='tight')
-plt.show()
-
-for j in range(K.size): 
-    plot_stress_tensor(3,6,
-                       stress_tensor[j]/K[j],
-                       stress_tensor_std[j]/K[j],
-                       j_,n_plates, labels_stress,marker,0,erate,e_end,linestyle_tuple[j])
-    plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
-plt.ylabel("$\sigma_{\\alpha\\beta}/K$",rotation=0,labelpad=25)
-plt.legend(fontsize=legfont) 
-plt.tight_layout()
-plt.savefig(path_2_log_files+"/plots/stress_tensor_K_scaled_3_6_plots.pdf",dpi=1200,bbox_inches='tight')
-plt.show()
-
 
 #%%
-# now plot n1 and n2 
+# now plot n1 vs erate with y=ax + bx^2
 #probably need to turn this into a a function 
 n_y_ticks=[-10,0,20,40,60,80]
 cutoff=0
+plt.plot(0,0,marker='none',label="fit: $y=ax + bx^{2}$",linestyle='none')
 for j in range(K.size):
     #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
   
 
     plt.errorbar(erate[cutoff:e_end], n_1[j,cutoff:e_end], yerr =n_1_error[j,cutoff:e_end],
-                  ls='none',label="$N_{1},K="+str(K[j])+"$",marker=marker[j] )
-    popt,cov_matrix_n1=curve_fit(linearthru0,erate[cutoff:e_end], n_1[j,cutoff:e_end])
-    # difference=np.sqrt(np.sum((n_1[j,cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
+                  ls="none",label="$N_{1},K="+str(K[j])+"$",marker=marker[j] )
 
-    # plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])),ls=linestyle_tuple[j],#)#,
-    #         label="$N_{1,fit,K="+str(K[j])+"},m="+str(sigfig.round(popt[0],sigfigs=2))+\
-    #             ",\\varepsilon="+str(sigfig.round(difference,sigfigs=2))+"$")
+    popt,cov_matrix_n1=curve_fit(quadratic_no_constant,erate[cutoff:e_end], n_1[j,cutoff:e_end])
+    predict_points=popt[0]*erate[cutoff:e_end] + popt[1]*(erate[cutoff:e_end]**2)
+
+    difference=np.sqrt(np.sum((n_1[j,cutoff:e_end]-predict_points)**2)/(e_end))
+
+    plt.plot(erate[cutoff:e_end],predict_points,ls=linestyle_tuple[j],#)#,
+            label="$N_{1,fit,K="+str(K[j])+"},a="+str(sigfig.round(popt[0],sigfigs=2))+\
+                ",b="+str(sigfig.round(popt[1],sigfigs=2))+",\\varepsilon="+str(sigfig.round(difference,sigfigs=2))+"$")
 
     #plt.xscale('log')
     #plt.show()
     #print(difference)
 
-    plt.errorbar(erate[cutoff:e_end], n_2[j,cutoff:e_end], yerr =n_2_error[j,cutoff:e_end],
-                  ls='none',label="$N_{2},K="+str(K[j])+"$",marker=marker[j] )
-    # popt,cov_matrix_n2=curve_fit(linearthru0,erate[cutoff:e_end], n_2[j,cutoff:e_end])
-    # difference=np.sqrt(np.sum((n_2[j,cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
 
-    # plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])),ls=linestyle_tuple[j],#)#,
-    #         label="$N_{2,fit,K="+str(K[j])+"},m="+str(sigfig.round(popt[0],sigfigs=2))+\
-    #         ",\\varepsilon="+str(sigfig.round(difference,sigfigs=2))+"$")
-    # # #
 plt.legend(fontsize=legfont, frameon=False)
 #plt.xscale('log')
 plt.xlabel("$\dot{\gamma}$")
-plt.ylabel("$N_{\\alpha}$",rotation=0)
+plt.ylabel("$N_{1}$",rotation=0)
 #plt.yticks(n_y_ticks)
 plt.tight_layout()
-#plt.savefig(path_2_log_files+"/plots/N1_N2_vs_gdot_plots.pdf",dpi=1200,bbox_inches='tight')
+plt.savefig(path_2_log_files+"/plots/N1_vs_gdot_yaxbx2_plots.pdf",dpi=1200,bbox_inches='tight')
+plt.show()
+#print(difference)
+#%%
+# now plot n1 vs erate with y=bx^a
+#probably need to turn this into a a function 
+n_y_ticks=[-10,0,20,40,60,80]
+cutoff=0
+plt.plot(0,0,marker='none',label="fit: $y=bx^{a}$",linestyle='none')
+for j in range(K.size):
+    #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
+  
+
+    plt.errorbar(erate[cutoff:e_end], n_1[j,cutoff:e_end], yerr =n_1_error[j,cutoff:e_end],
+                  ls="none",label="$N_{1},K="+str(K[j])+"$",marker=marker[j] )
+
+    popt,cov_matrix_n1=curve_fit(one_term_poly,erate[cutoff:e_end], n_1[j,cutoff:e_end])
+    difference=np.sqrt(np.sum((n_1[j,cutoff:e_end]-(popt[1]*(erate[cutoff:e_end])**popt[0]))**2)/(e_end))
+
+    plt.plot(erate[cutoff:e_end],popt[1]*(erate[cutoff:e_end])**popt[0],ls=linestyle_tuple[j],#)#,
+            label="$N_{1,fit,K="+str(K[j])+"},a="+str(sigfig.round(popt[0],sigfigs=2))+\
+                ",b="+str(sigfig.round(popt[1],sigfigs=2))+",\\varepsilon="+str(sigfig.round(difference,sigfigs=2))+"$")
+
+    #plt.xscale('log')
+    #plt.show()
+    #print(difference)
+
+
+plt.legend(fontsize=legfont, frameon=False)
+#plt.xscale('log')
+plt.xlabel("$\dot{\gamma}$")
+plt.ylabel("$N_{1}$",rotation=0)
+#plt.yticks(n_y_ticks)
+plt.tight_layout()
+plt.savefig(path_2_log_files+"/plots/N1_vs_gdot_ybxa_plots.pdf",dpi=1200,bbox_inches='tight')
 plt.show()
 #print(difference)
 
-#collapse N1 and N2 /sigma_xz
+#%%
+# now plot n1 vs erate with y=mx
+#probably need to turn this into a a function 
+n_y_ticks=[-10,0,20,40,60,80]
+cutoff=0
+plt.plot(0,0,marker='none',label="fit: $y=mx$",linestyle='none')
+for j in range(K.size):
+    #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
+  
+
+    plt.errorbar(erate[cutoff:e_end], n_1[j,cutoff:e_end], yerr =n_1_error[j,cutoff:e_end],
+                  ls="none",label="$N_{1},K="+str(K[j])+"$",marker=marker[j] )
+
+    popt,cov_matrix_n2=curve_fit(linearthru0,erate[cutoff:e_end], n_1[j,cutoff:e_end])
+    difference=np.sqrt(np.sum((n_1[j,cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
+
+    plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])),
+            label="$N_{1,fit,K="+str(K[j])+"},m="+str(sigfig.round(popt[0],sigfigs=3))+\
+            ",\\varepsilon="+str(sigfig.round(difference,sigfigs=3))+"$",ls=linestyle_tuple[j])
+
+    #plt.xscale('log')
+    #plt.show()
+    #print(difference)
+
+
+plt.legend(fontsize=legfont, frameon=False)
+#plt.xscale('log')
+plt.xlabel("$\dot{\gamma}$")
+plt.ylabel("$N_{1}$",rotation=0)
+#plt.yticks(n_y_ticks)
+plt.tight_layout()
+plt.savefig(path_2_log_files+"/plots/N1_vs_gdot_ymx_plots.pdf",dpi=1200,bbox_inches='tight')
+plt.show()
+#print(difference)
+#%%
+# now plot n2 vs erate with y=ax + bx^2
+#probably need to turn this into a a function 
+n_y_ticks=[-10,0,20,40,60,80]
+cutoff=0
+plt.plot(0,0,marker='none',label="fit: $y=ax + bx^{2}$",linestyle='none')
+for j in range(K.size):
+    #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
+  
+
+    plt.errorbar(erate[cutoff:e_end], n_2[j,cutoff:e_end], yerr =n_2_error[j,cutoff:e_end],
+                  ls="none",label="$N_{2},K="+str(K[j])+"$",marker=marker[j] )
+
+    popt,cov_matrix_n1=curve_fit(quadratic_no_constant,erate[cutoff:e_end], n_2[j,cutoff:e_end])
+    predict_points=popt[0]*erate[cutoff:e_end] + popt[1]*(erate[cutoff:e_end]**2)
+
+    difference=np.sqrt(np.sum((n_2[j,cutoff:e_end]-predict_points)**2)/(e_end))
+
+    plt.plot(erate[cutoff:e_end],predict_points,ls=linestyle_tuple[j],#)#,
+            label="$N_{2,fit,K="+str(K[j])+"},a="+str(sigfig.round(popt[0],sigfigs=2))+\
+                ",b="+str(sigfig.round(popt[1],sigfigs=2))+",\\varepsilon="+str(sigfig.round(difference,sigfigs=2))+"$")
+
+    #plt.xscale('log')
+    #plt.show()
+    #print(difference)
+
+
+plt.legend(fontsize=legfont, frameon=False)
+#plt.xscale('log')
+plt.xlabel("$\dot{\gamma}$")
+plt.ylabel("$N_{2}$",rotation=0)
+#plt.yticks(n_y_ticks)
+plt.tight_layout()
+plt.savefig(path_2_log_files+"/plots/N2_vs_gdot_yaxbx2_plots.pdf",dpi=1200,bbox_inches='tight')
+plt.show()
+#print(difference)
+#%% plot n2 vs erate with y=bx^a
+#probably need to turn this into a a function 
+n_y_ticks=[-10,0,20,40,60,80]
+cutoff=0
+plt.plot(0,0,marker='none',label="fit: $y=bx^{a}$",linestyle='none')
+for j in range(K.size):
+    
+
+    plt.errorbar(erate[cutoff:e_end], n_2[j,cutoff:e_end], yerr =n_2_error[j,cutoff:e_end],
+                  ls="none",label="$N_{2},K="+str(K[j])+"$",marker=marker[j] )
+
+                
+    popt,cov_matrix_n1=curve_fit(one_term_poly,erate[cutoff:e_end], n_2[j,cutoff:e_end])
+    difference=np.sqrt(np.sum((n_2[j,cutoff:e_end]-(popt[1]*(erate[cutoff:e_end])**popt[0]))**2)/(e_end))
+
+    plt.plot(erate[cutoff:e_end],popt[1]*(erate[cutoff:e_end])**popt[0],ls=linestyle_tuple[j],#)#,
+            label="$N_{2,fit,K="+str(K[j])+"},a="+str(sigfig.round(popt[0],sigfigs=2))+\
+                ",b="+str(sigfig.round(popt[1],sigfigs=2))+",\\varepsilon="+str(sigfig.round(difference,sigfigs=2))+"$")
+
+plt.legend(fontsize=legfont, frameon=False)
+#plt.xscale('log')
+plt.xlabel("$\dot{\gamma}$")
+plt.ylabel("$N_{2}$",rotation=0)
+#plt.yticks(n_y_ticks)
+plt.tight_layout()
+plt.savefig(path_2_log_files+"/plots/N2_vs_gdot_ybxa_plots.pdf",dpi=1200,bbox_inches='tight')
+plt.show()
+#print(difference)
+#%% plot n2 vs erate with y=mx
+#probably need to turn this into a a function 
+n_y_ticks=[-10,0,20,40,60,80]
+cutoff=0
+plt.plot(0,0,marker='none',label="fit: $y=mx$",linestyle='none')
+for j in range(K.size):
+    
+
+    plt.errorbar(erate[cutoff:e_end], n_2[j,cutoff:e_end], yerr =n_2_error[j,cutoff:e_end],
+                  ls="none",label="$N_{2},K="+str(K[j])+"$",marker=marker[j] )
+
+                
+    popt,cov_matrix_n2=curve_fit(linearthru0,erate[cutoff:e_end], n_2[j,cutoff:e_end])
+    difference=np.sqrt(np.sum((n_2[j,cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
+
+    plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])),
+            label="$N_{2,fit,K="+str(K[j])+"},m="+str(sigfig.round(popt[0],sigfigs=3))+\
+            ",\\varepsilon="+str(sigfig.round(difference,sigfigs=3))+"$",ls=linestyle_tuple[j])
+    
+
+plt.legend(fontsize=legfont, frameon=False)
+#plt.xscale('log')
+plt.xlabel("$\dot{\gamma}$")
+plt.ylabel("$N_{2}$",rotation=0)
+#plt.yticks(n_y_ticks)
+plt.tight_layout()
+plt.savefig(path_2_log_files+"/plots/N2_vs_gdot_ymx_plots.pdf",dpi=1200,bbox_inches='tight')
+plt.show()
+#print(difference)
+#%%collapse N1 and N2 /sigma_xz
 cutoff=1
 for j in range(K.size):
     #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
   
 
     plt.errorbar(erate[cutoff:e_end], n_1[j,cutoff:e_end]/stress_tensor[j,cutoff:e_end,3], yerr =np.abs(n_1_error[j,cutoff:e_end]/stress_tensor[j,cutoff:e_end,3]),
-                  ls='none',label="$N_{1},K="+str(K[j])+"$",marker=marker[j] )
-    # popt,cov_matrix_n1=curve_fit(linearthru0,erate[cutoff:e_end], n_1[j,cutoff:e_end])
-    # difference=np.sqrt(np.sum((n_1[j,cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
-
-    # plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])),
-    #         label="$N_{1,fit},m="+str(sigfig.round(popt[0],sigfigs=3))+\
-    #             ",\\varepsilon="+str(sigfig.round(difference,sigfigs=3))+"$", ls=linestyle_tuple[j])
+                  ls='none',label="$K="+str(K[j])+"$",marker=marker[j] )
+   
 
     #plt.xscale('log')
     #plt.show()
@@ -432,23 +606,51 @@ for j in range(K.size):
     #         label="$N_{2,fit},m="+str(sigfig.round(popt[0],sigfigs=3))+\
     #         ",\\varepsilon="+str(sigfig.round(difference,sigfigs=3))+"$",ls=linestyle_tuple[j])
     #
-    plt.legend(fontsize=legfont)
-    plt.ylabel("$N_{1}/\sigma_{xz}$",rotation=0)
+    plt.legend(fontsize=legfont,frameon=False)
+    plt.ylabel("$\\frac{N_{1}}{\sigma_{xz}}$",rotation=0)
     #plt.xscale('log')
     plt.xlabel("$\dot{\gamma}$")
 plt.tight_layout()
-#plt.savefig(path_2_log_files+"/plots/N1_N2_scaled_K_vs_gdot_plots.pdf",dpi=1200,bbox_inches='tight')
+plt.savefig(path_2_log_files+"/plots/N1_scaled_sigxz_vs_gdot_plots.pdf",dpi=1200,bbox_inches='tight')
 plt.show()
 #print(difference)
 
+cutoff=1
+for j in range(K.size):
+    #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
+  
 
+    plt.errorbar(erate[cutoff:e_end], n_2[j,cutoff:e_end]/stress_tensor[j,cutoff:e_end,3], yerr =np.abs(n_1_error[j,cutoff:e_end]/stress_tensor[j,cutoff:e_end,3]),
+                  ls='none',label="$K="+str(K[j])+"$",marker=marker[j] )
+   
+
+    #plt.xscale('log')
+    #plt.show()
+    #print(difference)
+
+    # plt.errorbar(erate[cutoff:e_end], n_2[j,cutoff:e_end]/K[j], yerr =n_2_error[j,cutoff:e_end]/K[j],
+    #               ls='none',label="$N_{2},K="+str(K[j])+"$",marker=marker[j] )
+    # popt,cov_matrix_n2=curve_fit(linearthru0,erate[cutoff:e_end], n_2[j,cutoff:e_end])
+    # difference=np.sqrt(np.sum((n_2[j,cutoff:e_end]-(popt[0]*(erate[cutoff:e_end])))**2)/(e_end))
+
+    # plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end])),
+    #         label="$N_{2,fit},m="+str(sigfig.round(popt[0],sigfigs=3))+\
+    #         ",\\varepsilon="+str(sigfig.round(difference,sigfigs=3))+"$",ls=linestyle_tuple[j])
+    #
+    plt.legend(fontsize=legfont,frameon=False)
+    plt.ylabel("$\\frac{N_{2}}{\sigma_{xz}}$",rotation=0)
+    #plt.xscale('log')
+    plt.xlabel("$\dot{\gamma}$")
+plt.tight_layout()
+plt.savefig(path_2_log_files+"/plots/N2_scaled_sigxz_vs_gdot_plots.pdf",dpi=1200,bbox_inches='tight')
+plt.show()
 
 
 
 # now do N1 N2 comparison plots
 # this plot isnt so useful 
-n2_factor=[-10,-18]
-for j in range(2):
+n2_factor=[-10,-10,-15,-20]
+for j in range(K.size):
 
     #sns.set_palette('icefire')
     plt.scatter(erate,n_1[j],label="$N_{1},K="+str(K[j])+"$", marker=marker[j])
@@ -469,6 +671,7 @@ for j in range(2):
 #%%viscosity for plate 
 
 cutoff=1
+plt.plot(0,0,marker='none',label="fit: $y=ax^{n}$",linestyle='none')
 for j in range(K.size):
     xz_stress= stress_tensor[j,cutoff:,3]
     xz_stress_std=stress_tensor_std[j,:,3]/np.sqrt(j_*n_plates)
@@ -480,17 +683,17 @@ for j in range(K.size):
     y_pred=popt[0]*(erate[cutoff:e_end]**(popt[1]))/sim_fluid
     difference=np.sqrt(np.sum((y-y_pred)**2)/e_end-cutoff)
     plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end]**(popt[1]))),
-            label="$\eta_{fit},a="+str(sigfig.round(popt[0],sigfigs=3))+",n="+str(sigfig.round(popt[1],sigfigs=3))+
+            label="$K="+str(K[j])+",\eta_{fit},a="+str(sigfig.round(popt[0],sigfigs=3))+",n="+str(sigfig.round(popt[1],sigfigs=3))+
 
             ",\\varepsilon=\pm"+str(sigfig.round(difference,sigfigs=3))+"$")
 
-    plt.legend(fontsize=legfont) 
+    plt.legend(fontsize=11,frameon=True) 
     plt.ylabel("$\eta/\eta_{s}$", rotation=0,labelpad=10)
     plt.xlabel("$\dot{\gamma}$")
     plt.tight_layout()
-# plt.xscale('log')
-# plt.yscale('log')
-#plt.savefig(path_2_log_files+"/plots/eta_vs_K_"+str(K[j])+"gdot_plots.pdf",dpi=1200,bbox_inches='tight')
+plt.xscale('log')
+plt.yscale('log')
+plt.savefig(path_2_log_files+"/plots/eta_vs_gdot_plots.pdf",dpi=1200,bbox_inches='tight')
 plt.show() 
 
 #%%viscosity for dumbell
@@ -544,6 +747,7 @@ plt.show()
 
 
 #%% area vector plots 
+plt.rcParams['text.usetex'] = "false"
 def convert_cart_2_spherical_z_inc(j,skip_array,area_vector_spherical_batch_tuple,
                                        n_plates,cutoff):
         spherical_coords_tuple=()
@@ -586,7 +790,7 @@ def convert_cart_2_spherical_z_inc(j,skip_array,area_vector_spherical_batch_tupl
 def stat_test_on_theta(periodic_data,sample_size):
     KS_test_result=[]
     MW_test_result=[]
-    for m in range(30):                
+    for m in range(100):                
                     # scotts factor 
                     np.random.seed(m)
                     uniform=np.random.uniform(low=np.min(periodic_data), high=np.max(periodic_data),size=periodic_data.size)
@@ -621,7 +825,7 @@ def producing_random_points_with_theta(number_of_points,rand_int):
 def stat_test_on_phi(periodic_data,sample_size):
     KS_test_result=[]
     MW_test_result=[]
-    for m in range(30):                
+    for m in range(100):                
                 
                     Phi,Theta,R=producing_random_points_with_theta(periodic_data.size,m)
 
@@ -646,9 +850,9 @@ def plot_MW_test(MW_test_result):
     plt.legend()
     plt.show()
 
-def plot_KS_test(KS_test_result):
+def plot_KS_test(KS_test_result,):
 
-    plt.plot(KS_test_result,label="KS_test_phi")
+    plt.plot(KS_test_result,label="KS_test")
     plt.axhline(np.mean(KS_test_result),label="KSmean$="+str(np.mean(KS_test_result))+",\pm"+str(np.std(KS_test_result))+"$",color="green",linestyle="dotted")
     plt.ylabel("pvalue")
     plt.legend()
@@ -741,7 +945,7 @@ for j in range(K.size):
     plt.ylabel('Density')
     plt.legend(fontsize=legfont) 
     #plt.tight_layout()
-    #plt.savefig(path_2_log_files+"/plots/theta_dist_K_"+str(K[j])+"_.pdf",dpi=1200,bbox_inches='tight')
+    plt.savefig(path_2_log_files+"/plots/theta_dist_K_"+str(K[j])+"_.pdf",dpi=1200,bbox_inches='tight')
     plt.show()
  
     
@@ -783,107 +987,119 @@ for j in range(K.size):
     plt.legend(fontsize=legfont,loc='upper right') 
     plt.xlim(0,np.pi/2)
     # plt.tight_layout()
-    # plt.savefig(path_2_log_files+"/plots/phi_dist_K_"+str(K[j])+"_.pdf",dpi=1200,bbox_inches='tight')
+    plt.savefig(path_2_log_files+"/plots/phi_dist_K_"+str(K[j])+"_.pdf",dpi=1200,bbox_inches='tight')
     plt.show()
 
     spherical_coords_batch_tuple=spherical_coords_batch_tuple+(spherical_coords_tuple,)
 
-#%% different style plot of theta and phi 
+#%% different style plot of phi 
 
 #phi 
-f, axs = plt.subplots(1, 4, figsize=(10, 6),sharey=True,sharex=True)
-
+f, axs = plt.subplots(1, 4, figsize=(15, 6),sharey=True,sharex=True)
+adjust_factor=0.005
 for j in range(K.size):
+    spherical_coords_tuple=convert_cart_2_spherical_z_inc(j,skip_array,area_vector_spherical_batch_tuple,
+                                       n_plates,cutoff)
+    
 
     i=0
-    data=np.ravel(spherical_coords_batch_tuple[j][i][-sample_cut:,2])
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,2])
     periodic_data=np.ravel(np.array([data,np.pi-data]))
     sns.kdeplot( data=periodic_data,
-                      label ="$\dot{\gamma}="+str(erate[skip_array[i]])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[0])
-    axs[0].legend(fontsize=legfont)
+                      label ="K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[0],bw_adjust=adjust_factor)
+    axs[0].set_title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$")
 
 
     i=1
-    data=np.ravel(spherical_coords_batch_tuple[j][i][-sample_cut:,2])
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,2])
     periodic_data=np.ravel(np.array([data,np.pi-data]))
     sns.kdeplot( data=periodic_data,
-                      label ="$\dot{\gamma}="+str(erate[skip_array[i]])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[1])
-    axs[1].legend(fontsize=legfont)
+                      label ="$\dot{\gamma}="+str(erate[skip_array[i]])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[1],bw_adjust=adjust_factor)
+    axs[1].set_title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$")
 
 
     i=2
-    data=np.ravel(spherical_coords_batch_tuple[j][i][-sample_cut:,2])
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,2])
     periodic_data=np.ravel(np.array([data,np.pi-data]))
     sns.kdeplot( data=periodic_data,
-                      label ="$\dot{\gamma}="+str(erate[skip_array[i]])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[2])
-    axs[2].legend(fontsize=legfont)
+                      label ="$K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[2],bw_adjust=adjust_factor)
+    axs[2].set_title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$")
 
 
     i=3
-    data=np.ravel(spherical_coords_batch_tuple[j][i][-sample_cut:,2])
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,2])
     periodic_data=np.ravel(np.array([data,np.pi-data]))
     sns.kdeplot( data=periodic_data,
-                      label ="$\dot{\gamma}="+str(erate[skip_array[i]])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[3])
-    axs[3].legend(fontsize=legfont)
-
+                      label ="$K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[3],bw_adjust=adjust_factor)
+    axs[3].set_title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$")
 f.supxlabel("$\Phi$")
 plt.xticks(pi_phi_ticks,pi_phi_tick_labels)
-    #
-plt.yticks(phi_y_ticks)
-plt.ylabel('Density')
 
+#plt.yticks(phi_y_ticks)
+plt.ylabel('Density')
+plt.legend(bbox_to_anchor=(1,0.5),frameon=False)
 plt.xlim(0,np.pi/2)
 #plt.xlim(0,np.pi)
 plt.tight_layout()
+plt.savefig(path_2_log_files+"/plots/phi_dist_.pdf",dpi=1200,bbox_inches='tight')
 plt.show()
 
 
-#%%theta 
-f, axs = plt.subplots(1, 4, figsize=(10, 6),sharey=True,sharex=True)
-theta_y_ticks=[0,0.02,0.04,0.06,0.08,0.1]
+#%% different style plot of theta
+
+#theta
+
+f, axs = plt.subplots(1, 4, figsize=(15, 6),sharey=True,sharex=True)
+adjust_factor=0.005
 for j in range(K.size):
+    spherical_coords_tuple=convert_cart_2_spherical_z_inc(j,skip_array,area_vector_spherical_batch_tuple,
+                                       n_plates,cutoff)
 
+   
     i=0
-    data=np.ravel(spherical_coords_batch_tuple[j][i][-sample_cut:,1])
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,1])
     periodic_data=np.ravel(np.array([data-2*np.pi,data,data+2*np.pi]) )
-
     sns.kdeplot( data=periodic_data,
-                      label ="$\dot{\gamma}="+str(erate[skip_array[i]])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[0])
-    axs[0].legend(fontsize=legfont)
+                      label ="$K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[0],bw_adjust=adjust_factor)
+    
+    axs[0].set_title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$")
 
 
     i=1
-    data=np.ravel(spherical_coords_batch_tuple[j][i][-sample_cut:,1])
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,1])
     periodic_data=np.ravel(np.array([data-2*np.pi,data,data+2*np.pi]) )
     sns.kdeplot( data=periodic_data,
-                      label ="$\dot{\gamma}="+str(erate[skip_array[i]])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[1])
-    axs[1].legend(fontsize=legfont)
+                      label ="$K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[1],bw_adjust=adjust_factor)
+  
+    axs[1].set_title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$")
 
 
     i=2
-    data=np.ravel(spherical_coords_batch_tuple[j][i][-sample_cut:,1])
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,1])
     periodic_data=np.ravel(np.array([data-2*np.pi,data,data+2*np.pi]) )
-
     sns.kdeplot( data=periodic_data,
-                      label ="$\dot{\gamma}="+str(erate[skip_array[i]])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[2])
-    axs[2].legend(fontsize=legfont)
+                      label ="$K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[2],bw_adjust=adjust_factor)
+    
+    axs[2].set_title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$")
 
 
     i=3
-    data=np.ravel(spherical_coords_batch_tuple[j][i][-sample_cut:,1])
-    periodic_data=np.ravel(np.array([data-2*np.pi,data,data+2*np.pi]) ) 
-
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,1])
+    periodic_data=np.ravel(np.array([data-2*np.pi,data,data+2*np.pi]) )
     sns.kdeplot( data=periodic_data,
-                      label ="$\dot{\gamma}="+str(erate[skip_array[i]])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[3])
-    axs[3].legend(fontsize=legfont)
+                      label ="$K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[3],bw_adjust=adjust_factor)
+   
+    axs[3].set_title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$")
 
 
 f.supxlabel("$\Theta$")
 plt.xticks(pi_theta_ticks,pi_theta_tick_labels)
-    
-#plt.yticks(theta_y_ticks)
+plt.legend(bbox_to_anchor=(1,0.55),frameon=False)
+
+
+#plt.yticks(phi_y_ticks)
+
 plt.ylabel('Density')
-plt.ylim(0.03,0.07)
 plt.xlim(-np.pi,np.pi)
 #plt.xlim(0,np.pi)
 plt.tight_layout()
@@ -892,98 +1108,112 @@ plt.show()
 
 
   
+#%% different style plot of rho
 
-#%% 
-plt.rcParams["figure.figsize"] = (12,6 )
-extension_ticks=[0,1,2,3,4]
-skip_array=[0,9,18]
-for i in range(len(skip_array)):
-    
-    for j in range(K.size):
-    
-        l=skip_array[i]
-    # for i in range(e_in,e_end):
+#rho
 
-        # sns.kdeplot(eq_spring_length-np.ravel(interest_vectors_tuple[i][:,:,2:5]),
-        #              label ="$K="+str(K)+"$")
-                    #label ="$\dot{\gamma}="+str(erate[i])+"$")
+f, axs = plt.subplots(1, 4, figsize=(15, 6),sharey=True,sharex=True)
+adjust_factor=0.005
+for j in range(K.size):
+    spherical_coords_tuple=convert_cart_2_spherical_z_inc(j,skip_array,area_vector_spherical_batch_tuple,
+                                       n_plates,cutoff)
 
-        plt.subplot(1, 3, i+1)
-        sns.kdeplot(np.ravel(interest_vectors_batch_tuple[j][l][:,:,2:5])-eq_spring_length,
-                    label ="$\dot{\gamma}="+str(erate[l])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j])
-        #NOTE: is this level of smoothing appropriate
-        # plt.hist(eq_spring_length+0.125-np.ravel(interest_vectors_batch_tuple[j][i][:,:,2:5]),
-        #         histtype='step', stacked=True,
-        #         fill=False, density=True, linestyle=linestyle_tuple[l], label ="$\dot{\gamma}="+str(erate[i])+"$")
    
+    i=0
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,0])
+   
+    sns.kdeplot( data=data,
+                      label ="$K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[0],bw_adjust=adjust_factor)
     
-plt.xlabel("$\Delta x$")
+    axs[0].set_title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$")
 
 
-#plt.legend(fontsize=legfont,loc='upper right') 
-plt.yticks(extension_ticks)
+    i=1
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,0])
+    
+    sns.kdeplot( data=data,
+                      label ="$K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[1],bw_adjust=adjust_factor)
+  
+    axs[1].set_title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$")
 
-plt.legend(fontsize=legfont)
-#plt.savefig(path_2_log_files+"/plots/deltax_dist_K_"+str(K[j])+"_.pdf",dpi=1200,bbox_inches='tight')
-#plt.xlim(-3,2)
+
+    i=2
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,0])
+   
+    sns.kdeplot( data=data,
+                      label ="$K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[2],bw_adjust=adjust_factor)
+    
+    axs[2].set_title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$")
+
+
+    i=3
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,0])
+   
+    sns.kdeplot( data=data,
+                      label ="$K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[3],bw_adjust=adjust_factor)
+   
+    axs[3].set_title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$")
+
+
+f.supxlabel("$\\rho$")
+
+plt.legend(bbox_to_anchor=(1,0.55),frameon=False)
+
+
+#plt.yticks(phi_y_ticks)
+
 plt.ylabel('Density')
+
+#plt.xlim(0,np.pi)
+plt.tight_layout()
+
 plt.show()
 
 
-#%% 
+#%% comparing across K
 skip_array=[0,9,13,18]
-plt.rcParams["figure.figsize"] = (12,6 )
-
-dist_xticks=([[-1,0,1,2,3],[-3,-2,-1,0,1,2,3],[-7.5,-5,-2.5,0,2.5,5]])
 
 
-f, axs = plt.subplots(1, 4, figsize=(12, 6),sharey=True,sharex=True)
+
+f, axs = plt.subplots(1, 4, figsize=(15, 6),sharey=True,sharex=True)
 
 #for i in range(len(skip_array)):
 adjust=1
 for j in range(K.size):
-        R_x=interest_vectors_batch_tuple[j][0][:,:,2]
-        R_y=interest_vectors_batch_tuple[j][0][:,:,3]
-        R_z=interest_vectors_batch_tuple[j][0][:,:,4]
-        magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
+        i=0
+        magnitude_spring=interest_vectors_batch_tuple[j][i][:,:,2:5]
 
+        mean_spring_mag=np.mean(magnitude_spring)
+          
+        
         sns.kdeplot(np.ravel(magnitude_spring)-eq_spring_length,
-                    label ="$\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[0])
-        axs[0].legend(fontsize=legfont)
-        # axs[0].xticks(dist_xticks[0][:])
-
-        R_x=interest_vectors_batch_tuple[j][9][:,:,2]
-        R_y=interest_vectors_batch_tuple[j][9][:,:,3]
-        R_z=interest_vectors_batch_tuple[j][9][:,:,4]
-        magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
+                    label ="$K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[0])
+        axs[0].set_title("$\dot{\gamma}="+str(erate[i])+"$")
+        i=9
+        magnitude_spring=interest_vectors_batch_tuple[j][9][:,:,2:5]
        
         sns.kdeplot(np.ravel(magnitude_spring)-eq_spring_length,
-                    label ="$\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[1])
-        axs[1].legend(fontsize=legfont)
-        # axs[1].xticks(dist_xticks[1][:])
-        R_x=interest_vectors_batch_tuple[j][13][:,:,2]
-        R_y=interest_vectors_batch_tuple[j][13][:,:,3]
-        R_z=interest_vectors_batch_tuple[j][13][:,:,4]
-        magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
+                    label ="$K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[1])
+        axs[1].set_title("$\dot{\gamma}="+str(erate[i])+"$")
+        i=13
+        magnitude_spring=interest_vectors_batch_tuple[j][13][:,:,2:5]
         sns.kdeplot(np.ravel(magnitude_spring)-eq_spring_length,
-                    label ="$\dot{\gamma}="+str(erate[13])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[2])
-        axs[2].legend(fontsize=legfont)
-        # axs[2].xticks(dist_xticks[2][:])
-        #plt.legend(fontsize=legfont) 
-        R_x=interest_vectors_batch_tuple[j][18][:,:,2]
-        R_y=interest_vectors_batch_tuple[j][18][:,:,3]
-        R_z=interest_vectors_batch_tuple[j][18][:,:,4]
-        magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
+                    label ="$K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[2])
+        axs[2].set_title("$\dot{\gamma}="+str(erate[i])+"$")
+        i=18
+        magnitude_spring=interest_vectors_batch_tuple[j][18][:,:,2:5]
+        
+      
         sns.kdeplot(np.ravel(magnitude_spring)-eq_spring_length,
-                    label ="$\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[3])
-        axs[3].legend(fontsize=legfont)
+                    label ="$K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[3])
+        axs[3].set_title("$\dot{\gamma}="+str(erate[i])+"$")
         
         
 
-plt.yticks(extension_ticks)
-plt.xticks()
+#plt.yticks(extension_ticks)
+#plt.xticks()
 
-
+plt.legend(bbox_to_anchor=(1,0.55),frameon=False)
 f.supxlabel("$\Delta x$")
 f.tight_layout()
 
@@ -991,158 +1221,50 @@ plt.savefig(path_2_log_files+"/plots/deltax_dist_.pdf",dpi=1200,bbox_inches='tig
    
 plt.show()
 
+#%% comparing erates
+skip_array=[0,9,13,18]
+#skip_array=[0]
 
-#%% x dist 
-plt.rcParams["figure.figsize"] = (12,6 )
-
-dist_xticks=([[-1,0,1,2,3],[-3,-2,-1,0,1,2,3],[-7.5,-5,-2.5,0,2.5,5]])
-f, axs = plt.subplots(1, 3, figsize=(10, 6),sharey=True,sharex=True)
-
-#for i in range(len(skip_array)):
-    
-for j in range(0,2):
-        R_x=interest_vectors_batch_tuple[j][0][:,:,2]
-        R_y=interest_vectors_batch_tuple[j][0][:,:,3]
-        R_z=interest_vectors_batch_tuple[j][0][:,:,4]
-        magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
-
-        sns.kdeplot(np.ravel(R_x),
-                    label ="$R_{x},\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[1], ax=axs[0])
-        sns.kdeplot(np.ravel(R_y),
-                    label ="$R_{y},\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[2], ax=axs[0])
-        sns.kdeplot(np.ravel(R_z),
-                    label ="$R_{z},\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[3], ax=axs[0])
-
-        axs[0].legend(fontsize=legfont)
-        # axs[0].xticks(dist_xticks[0][:])
-
-        R_x=interest_vectors_batch_tuple[j][9][:,:,2]
-        R_y=interest_vectors_batch_tuple[j][9][:,:,3]
-        R_z=interest_vectors_batch_tuple[j][9][:,:,4]
-        magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
-       
-        sns.kdeplot(np.ravel(R_x),
-                    label ="$R_{x},\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[1], ax=axs[1])
-        sns.kdeplot(np.ravel(R_y),
-                    label ="$R_{y},\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[2], ax=axs[1])
-        sns.kdeplot(np.ravel(R_z),
-                    label ="$R_{z},\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[3], ax=axs[1])
-        axs[1].legend(fontsize=legfont)
-        # axs[1].xticks(dist_xticks[1][:])
-        R_x=interest_vectors_batch_tuple[j][18][:,:,2]
-        R_y=interest_vectors_batch_tuple[j][18][:,:,3]
-        R_z=interest_vectors_batch_tuple[j][18][:,:,4]
-        magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
-        sns.kdeplot(np.ravel(R_x),
-                    label ="$R_{x},\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[1], ax=axs[2])
-        sns.kdeplot(np.ravel(R_y),
-                    label ="$R_{y},\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[2], ax=axs[2])
-        sns.kdeplot(np.ravel(R_z),
-                    label ="$R_{z},\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[3], ax=axs[2])
-        axs[2].legend(fontsize=legfont)
-        # axs[2].xticks(dist_xticks[2][:])
-        #plt.legend(fontsize=legfont) 
-        
-
-plt.yticks(extension_ticks)
-f.supxlabel("$\Delta R_{x}$")
-f.tight_layout()
-
-plt.savefig(path_2_log_files+"/plots/deltar_x_dist_.pdf",dpi=1200,bbox_inches='tight')
-   
-plt.show()
-
-
-#%% y dist 
-plt.rcParams["figure.figsize"] = (12,6 )
-
-dist_xticks=([[-1,0,1,2,3],[-3,-2,-1,0,1,2,3],[-7.5,-5,-2.5,0,2.5,5]])
-f, axs = plt.subplots(1, 3, figsize=(10, 6),sharey=True,sharex=True)
+#dist_xticks=([[-1,0,1,2,3],[-3,-2,-1,0,1,2,3],[-7.5,-5,-2.5,0,2.5,5]])
 
 #for i in range(len(skip_array)):
-    
+
+adjust=1
 for j in range(K.size):
-        R_x=interest_vectors_batch_tuple[j][0][:,:,2]
-        R_y=interest_vectors_batch_tuple[j][0][:,:,3]
-        R_z=interest_vectors_batch_tuple[j][0][:,:,4]
-        magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
+  
+    for i in range(len(skip_array)):
+            k=skip_array[i]
+           
+            magnitude_spring=interest_vectors_batch_tuple[j][k][:,:,2:5]
 
-        sns.kdeplot(np.ravel(R_y),
-                    label ="$\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[0])
-        axs[0].legend(fontsize=legfont)
-        # axs[0].xticks(dist_xticks[0][:])
+            mean_spring_mag=np.mean(magnitude_spring)
+          
 
-        R_x=interest_vectors_batch_tuple[j][9][:,:,2]
-        R_y=interest_vectors_batch_tuple[j][9][:,:,3]
-        R_z=interest_vectors_batch_tuple[j][9][:,:,4]
-        magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
-       
-        sns.kdeplot(np.ravel(R_y),
-                    label ="$\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[1])
-        axs[1].legend(fontsize=legfont)
-        # axs[1].xticks(dist_xticks[1][:])
-        R_x=interest_vectors_batch_tuple[j][18][:,:,2]
-        R_y=interest_vectors_batch_tuple[j][18][:,:,3]
-        R_z=interest_vectors_batch_tuple[j][18][:,:,4]
-        magnitude_spring=np.sqrt(R_x**2 +R_y**2 + R_z**2)
-        sns.kdeplot(np.ravel(R_y),
-                    label ="$\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[2])
-        axs[2].legend(fontsize=legfont)
-        # axs[2].xticks(dist_xticks[2][:])
-        #plt.legend(fontsize=legfont) 
+            sns.kdeplot(np.ravel(magnitude_spring)-eq_spring_length,
+                        label ="$\dot{\gamma}="+str(erate[k])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[i])
+            plt.axvline(mean_spring_mag,label="$\\bar{\Delta x}="+str(sigfig.round(mean_spring_mag,sigfigs=3))+", \dot{\gamma}="+str(erate[k])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[i])
+         
         
+            
 
-plt.yticks(extension_ticks)
+    #plt.yticks(extension_ticks)
 
-f.supxlabel("$\Delta R_{y}$")
-f.tight_layout()
-
-plt.savefig(path_2_log_files+"/plots/deltar_y_dist_.pdf",dpi=1200,bbox_inches='tight')
-   
-plt.show()
+    #plt.xticks()
 
 
-
-
-# %%
-#%% z dist 
-plt.rcParams["figure.figsize"] = (12,6 )
-
-dist_xticks=([[-1,0,1,2,3],[-3,-2,-1,0,1,2,3],[-7.5,-5,-2.5,0,2.5,5]])
-f, axs = plt.subplots(1, 3, figsize=(10, 6),sharey=True,sharex=True)
-
-#for i in range(len(skip_array)):
+    plt.xlabel("$\Delta x$")
+    plt.legend(fontsize=legfont,bbox_to_anchor=(0.75,0.5), frameon=False)
+    plt.xlim(-2,5.5)
+    plt.tight_layout()
     
-for j in range(K.size):
 
-        sns.kdeplot(np.ravel(interest_vectors_batch_tuple[j][0][:,:,4]),
-                    label ="$\dot{\gamma}="+str(erate[0])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[0])
-        axs[0].legend(fontsize=legfont)
-        # axs[0].xticks(dist_xticks[0][:])
+    plt.savefig(path_2_log_files+"/plots/deltax_dist_K"+str(K[j])+".pdf",dpi=1200,bbox_inches='tight')
+    
+    plt.show()
 
-        
-       
-        sns.kdeplot(np.ravel(interest_vectors_batch_tuple[j][9][:,:,4]),
-                    label ="$\dot{\gamma}="+str(erate[9])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[1])
-        axs[1].legend(fontsize=legfont)
-        # axs[1].xticks(dist_xticks[1][:])
-       
-        sns.kdeplot(np.ravel(interest_vectors_batch_tuple[j][18][:,:,4]),
-                    label ="$\dot{\gamma}="+str(erate[18])+",K="+str(K[j])+"$",bw_adjust=adjust,linestyle=linestyle_tuple[j], ax=axs[2])
-        axs[2].legend(fontsize=legfont)
-        # axs[2].xticks(dist_xticks[2][:])
-        #plt.legend(fontsize=legfont) 
-        
-        
 
-plt.yticks(extension_ticks)
 
-f.supxlabel("$\Delta R_{z}$")
-f.tight_layout()
 
-plt.savefig(path_2_log_files+"/plots/deltar_z_dist_.pdf",dpi=1200,bbox_inches='tight')
-   
-plt.show()
 
 #%% plotting particle velocity against postion 
 for j in range(K.size):

@@ -16,8 +16,8 @@ import regex as re
 import pandas as pd
 import sigfig
 plt.rcParams.update(plt.rcParamsDefault)
-# plt.rcParams["figure.figsize"] = (8,6 )
-# plt.rcParams.update({'font.size': 16})
+plt.rcParams["figure.figsize"] = (8,6 )
+plt.rcParams.update({'font.size': 16})
 #plt.rcParams['text.usetex'] = True
 from mpl_toolkits import mplot3d
 from matplotlib.gridspec import GridSpec
@@ -27,18 +27,18 @@ import mmap
 import h5py as h5
 import math as m 
 import glob 
-from reading_lammps_module import *
 from fitter import Fitter, get_common_distributions, get_distributions
-path_2_post_proc_module= '/Users/luke_dev/Documents/molecular_dynamics_post_processing_codes/MPCD_codes/'
+path_2_post_proc_module= '/Users/luke_dev/Documents/MPCD_post_processing_codes/'
 os.chdir(path_2_post_proc_module)
 import seaborn as sns
+sns.set_palette('colorblind')
+from log2numpy import *
+from dump2numpy import *
 import glob 
-from post_MPCD_MP_processing_module import *
-from post_langevin_module import * 
-
+from MPCD_codes.post_MPCD_MP_processing_module import *
 import pickle as pck
 from numpy.linalg import norm
-from numpy.linalg import inv as matinv
+from post_langevin_module import *
 
 #%%
 damp=0.035
@@ -61,17 +61,24 @@ strain_total=100
 
 # erate=np.array([0])
 # no_timesteps=np.array([10000000])
-K=150
-erate=np.flip(np.array([0]))
+K=60
+erate=np.flip(np.array([1,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.175,0.15,0.125,0.1,0.08,
+                0.06,0.04,0.01,0.005,0]))
 
-no_timesteps=np.flip(np.array([ 10000000]))
+no_timesteps=np.flip(np.array([ 3944000,  4382000,  4929000,  5634000,  6573000,  7887000,
+         9859000, 13145000, 19718000,  2253000,  2629000,  3155000,
+         3944000,  4929000,  6573000,  9859000, 39435000,
+        78870000, 10000000]))
 
 timestep_multiplier=np.flip(np.array(
-[0.2]))
+[0.005,0.005,0.005,0.005,
+0.005,0.005,0.005,0.005,0.005,
+0.05,0.05,0.05,0.05,0.05,0.05,
+0.05,0.05,0.05,0.2]))
 
 
-
-thermo_vars='         KinEng         PotEng         Press         c_myTemp        TotEng    '
+thermo_vars='         KinEng         PotEng         Press         c_myTemp        c_bias         TotEng    '
+#thermo_vars='         KinEng         PotEng         Press         c_myTemp        TotEng    '
 
 
 
@@ -82,8 +89,11 @@ eq_spring_length=3*np.sqrt(3)/2
 mass_pol=5 
 n_plates=100
 
-
-filepath="/Users/luke_dev/Documents/simulation_test_folder/equilibrium_runs/noise_0.035"
+filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/run_692855/sucessful_runs_3_reals"
+#filepath='/Users/luke_dev/Documents/simulation_run_folder/tri_plate_with_6_angles/eq_run_tri_plate_damp_0.035_K_50_100_particles'
+filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/run_312202/"
+filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/run_667325/"
+filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/run_279865/"
 path_2_log_files=filepath
 pol_general_name_string='*K_'+str(K)+'*pol*h5'
 
@@ -212,7 +222,7 @@ print(len(realisation_name_dump_sorted_final))
 
 #NOTE: make sure the lists are all correct with precisely the right number of repeats or this code below
 # will not work properly. 
-
+import dump2numpy
 dump_start_line = "ITEM: ATOMS id type x y z vx vy vz"
 Path_2_dump=filepath
 
@@ -250,7 +260,7 @@ for i in range(e_in,e_end):
     dump_freq=int(realisation_name_log_sorted_final[i_].split('_')[10])
     
     #log_file_array=np.zeros((j_,outputdim_log,6)) #eq
-    log_file_array=np.zeros((j_,outputdim_log,6)) #nemd
+    log_file_array=np.zeros((j_,outputdim_log,7)) #nemd
     p_velocities_array=np.zeros((j_,outputdim_dump,n_plates*6,3))
     p_positions_array=np.zeros((j_,outputdim_dump,n_plates*6,3))
     
@@ -630,8 +640,6 @@ marker=['x','o','+','^',"1","X","d","*","P","v"]
 aftcut=1
 cut=0.4
 
-
-
 labels_stress=["$\sigma_{xx}$",
                "$\sigma_{yy}$",
                "$\sigma_{zz}$",
@@ -663,15 +671,11 @@ def stress_tensor_averaging(e_end,
                 stress_tensor_std=np.mean(stress_tensor_std_reals, axis=1)
     return stress_tensor,stress_tensor_std
 
-
-
 stress_tensor,stress_tensor_std=stress_tensor_averaging(e_end,
                             labels_stress,
                             cut,
                             aftcut,
                             spring_force_positon_tensor_tuple,j_)
-
-
 
 #%% plot stress vs strain 
 
@@ -1061,117 +1065,6 @@ plt.legend()
 plt.tight_layout()
 plt.show()
 
-
-#%% stat tests
-def convert_cart_2_spherical_z_inc(j,skip_array,area_vector_spherical_batch_tuple,
-                                       n_plates,cutoff):
-        spherical_coords_tuple=()
-        for i in range(len(skip_array)):
-            i=skip_array[i]
-
-            
-            area_vector_ray=area_vector_spherical_batch_tuple[j][i]
-            area_vector_ray[area_vector_ray[:,:,:,2]<0]*=-1
-            
-            x=area_vector_ray[:,cutoff:,:,0]
-            y=area_vector_ray[:,cutoff:,:,1]
-            z=area_vector_ray[:,cutoff:,:,2]
-        
-
-            spherical_coords_array=np.zeros((j_,area_vector_ray.shape[1]-cutoff,n_plates,3))
-        
-
-
-
-            # radial coord
-            spherical_coords_array[:,:,:,0]=np.sqrt((x**2)+(y**2)+(z**2))
-
-            #  theta coord 
-            spherical_coords_array[:,:,:,1]=np.sign(y)*np.arccos(x/(np.sqrt((x**2)+(y**2))))
-
-            #spherical_coords_array[:,:,:,1]=np.sign(x)*np.arccos(y/(np.sqrt((x**2)+(y**2))))
-            #spherical_coords_array[:,:,:,1]=np.arctan(y/x)
-            
-            # phi coord
-            # print(spherical_coords_array[spherical_coords_array[:,:,:,0]==0])
-            spherical_coords_array[:,:,:,2]=np.arccos(z/np.sqrt((x**2)+(y**2)+(z**2)))
-
-        
-
-            spherical_coords_tuple=spherical_coords_tuple+(spherical_coords_array,)
-
-        return spherical_coords_tuple
-
-def stat_test_on_theta(periodic_data,sample_size):
-    KS_test_result=[]
-    MW_test_result=[]
-    for m in range(100):                
-                    # scotts factor 
-                    np.random.seed(m)
-                    uniform=np.random.uniform(low=np.min(periodic_data), high=np.max(periodic_data),size=periodic_data.size)
-                    sample1 = np.random.choice(uniform,size=sample_size, replace = True, p = None)
-                    periodic_sample=np.random.choice( np.ravel(periodic_data) , size = sample_size, replace = True, p = None)
-                    print(f'Uniform vs. My data: {scipy.stats.ks_2samp( periodic_sample,sample1)}')
-                    KS_test_result.append(scipy.stats.ks_2samp(  periodic_sample,sample1)[1])
-                   # MW_test_result.append(scipy.stats.mannwhitneyu(  periodic_sample,sample1)[1])
-
-    return KS_test_result,MW_test_result
-
-
-                                    
-                   
-#sns.set_theme(font_scale=1.5, rc={'text.usetex' : True})
-
-def producing_random_points_with_theta(number_of_points,rand_int):
-
-    rng = np.random.default_rng(rand_int)
-    Phi=np.arccos(1-2*(rng.random((number_of_points))))
-    
-    Theta=2*np.pi*rng.random((number_of_points))
-    rho=1#7.7942286341
-    A=Phi
-    B=Theta
-    R=np.array([rho*np.sin(A)*np.cos(B),rho*np.sin(B)*np.sin(A),rho*np.cos(A)])
-
-
-    return Phi,Theta,R
-                
-                # scotts factor 
-def stat_test_on_phi(periodic_data,sample_size):
-    KS_test_result=[]
-    MW_test_result=[]
-    for m in range(100):                
-                
-                    Phi,Theta,R=producing_random_points_with_theta(periodic_data.size,m)
-
-                    sample_sin=np.random.choice( Phi , size = sample_size, replace = True, p = None)
-                    periodic_sample=np.random.choice( np.ravel(periodic_data) , size = sample_size, replace = True, p = None)
-                    KS_test_result.append(scipy.stats.ks_2samp( periodic_sample,sample_sin)[1])
-                    #MW_test_result.append(scipy.stats.mannwhitneyu( periodic_sample,sample_sin)[1])
-                    
-                    print(f'sampled sine vs. My data sample KS test: {scipy.stats.ks_2samp( periodic_sample,sample_sin)}')
-                    #MW only makes sense in ordinal data - no natural ranking 
-                   # print(f'sampled sine vs. My data sample Mannwhitney test: {scipy.stats.mannwhitneyu( periodic_sample,sample_sin)}')
-                   # print(f'sampled sine vs. My data sample ranksums test: {scipy.stats.ranksums( periodic_sample,sample_sin)}')
-
-    return KS_test_result,MW_test_result
-
-
-def plot_MW_test(MW_test_result):
-
-    plt.plot(MW_test_result,label="MW_test_phi")
-    plt.axhline(np.mean(MW_test_result),label="MWmean$="+str(np.mean(MW_test_result))+",\pm"+str(np.std(MW_test_result))+"$",color="red",linestyle="dashed")
-    plt.ylabel("pvalue")
-    plt.legend()
-    plt.show()
-
-def plot_KS_test(KS_test_result):
-
-    plt.plot(KS_test_result,label="KS_test_phi")
-    plt.axhline(np.mean(KS_test_result),label="KSmean$="+str(np.mean(KS_test_result))+",\pm"+str(np.std(KS_test_result))+"$",color="green",linestyle="dotted")
-    plt.ylabel("pvalue")
-    plt.legend()
-    plt.show()
           
 
       
@@ -1182,7 +1075,6 @@ pi_theta_tick_labels=['-π','-π/2','0', 'π/2', 'π']
 pi_phi_ticks=[ 0,np.pi/4, np.pi/2]
 pi_phi_tick_labels=[ '0','π/4', 'π/2']
 spherical_coords_tuple=()
-cutoff=90
 for i in range(e_in,e_end):
      
     area_vector_ray=area_vector_tuple[i]
@@ -1203,7 +1095,24 @@ for i in range(e_in,e_end):
 
     spherical_coords_tuple=spherical_coords_tuple+(spherical_coords_array,)
 
+#%% look at chnage of theta with time 
+for i in range(e_in,e_end):
+     strain_plot=np.linspace(0,strain_total,spherical_coords_array[i,:,0,2].shape[0])
+     plt.plot( strain_plot,spherical_coords_array[i,:,0,1])
+     plt.show()
 
+#%%
+for i in range(e_in,e_end):
+     strain_plot=np.linspace(0,strain_total,spherical_coords_array[i,:,0,2].shape[0])
+     plt.plot( strain_plot,spherical_coords_array[i,:,0,2])
+     plt.xlabel("$\gamma$")
+     plt.ylabel("$\phi$")
+     pi_phi_ticks=[ 0,np.pi/4, np.pi/2]
+     pi_phi_tick_labels=[ '0','π/4', 'π/2']
+     plt.yticks(pi_phi_ticks,pi_phi_tick_labels)
+     #plt.ylim(0,np.pi/2)
+     plt.show()
+     
 
 
 #%% rho 
@@ -1219,12 +1128,11 @@ plt.rcParams["figure.figsize"] = (8,6 )
 plt.rcParams.update({'font.size': 16})
 skip_array=np.arange(0,e_end,4)
 skip_array_2=np.arange(0,int(no_timesteps[0]/100),100)
-sample_size=500
-adjust=1
-# look at last one 
+
+
 
 for i in range(skip_array.size):
-    for j in range(99,100):
+    #for j in range(j_):
 
 
         i=skip_array[i]
@@ -1233,48 +1141,36 @@ for i in range(skip_array.size):
         #             label ="$\dot{\gamma}="+str(erate[i])+"$", kde=True)
         # sns.kdeplot( data=np.ravel(spherical_coords_tuple[i][:,skip_array_2[j],:,1]),
         #             label="output_range:"+str(skip_array_2[j]))
-        data=np.ravel(spherical_coords_tuple[i][:,:,:,1])
-        # Kolmogorov smirnoff test
-
-       
+        data=np.ravel(spherical_coords_tuple[i][:,-500:,:,1])
         periodic_data=np.array([data-2*np.pi,data,data+2*np.pi])  
 
-        KS_test_result,MW_test_result=stat_test_on_theta(periodic_data,sample_size)
-
-        #periodic_data=data
-
         sns.kdeplot( data=np.ravel(periodic_data),
-                    label ="$\dot{\gamma}="+str(erate[i],)+"$",bw_adjust=adjust)
+                    label ="$\dot{\gamma}="+str(erate[i],)+"$")#bw_adjust=0.1
         
         # mean_data=np.mean(spherical_coords_tuple[0][:,-1,:,1],axis=0)      
-        plt.hist(np.ravel(periodic_data),alpha=0.1,density=True,bins=27)
+        #plt.hist(np.ravel(spherical_coords_tuple[i][:,-100,:,1]))
         # bw adjust effects the degree of smoothing , <1 smoothes less
         plt.xlabel("$\Theta$")
         plt.xticks(pi_theta_ticks,pi_theta_tick_labels)
-        plt.xlim(-1*np.pi,1*np.pi)
+        plt.xlim(-np.pi,np.pi)
         plt.ylabel('Density')
         plt.legend(bbox_to_anchor=[1.1, 0.45])
 plt.show()
-
-plot_KS_test(KS_test_result)
-
 
 
 #%% chi squared test
 # generate uniform data 
 rng = np.random.default_rng(1234)
 s = rng.uniform(-np.pi,np.pi,n_plates*j_)
-bins=27
+bins=10
 # make into histograms 
-data=np.ravel(spherical_coords_tuple[0][:,-1,:,1])
+data=spherical_coords_tuple[0][0,-1,:,1]
 freq_exp=np.histogram(s,bins=bins)[0]
 freq_obv=np.histogram(data,bins=bins)[0]
-
 degrees_freedom=bins-1
-chi_stat,pvalue=scipy.stats.chisquare(f_obs=freq_obv,f_exp=freq_exp,ddof=0)
+chi_stat,pvalue=scipy.stats.chisquare(f_obs=freq_obv,ddof=0)
 print(chi_stat)
 print(pvalue)
-
 
 chi_stat_table=scipy.stats.chi2.ppf(0.05,degrees_freedom)
 print(chi_stat_table)
@@ -1286,21 +1182,18 @@ print(chi_stat_table)
 #%% phi 
 plt.rcParams["figure.figsize"] = (8,6 )
 plt.rcParams.update({'font.size': 16})
-for i in range(e_end):
-    for j in range(99,100):
-       
+for i in range(skip_array.size):
+    #for j in range(skip_array_2.size):
+        i=skip_array[i]
 
         # sns.kdeplot( data=np.ravel(spherical_coords_tuple[i][:,skip_array_2[j],:,2]),
         #              label="output_range:"+str(skip_array_2[j]))
         # sns.kdeplot( data=np.ravel(spherical_coords_tuple[i][:,-1,:,2]),
         #              label ="$\dot{\gamma}="+str(erate[i])+"$")
-        data=np.ravel(spherical_coords_tuple[i][:,j,:,2])
+        data=np.ravel(spherical_coords_tuple[i][:,-500,:,2])
         periodic_data=np.array([data,np.pi-data])  
-        KS_test_result,MW_test_result=stat_test_on_phi(periodic_data,sample_size)
-        #periodic_data=data
         sns.kdeplot( data=np.ravel(periodic_data),
-                      label ="$\dot{\gamma}="+str(erate[i])+"$", bw_adjust=adjust)
-        plt.hist(np.ravel(periodic_data),alpha=0.1,density=True,bins=13)
+                      label ="$\dot{\gamma}="+str(erate[i])+"$")
                    
         #plt.hist(np.ravel(spherical_coords_tuple[i][:,-1,:,2]))
 
@@ -1310,8 +1203,6 @@ plt.ylabel('Density')
 plt.legend(bbox_to_anchor=[1.1, 0.45])
 plt.xlim(0,np.pi/2)
 plt.show()
-
-plot_KS_test(KS_test_result)
 
 #%% extension_vectors
 plt.rcParams["figure.figsize"] = (8,6 )
@@ -1325,12 +1216,8 @@ for i in range(skip_array.size):
     # sns.kdeplot(eq_spring_length-np.ravel(interest_vectors_tuple[i][:,:,2:5]),
     #              label ="$K="+str(K)+"$")
                  #label ="$\dot{\gamma}="+str(erate[i])+"$")
-    sns.kdeplot(eq_spring_length-np.ravel(interest_vectors_tuple[i][:,:,2:5]),
+    sns.kdeplot(eq_spring_length+0.125-np.ravel(interest_vectors_tuple[i][:,:,2:5]),
                   label ="$\dot{\gamma}="+str(erate[i])+"$")
-    mean=np.mean(eq_spring_length-np.ravel(interest_vectors_tuple[i][:,:,2:5]))
-    std=np.std(eq_spring_length-np.ravel(interest_vectors_tuple[i][:,:,2:5]))
-    plt.axvline(mean)
-    
     
 plt.xlabel("$\Delta x$")
 
