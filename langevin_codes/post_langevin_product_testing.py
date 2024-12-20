@@ -1267,8 +1267,10 @@ for j in range(K.size):
 
 
 #%% plotting particle velocity against postion 
+skip_array=[0,5,10,15,18]
 for j in range(K.size):
-    for i in range(erate.size):
+    for i in range(len(skip_array)):
+        i=skip_array[i]
 
 
         
@@ -1278,9 +1280,10 @@ for j in range(K.size):
         plt.scatter(z_position,x_vel, label="$\dot{\gamma}="+str(erate[i])+"$")
         plt.plot(z_position,pred_x_vel)
         plt.xlabel("$z$")
-        plt.ylabel("$v_{x}$")
+        plt.ylabel("$v_{x}$",rotation=0)
         
     plt.legend(bbox_to_anchor=(1,1))
+    plt.savefig(path_2_log_files+"/plots/vx_vs_z_"+str(K[j])+".pdf",dpi=1200,bbox_inches='tight')
     plt.show()
 
 #%% plotting initial velocity distribution 
@@ -1305,7 +1308,7 @@ for j in range(K.size):
     # only need the velocity distribution at gammadot=0
     for i in range(1):
         maxwell = scipy.stats.norm
-        data = np.ravel(pos_vel_batch_tuple[j][i][:,:,3:6,0])
+        data = np.ravel(pos_vel_batch_tuple[j][i][:,:,3,0])
 
         params = maxwell.fit(data)
         print(params)
@@ -1314,6 +1317,35 @@ for j in range(K.size):
         plt.hist(data, bins=20,density=True)
         x = np.linspace(np.min(data),np.max(data),data.size)
         plt.plot(x, maxwell.pdf(x, *params), lw=3)
+        plt.xlabel("$v_{x}$")
+        plt.ylabel("Density")
+        plt.savefig(path_2_log_files+"/plots/vx_dist_"+str(K[j])+".pdf",dpi=1200,bbox_inches='tight')
+        plt.show()
+        data = np.ravel(pos_vel_batch_tuple[j][i][:,:,4,0])
+
+        params = maxwell.fit(data)
+        print(params)
+        # (0, 4.9808603062591041)
+
+        plt.hist(data, bins=20,density=True)
+        x = np.linspace(np.min(data),np.max(data),data.size)
+        plt.plot(x, maxwell.pdf(x, *params), lw=3)
+        plt.xlabel("$v_{y}$")
+        plt.ylabel("Density")
+        plt.savefig(path_2_log_files+"/plots/vy_dist_"+str(K[j])+".pdf",dpi=1200,bbox_inches='tight')
+        plt.show()
+        data = np.ravel(pos_vel_batch_tuple[j][i][:,:,5,0])
+
+        params = maxwell.fit(data)
+        print(params)
+        # (0, 4.9808603062591041)
+
+        plt.hist(data, bins=20,density=True)
+        x = np.linspace(np.min(data),np.max(data),data.size)
+        plt.plot(x, maxwell.pdf(x, *params), lw=3)
+        plt.xlabel("$v_{z}$")
+        plt.ylabel("Density")
+        plt.savefig(path_2_log_files+"/plots/vz_dist_"+str(K[j])+".pdf",dpi=1200,bbox_inches='tight')
 
         plt.show()
 
@@ -1341,5 +1373,6 @@ for j in range(K.size):
         plt.plot(x, maxwell.pdf(x, *params), lw=3)
         plt.xlabel("$|v|$")
         plt.ylabel("Density")
+        plt.savefig(path_2_log_files+"/plots/v_dist_"+str(K[j])+".pdf",dpi=1200,bbox_inches='tight')
         plt.show()
 # %%
