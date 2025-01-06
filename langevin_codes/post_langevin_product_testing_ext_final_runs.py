@@ -1055,7 +1055,7 @@ def convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tup
 
 
             area_vector=np.cross(ell_1,ell_2,axis=3)
-            print("percent of data with faulty rho vector",100*np.count_nonzero(area_vector[:,:,:,0]>50)/area_vector[:,:,:,0].size)
+            #print("percent of data with faulty rho vector",100*np.count_nonzero(area_vector[:,:,:,0]>50)/area_vector[:,:,:,0].size)
             
             # detect all z coords less than 0 and multiply all 3 coords by -1
             area_vector[area_vector[:,:,:,0]<0]*=-1
@@ -1079,6 +1079,9 @@ def convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tup
 
                 
             #spherical_coords_mean=np.mean(spherical_coords_array,axis=0)
+            
+            print("percent of data with faulty rho vector",100*np.count_nonzero( spherical_coords_array[:,:,:,0]>50)/ spherical_coords_array[:,:,:,0].size)
+            
 
             spherical_coords_tuple=spherical_coords_tuple+(spherical_coords_array,)
 
@@ -1104,7 +1107,7 @@ def convert_cart_2_spherical_y_incline(j_,j,skip_array,transformed_pos_batch_tup
 
 
             area_vector=np.cross(ell_1,ell_2,axis=3)
-            print("percent of data with faulty rho vector",100*np.count_nonzero(area_vector[:,:,:,0]>50)/area_vector[:,:,:,0].size)
+            #print("percent of data with faulty rho vector",100*np.count_nonzero(area_vector[:,:,:,0]>50)/area_vector[:,:,:,0].size)
             
             # detect all z coords less than 0 and multiply all 3 coords by -1
             area_vector[area_vector[:,:,:,1]<0]*=-1
@@ -1128,6 +1131,8 @@ def convert_cart_2_spherical_y_incline(j_,j,skip_array,transformed_pos_batch_tup
 
                 
             #spherical_coords_mean=np.mean(spherical_coords_array,axis=0)
+            print("percent of data with faulty rho vector",100*np.count_nonzero( spherical_coords_array[:,:,:,0]>50)/ spherical_coords_array[:,:,:,0].size)
+            
 
             spherical_coords_tuple=spherical_coords_tuple+(spherical_coords_array,)
 
@@ -1153,7 +1158,7 @@ def convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tup
 
 
             area_vector=np.cross(ell_1,ell_2,axis=3)
-            print("percent of data with faulty rho vector",100*np.count_nonzero(area_vector[:,:,:,0]>50)/area_vector[:,:,:,0].size)
+            #print("percent of data with faulty rho vector",100*np.count_nonzero(area_vector[:,:,:,0]>50)/area_vector[:,:,:,0].size)
             
             # detect all z coords less than 0 and multiply all 3 coords by -1
             area_vector[area_vector[:,:,:,2]<0]*=-1
@@ -1189,6 +1194,8 @@ def convert_cart_2_spherical_z_incline(j_,j,skip_array,transformed_pos_batch_tup
             #spherical_coords_mean=np.mean(spherical_coords_array,axis=0)
 
             #spherical_coords_tuple=spherical_coords_tuple+(spherical_coords_mean,)
+            print("percent of data with faulty rho vector",100*np.count_nonzero( spherical_coords_array[:,:,:,0]>50)/ spherical_coords_array[:,:,:,0].size)
+            
             spherical_coords_tuple=spherical_coords_tuple+(spherical_coords_array,)
 
     return spherical_coords_tuple
@@ -1568,7 +1575,7 @@ j=0
 spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
 sns.color_palette("magma")
 plt.ylim(0,2.2)
-plt.yscale('log')
+
 phi_dist_plot_timstep(skip_array,spherical_coords_tuple,j,adjfactor,skip_steps)
 plt.title("Phi inclined to x axis selection of steps")
 
@@ -1629,7 +1636,9 @@ linestyle_tuple = [
      ('loosely dashdotdotted', (0, (3, 10, 1, 10, 1, 10))),
      ('densely dashdotdotted', (0, (3, 1, 1, 1, 1, 1)))]
 
-cutoff=700
+
+
+cutoff=500
 adjfactor=0.5 #0.25#0.05
 j=0
 spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
@@ -1638,13 +1647,13 @@ phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
 plt.show()
 theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
 plt.show()
-# j=1
-# spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
-# # phi_theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor,skip_steps)
-# phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
-# plt.show()
-# theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
-# plt.show()
+j=1
+spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
+# phi_theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor,skip_steps)
+phi_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+plt.show()
+theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor)
+plt.show()
 # j=2
 # spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
 # # phi_theta_dist_plot(skip_array,spherical_coords_tuple,j,adjfactor,skip_steps)
@@ -1663,23 +1672,23 @@ plt.show()
 #%% different style plot of theta
 cutoff=500
 #theta
-linestyle_tuple = ['-', 
+linestyle_tuple = ['dashdot', 
   'dotted', 
- 'dashed', 'dashdot', 
+ 'dashed', '-', 
  'None', ' ', '', 'solid', 
  'dashed', 'dashdot', '--']
 pi_theta_ticks=[ -np.pi, -np.pi/2, 0, np.pi/2,np.pi]
 pi_theta_tick_labels=['-π','-π/2','0', 'π/2', 'π'] 
 pi_phi_ticks=[ 0,np.pi/8,np.pi/4,3*np.pi/8, np.pi/2]
 pi_phi_tick_labels=[ '0','π/8','π/4','3π/8', 'π/2']
-skip_array=np.array([[0,5,10,13,11,13],
-                         [0,5,10,13,11,1],
+skip_array=np.array([[0,5,10,12,11,13],
+                         [0,5,10,12,11,1],
                          [0,4,8,12,14,15],
                          [0,6,8,12,14,17],
                          [0,6,10,14,18,21],
                          [0,6,10,14,18,23]])
 f, axs = plt.subplots(1, 4, figsize=(15, 6),sharey=True,sharex=True)
-adjust_factor=0.5
+adjust_factor=1
 for j in range(K.size):
     spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
    
@@ -1739,19 +1748,22 @@ plt.tight_layout()
 #plt.savefig(path_2_log_files+"/plots/theta_dist_.pdf",dpi=1200,bbox_inches='tight')
 plt.show()
 # %%
-#%% different style plot of phi 
-
+#%% different style plot of phi using kdeplot 
+adjust_factor=10
 #phi 
-f, axs = plt.subplots(1, 4, figsize=(15, 6),sharey=True,sharex=True)
+f, axs = plt.subplots(1, 4, figsize=(15, 6),sharex=True)
 
 
 for j in range(K.size):
     spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
     i=0
     data=np.ravel( spherical_coords_tuple[i][:,:,:,2])
+    print(np.count_nonzero(np.isnan(data)))
     periodic_data=np.ravel(np.array([data,np.pi-data]))
+    
     sns.kdeplot( data=periodic_data,
                       label ="K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[0],bw_adjust=adjust_factor)
+    
     axs[0].set_title("$\dot{\\varepsilon}="+str(sigfig.round(erate[skip_array[j,i]],sigfigs=3))+"$")
     t = np.linspace(0, np.pi/2, data.size)
     pdf = 0.5 * np.sin(t)
@@ -1759,6 +1771,7 @@ for j in range(K.size):
 
     i=1
     data=np.ravel( spherical_coords_tuple[i][:,:,:,2])
+    print(np.count_nonzero(np.isnan(data)))
     periodic_data=np.ravel(np.array([data,np.pi-data]))
     sns.kdeplot( data=periodic_data,
                       label ="$\dot{\gamma}="+str(erate[skip_array[i]])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[1],bw_adjust=adjust_factor)
@@ -1769,6 +1782,7 @@ for j in range(K.size):
 
     i=2
     data=np.ravel( spherical_coords_tuple[i][:,:,:,2])
+    print(np.count_nonzero(np.isnan(data)))
     periodic_data=np.ravel(np.array([data,np.pi-data]))
     sns.kdeplot( data=periodic_data,
                       label ="$K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[2],bw_adjust=adjust_factor)
@@ -1779,6 +1793,7 @@ for j in range(K.size):
 
     i=3
     data=np.ravel( spherical_coords_tuple[i][:,:,:,2])
+    print(np.count_nonzero(np.isnan(data)))
     periodic_data=np.ravel(np.array([data,np.pi-data]))
     sns.kdeplot( data=periodic_data,
                       label ="$K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[3],bw_adjust=adjust_factor)
@@ -1804,4 +1819,56 @@ plt.tight_layout()
 #plt.savefig(path_2_log_files+"/plots/phi_dist_.pdf",dpi=1200,bbox_inches='tight')
 plt.show()
 
+#%% different style plot of rho using kdeplot 
+adjust_factor=2
+#phi 
+f, axs = plt.subplots(1, 4, figsize=(15, 6),sharey=True,sharex=True)
+
+
+for j in range(K.size):
+    spherical_coords_tuple=convert_cart_2_spherical_x_incline(j_,j,skip_array,transformed_pos_batch_tuple,n_plates,cutoff)
+    i=0
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,0])
+    periodic_data=np.ravel(np.array([data]))
+    sns.kdeplot( data=periodic_data,
+                      label ="K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[0],bw_adjust=adjust_factor)
+    
+    axs[0].set_title("$\dot{\\varepsilon}="+str(sigfig.round(erate[skip_array[j,i]],sigfigs=3))+"$")
+   
+    i=1
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,0])
+    periodic_data=np.ravel(np.array([data]))
+    sns.kdeplot( data=periodic_data,
+                      label ="$\dot{\gamma}="+str(erate[skip_array[i]])+",K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[1],bw_adjust=adjust_factor)
+    axs[1].set_title("$\dot{\\varepsilon}="+str(sigfig.round(erate[skip_array[j,i]],sigfigs=3))+"$")
+   
+
+    i=2
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,0])
+    periodic_data=np.ravel(np.array([data]))
+    sns.kdeplot( data=periodic_data,
+                      label ="$K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[2],bw_adjust=adjust_factor)
+    axs[2].set_title("$\dot{\\varepsilon}="+str(sigfig.round(erate[skip_array[j,i]],sigfigs=3))+"$")
+   
+
+    i=3
+    data=np.ravel( spherical_coords_tuple[i][:,:,:,0])
+    periodic_data=np.ravel(np.array([data]))
+    sns.kdeplot( data=periodic_data,
+                      label ="$K="+str(K[j])+"$",linestyle=linestyle_tuple[j],ax=axs[3],bw_adjust=adjust_factor)
+    axs[3].set_title("$\dot{\\varepsilon}="+str(sigfig.round(erate[skip_array[j,i]],sigfigs=3))+"$")
+    
+
+f.supxlabel("$\\rho$")
+
+#plt.xticks(pi_phi_ticks,pi_phi_tick_labels)
+
+#plt.yticks(phi_y_ticks)
+plt.ylabel('Density')
+plt.legend(bbox_to_anchor=(1,0.5),frameon=False)
+#plt.xlim(0,np.pi/2)
+#plt.xlim(0,np.pi)
+plt.tight_layout()
+#plt.savefig(path_2_log_files+"/plots/phi_dist_.pdf",dpi=1200,bbox_inches='tight')
+plt.show()
 # %%
