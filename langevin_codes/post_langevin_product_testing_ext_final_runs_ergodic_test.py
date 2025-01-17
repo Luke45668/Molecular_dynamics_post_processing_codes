@@ -159,15 +159,21 @@ for i in range(K.size):
 
 # need to make this plot more clear 
 cutoff=500
-ensemble_mean=np.mean(spring_force_positon_tensor_batch_tuple[0][0],axis=0)
-ensemble_std=np.std(spring_force_positon_tensor_batch_tuple[0][0],axis=0)
+ensemble_mean=np.mean(spring_force_positon_tensor_batch_tuple[0][0][:,-1,:,:],axis=0)
+ensemble_mean=np.mean(ensemble_mean,axis=0)
+ensemble_std=np.std(spring_force_positon_tensor_batch_tuple[0][0][:,-1,:,:],axis=0)
+ensemble_std=np.std(ensemble_std,axis=0)
 
 # take mean over all the trajectories to get an ensemble average set of points 
 
 
 
-trajecctory_mean=np.mean(spring_force_positon_tensor_batch_tuple[0][0][:,cutoff:,:,:],axis=1)
-trajectory_std=np.std(spring_force_positon_tensor_batch_tuple[0][0][:,cutoff:,:,:],axis=1)
+trajecctory_mean=np.mean(spring_force_positon_tensor_batch_tuple[0][0],axis=1)# over time 
+trajecctory_mean=np.mean(trajecctory_mean,axis=1) # over space 
+
+trajectory_std=np.std(spring_force_positon_tensor_batch_tuple[0][0],axis=1)
+trajectory_std=np.std(trajectory_std,axis=1)
+
 # take a time average for each trajectory, then compare the mean for selected particles, to the same particle in the ensemble average 
 
 
@@ -178,12 +184,13 @@ for i in range(j_):
         for k in range(len(skip_array)):
             l=skip_array[k]
 
-            plt.axhline(trajecctory_mean[i,l,j],label="particle num="+str(l),linestyle=linestyle_tuple[k][1])
+           
             # plt.axhline(trajecctory_mean[i,k,j]+trajectory_std[i,k,j], label="std dev upper bound of trajectory",linestyle='--')
             # plt.axhline(trajecctory_mean[i,k,j]-trajectory_std[i,k,j], label="std dev lower bound of trajectory",linestyle=':')
 
-            plt.plot(ensemble_mean[cutoff:,l,j])
-            plt.axhline(np.mean(ensemble_mean[cutoff:,l,j])) # compare trajectory to mean of ensemble signal 
+            
+            plt.axhline(ensemble_mean[j]) # compare trajectory to mean of ensemble signal 
+            plt.axhline(trajecctory_mean[i,j])
             plt.xlabel("output count")
             plt.ylabel("stress value")
             plt.legend()

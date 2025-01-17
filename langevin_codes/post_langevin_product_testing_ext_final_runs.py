@@ -70,7 +70,7 @@ marker=['x','+','^',"1","X","d","*","P","v","."]
 damp=np.array([ 0.035, 0.035 ,0.035,0.035,0.035,0.035])
 K=np.array([ 30, 60,100,150,300,600 ])
 K=np.array([ 30,60,100,300 ])
-K=np.array([ 15,60 ])
+K=np.array([ 15,60,120 ])
 
 #K=np.array([  100,300,600,1200 ])
 thermal_damp_multiplier=np.flip(np.array([25,25,25,25,25,25,25,100,100,100,100,100,
@@ -188,8 +188,8 @@ plt.rcParams["figure.figsize"] = (24,12 )
 plt.rcParams.update({'font.size': 16})
 #NOTE need to add an econserve plot as this should be constant 
 
-for j in range(K.size):
-
+for j in range(K.size-2):
+    j=1
     mean_temp_array=np.zeros((erate[:e_end[j]].size))
 
     skip_array=np.array([7,8,9,10])
@@ -498,7 +498,7 @@ plt.rcParams['axes.spines.right'] = False
 plt.rcParams.update({'font.size': 16})
 # for j in range(thermal_damp_multiplier.size): 
 
-for j in range(0,2): 
+for j in range(0,3): 
     for l in range(3):
         #plt.plot(erate[:e_end[j]],stress_tensor_tuple[j][:,l],label="$K="+str(K[0])+","+str(labels_stress[l]),ls=linestyle_tuple[j], marker=marker[j])
         
@@ -1683,7 +1683,7 @@ pi_phi_ticks=[ 0,np.pi/8,np.pi/4,3*np.pi/8, np.pi/2]
 pi_phi_tick_labels=[ '0','π/8','π/4','3π/8', 'π/2']
 skip_array=np.array([[0,5,10,12,11,13],
                          [0,5,10,12,11,1],
-                         [0,4,8,12,14,15],
+                         [0,5,10,12,14,15],
                          [0,6,8,12,14,17],
                          [0,6,10,14,18,21],
                          [0,6,10,14,18,23]])
@@ -1749,7 +1749,7 @@ plt.tight_layout()
 plt.show()
 # %%
 #%% different style plot of phi using kdeplot 
-adjust_factor=10
+adjust_factor=5
 #phi 
 f, axs = plt.subplots(1, 4, figsize=(15, 6),sharex=True)
 
@@ -1820,9 +1820,9 @@ plt.tight_layout()
 plt.show()
 
 #%% different style plot of rho using kdeplot 
-adjust_factor=2
+adjust_factor=100
 #phi 
-f, axs = plt.subplots(1, 4, figsize=(15, 6),sharey=True,sharex=True)
+f, axs = plt.subplots(1, 4, figsize=(15, 6),sharex=True)
 
 
 for j in range(K.size):
