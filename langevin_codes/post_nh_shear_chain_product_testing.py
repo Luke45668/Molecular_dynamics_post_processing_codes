@@ -73,7 +73,7 @@ linestyle_tuple = [
 damp=np.array([ 0.035, 0.035,0.035,0.035 ])
 K=np.array([  30,  60  ,90
             ])
-K=np.array([  60
+K=np.array([ 60
             ])
 
 
@@ -93,13 +93,13 @@ timestep_multiplier=np.flip(np.array([9.85877894e-06, 1.03045633e-05, 1.07925709
 
 thermo_vars="         KinEng         PotEng         Press         c_myTemp        c_bias         TotEng    "
 
-erate=np.linspace(0,1.5,24)
+erate=np.linspace(0,1,24)
 
 e_in=0
 #e_end=erate.size
-n_plates=100
+n_plates=150
 
-strain_total=300
+strain_total=200
 
 path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/shear_runs/tdamp_250_tchain5_novramp_combine/"
 #path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/shear_runs/tdamp_250_tchain5_novramp/"
@@ -107,14 +107,11 @@ path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/shear_ru
 #path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/shear_runs/3_reals_tdamp_100/"
 #path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/dumbell_run/log_tensor_files/saved_tuples"
 #path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/langevin_runs/100_particle/final_tuples"
-path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/shear_runs/tdamp_250_tchain5_8reals_wide_erate/"
-path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/shear_runs/strain_300_units_3reals/"
+path_2_log_files="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/shear_runs/chain_runs/tdamp_250_tchain_5_erate_0_1_5_real/"
 
 
 
-
-
-j_=3
+j_=5
 sim_fluid=30.315227255599112
 
 eq_spring_length=3*np.sqrt(3)/2
@@ -178,7 +175,7 @@ for i in range(K.size):
     log_file_batch_tuple=log_file_batch_tuple+(batch_load_tuples(label,
                                                             "log_file_tuple.pickle"),)
     print(len(log_file_batch_tuple[i]))
-    area_vector_spherical_batch_tuple=area_vector_spherical_batch_tuple+(batch_load_tuples(label,"area_vector_tuple.pickle"),)
+    # area_vector_spherical_batch_tuple=area_vector_spherical_batch_tuple+(batch_load_tuples(label,"area_vector_tuple.pickle"),)
     
     # interest_vectors_batch_tuple=interest_vectors_batch_tuple+(batch_load_tuples(label,
     #                                                                            "interest_vectors_tuple.pickle"),)
@@ -469,7 +466,7 @@ def stress_tensor_averaging(e_end,
 
 
 aftcut=1
-cut=0.7 # or 0.4 
+cut=0.9 # or 0.4 
 # aftcut=[1,1,1,1,1,1,1,1,1,1,1,1,1,1,0.25,0.25,0.2,0.2,0.175,0.15,0.15,0.1,0.1,0.1]
 # cut=[0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.1,0.1,0.075,0.075,0.075,0.075,0.075,0.05,0.05,0.05]
 
@@ -608,12 +605,12 @@ for j in range(K.size):
         #plt.tight_layout()
         #plt.xscale('log')
         #plt.savefig(path_2_log_files+"/plots/stress_tensor_0_3_plots.pdf",dpi=1200,bbox_inches='tight') 
-    plt.tight_layout()
-            #plt.xscale('log')
+plt.tight_layout()
+        #plt.xscale('log')
 
-    plt.legend(frameon=False)
-    plt.savefig(path_2_log_files+"/stress_tensor_3_6_plots.pdf",dpi=1200,bbox_inches='tight') 
-    plt.show()
+plt.legend(frameon=False)
+plt.savefig(path_2_log_files+"/stress_tensor_3_6_plots.pdf",dpi=1200,bbox_inches='tight') 
+plt.show()
 
 #%%
 
@@ -622,7 +619,7 @@ for j in range(K.size):
 #probably need to turn this into a a function 
 n_y_ticks=[-10,0,20,40,60,80]
 cutoff=0
-quadratic_end=16
+quadratic_end=14
 plt.plot(0,0,marker='none',label="fit: $y=ax^{2}$",linestyle='none')
 for j in range(K.size):
     #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
@@ -634,13 +631,13 @@ for j in range(K.size):
                           )
     plt.errorbar(erate[cutoff:e_end[j]], n_1[cutoff:e_end[j]], yerr =n_1_error[cutoff:e_end[j]],
                   ls="none",label="$N_{1},K="+str(K[j])+"$",marker=marker[j] )
-
     popt,cov_matrix_n1=curve_fit(quadratic,erate[cutoff:quadratic_end], n_1[cutoff:quadratic_end])
     difference=np.sqrt(np.sum((n_1[cutoff:quadratic_end]-(popt[0]*(erate[cutoff:quadratic_end])**2))**2)/(quadratic_end))
 
     plt.plot(erate[cutoff:quadratic_end],popt[0]*(erate[cutoff:quadratic_end])**2,ls=linestyle_tuple[j][1],#)#,
             label="$N_{1,fit,K="+str(K[j])+"},a="+str(sigfig.round(popt[0],sigfigs=2))+\
                 ",\\varepsilon="+str(sigfig.round(difference,sigfigs=2))+"$")
+
 
     #plt.xscale('log')
     #plt.show()
@@ -663,7 +660,7 @@ plt.show()
 #probably need to turn this into a a function 
 n_y_ticks=[-10,0,20,40,60,80]
 cutoff=0
-quadratic_end=6
+quadratic_end=10
 plt.plot(0,0,marker='none',label="fit: $y=ax^{2}$",linestyle='none')
 for j in range(K.size):
     #plt.plot(0,0,marker='none',ls=linestyle_tuple[j],color='grey',label="$K="+str(K[j])+"$")
@@ -688,7 +685,7 @@ for j in range(K.size):
     #print(difference)
 
 
-plt.legend(fontsize=9, frameon=False, loc="best")
+plt.legend(fontsize=legfont, frameon=False,bbox_to_anchor=(1,1))
 #plt.xscale('log')
 plt.xlabel("$\dot{\gamma}$")
 plt.ylabel("$N_{2}$",rotation=0)
@@ -797,12 +794,13 @@ for j in range(K.size):
     # plt.plot(erate[cutoff:e_end], xz_stress/erate[cutoff:e_end],
     #               ls='none',label="$\eta,K="+str(K[j])+"$",marker=marker[j] )
     popt,cov_matrix_xz=curve_fit(powerlaw,erate[cutoff:e_end[j]], xz_stress/erate[cutoff:e_end[j]])
-    y=xz_stress/erate[cutoff:e_end[j]]
-    y_pred=popt[0]*(erate[cutoff:e_end[j]]**(popt[1]))
-    difference=np.sqrt(np.sum((y-y_pred)**2)/e_end[j]-cutoff)
-    plt.plot(erate[cutoff:e_end[j]],(popt[0]*(erate[cutoff:e_end[j]]**(popt[1]))),
-            label="$K="+str(K[j])+",\eta_{fit},a="+str(sigfig.round(popt[0],sigfigs=3))+",\n="+str(sigfig.round(popt[1],sigfigs=3))+
-             ",\\varepsilon=\\pm"+str(sigfig.round(difference,sigfigs=3))+"$")
+    # y=xz_stress/erate[cutoff:e_end]
+    # y_pred=popt[0]*(erate[cutoff:e_end]**(popt[1]))
+    # difference=np.sqrt(np.sum((y-y_pred)**2)/e_end-cutoff)
+    # plt.plot(erate[cutoff:e_end],(popt[0]*(erate[cutoff:e_end]**(popt[1]))),
+    #         label="$K="+str(K[j])+",\eta_{fit},a="+str(sigfig.round(popt[0],sigfigs=3))+",n="+str(sigfig.round(popt[1],sigfigs=3))+
+
+    #         ",\\varepsilon=\pm"+str(sigfig.round(difference,sigfigs=3))+"$")
 
     plt.legend(fontsize=11,frameon=True) 
     plt.ylabel("$\eta$", rotation=0,labelpad=10)
@@ -1135,12 +1133,7 @@ for j in range(K.size):
         
 
 #%% different style plot of phi 
-linestyle_tuple = ['-', 
-  'dotted', 
- 'dashed', 'dashdot', 
-  'solid', 
- 'dashed', 'dashdot', '--']
-skip_array=[0,6,15,22]
+skip_array=[0,6,15,23]
 #skip_array=[0,18,19,23]
 #phi 
 f, axs = plt.subplots(1, 4, figsize=(15, 6),sharey=True,sharex=True)
