@@ -43,9 +43,9 @@ from reading_lammps_module import *
 
 
 damp=0.035
-strain_total=100
+strain_total=250
 
-erate=np.linspace(0,1.5,24)
+erate=np.linspace(0,1.7,48)
 
 no_timesteps=np.array([1999999000, 1999999000, 1999999000, 1999999000, 1999999000,
         1999999000, 1999999000, 1999999000, 1999999000, 1999999000,
@@ -53,10 +53,15 @@ no_timesteps=np.array([1999999000, 1999999000, 1999999000, 1999999000, 199999900
         1999999000, 1999999000, 1999999000, 1999999000, 1999999000,
         1999999000, 1999999000, 1999999000, 1999999000 ])
 
-
+erate=np.array([0.        , 0.00388889, 0.00777778, 0.01166667, 0.01555556,
+       0.01944444, 0.02333333, 0.02722222, 0.03111111, 0.035  ,0.07      , 0.13894737, 0.20789474, 0.27684211, 0.34578947,
+        0.41473684, 0.48368421, 0.55263158, 0.62157895, 0.69052632,
+        0.75947368, 0.82842105, 0.89736842, 0.96631579, 1.03526316,
+        1.10421053, 1.17315789, 1.24210526, 1.31105263, 1.38,1.4  , 1.42222222, 1.44444444, 1.46666667, 1.48888889,
+        1.51111111, 1.53333333, 1.55555556, 1.57777778, 1.6 ])
 
 thermo_vars='         KinEng         PotEng         Press         c_myTemp        c_bias         TotEng    '
-K=60
+K=120
 j_=3
 box_size=100
 eq_spring_length=3*np.sqrt(3)/2
@@ -64,7 +69,7 @@ mass_pol=5
 n_plates=100
 
 
-filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/shear_runs/strain_300_units_3reals"
+filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/shear_runs/strain_250_3_reals_15_45_60_tchain"
 path_2_log_files=filepath
 pol_general_name_string='*K_'+str(K)+'*pol*h5'
 
@@ -193,7 +198,7 @@ new_pos_vel_tuple=()
 interest_vectors_tuple=()
 tilt_test=[]
 e_in=0
-e_end=23
+e_end=37
 count=e_in
 
 # need to write dump to numpy to only look at chunks to save on ram 
@@ -246,6 +251,9 @@ for i in range(e_in,e_end):
                      
     
     area_vector_tuple=area_vector_tuple+(area_vector_array,)
+
+    p_velocities_tuple=p_velocities_tuple+(p_velocities_array,)
+    p_positions_tuple=p_positions_tuple+(p_positions_array,)
  
     count+=1
 
