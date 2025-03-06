@@ -60,9 +60,14 @@ erate=np.array([0.        , 0.00388889, 0.00777778, 0.01166667, 0.01555556,
         1.10421053, 1.17315789, 1.24210526, 1.31105263, 1.38,1.4  , 1.42222222, 1.44444444, 1.46666667, 1.48888889,
         1.51111111, 1.53333333, 1.55555556, 1.57777778, 1.6 ])
 
+erate=np.array([1.34      , 1.34555556, 1.35111111, 1.35666667, 1.36222222,
+       1.36777778, 1.37333333, 1.37888889, 1.38444444, 1.39,1.395     , 1.41222222, 1.42944444, 1.44666667, 1.46388889,
+       1.48111111, 1.49833333, 1.51555556, 1.53277778, 1.55,1.6       , 1.62222222, 1.64444444, 1.66666667, 1.68888889,
+       1.71111111, 1.73333333, 1.75555556, 1.77777778, 1.8])
+
 thermo_vars='         KinEng         PotEng         Press         c_myTemp        c_bias         TotEng    '
-K=120
-j_=3
+K=60
+j_=6
 box_size=100
 eq_spring_length=3*np.sqrt(3)/2
 mass_pol=5
@@ -70,6 +75,7 @@ n_plates=100
 
 
 filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/shear_runs/strain_250_3_reals_15_45_60_tchain"
+filepath="/Users/luke_dev/Documents/MYRIAD_lammps_runs/nvt_runs/shear_runs/strain_250_6_reals_erate_over_1.34_comparison/"
 path_2_log_files=filepath
 pol_general_name_string='*K_'+str(K)+'*pol*h5'
 
@@ -198,7 +204,7 @@ new_pos_vel_tuple=()
 interest_vectors_tuple=()
 tilt_test=[]
 e_in=0
-e_end=37
+e_end=22
 count=e_in
 
 # need to write dump to numpy to only look at chunks to save on ram 
