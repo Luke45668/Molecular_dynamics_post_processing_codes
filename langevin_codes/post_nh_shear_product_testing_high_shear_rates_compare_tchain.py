@@ -31,7 +31,7 @@ import mmap
 import h5py as h5
 from scipy.optimize import curve_fit
 
-
+marker=['x','+','^',"1","X","d","*","P","v"]
 # path_2_post_proc_module= '/Users/luke_dev/Documents/MPCD_post_processing_codes/'
 # os.chdir(path_2_post_proc_module)
 import seaborn as sns
@@ -455,7 +455,9 @@ for i in range(e_end[j]):
                     plt.plot(strain_plot,mean_stress_tensor[k,:,l],label="tchain="+tchain[j]+",real="+str(k)+",$SSgrad="+str(SS_grad)+","+labels_stress[l])
 
         plt.legend(bbox_to_anchor=(1,1))
-        plt.title("$\dot{\\gamma}="+str(erate[i])+"="+str(K[j])+"$")
+        plt.title("$\dot{\\gamma}="+str(erate[i])+",K="+str(K[j])+"$")
+        plt.xlabel("$\gamma$")
+        plt.ylabel("$\sigma_{\\alpha\\beta}$")
                 #plt.yscale('log')
         plt.ylim(-5,40)
             #plt.savefig(path_2_log_files+"/"+str(K[j])+"_stress_time_series_"+str(erate[i])+".pdf",dpi=1200,format="pdf",bbox_inches='tight') 
@@ -789,12 +791,13 @@ skip_array=[0,3,5,7]
 skip_array=[8,9,10,11]
 skip_array=[12,13,14,15]
 skip_array=[0,13,16,18,19]
+skip_array=[13]
 # skip_array=[20,21,22,23]
 # skip_array=[22,24,26,28]
 # skip_array=[29,30,31,32]
 # skip_array=[33,34,35,36]
 #phi 
-marker=['x','+','^',"1","X","d","*","P","v"]
+
 cutoff=0
 timestep_skip_array=[0,5,10,100,200,500,900]
 steady_state_index=800
@@ -817,13 +820,15 @@ for j in range(0,1):
          
             for l in range(len(timestep_skip_array)):
                 m=timestep_skip_array[l]
-                timstep_dist=np.ravel(periodic_data[:,n,m,:])
-                KS_stat,p_value=generic_stat_kolmogorov_2samp(steady_state_dist,timstep_dist)[0]
+                #timstep_dist=np.ravel(periodic_data[:,n,m,:])
+                timstep_dist=np.ravel(periodic_data[:,:,m,:])
+                KS_stat,p_value=generic_stat_kolmogorov_2samp(steady_state_dist,timstep_dist)
                 p_value_array[i,n,l]=p_value
                 KS_stat_array[i,n,l]=KS_stat
-                sns.kdeplot( data=np.ravel(periodic_data[:,n,m,:]),
+                sns.kdeplot( data=np.ravel(periodic_data[:,:,m,:]),
                                 label ="$N_{t}="+str(timestep_skip_array[l])+"$",linestyle=linestyle_tuple[j],bw_adjust=adjust_factor)
-                plt.title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$, real="+str(n))
+                #plt.title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$, real="+str(n))
+                plt.title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$")
 
            
             plt.xlabel("$\Phi$")
@@ -890,15 +895,61 @@ for j in range(0,1):
         plt.legend(bbox_to_anchor=(1,0.55),frameon=False)
 
 
-        #plt.yticks(phi_y_ticks)
+       
+        plt.xticks(theta_y_ticks)
 
         plt.ylabel('Density')
         plt.xlim(-np.pi,np.pi)
+       
         #plt.xlim(0,np.pi)
         plt.tight_layout()
         #plt.savefig(path_2_log_files+"/plots/theta_dist_.pdf",dpi=1200,bbox_inches='tight')
         plt.show()
 
+#%%
+
+#theta
+adjust_factor=0.25
+for j in range(0,1):
+    spherical_coords_tuple=convert_cart_2_spherical_z_inc(j,skip_array,area_vector_spherical_batch_tuple,
+                                       n_plates,cutoff)
+    
+    for i in range(len(skip_array)):
+
+        k=skip_array[i]
+   
+
+
+       
+       
+        for l in range(len(timestep_skip_array)):
+            m=timestep_skip_array[l]
+            theta= spherical_coords_tuple[i][:,m,:,1]
+            phi=spherical_coords_tuple[i][:,m,:,2]
+
+            plt.scatter(theta,phi, label ="$N_{t}="+str(timestep_skip_array[l])+"$", s=5, marker=marker[l])
+            plt.title("$\dot{\gamma}="+str(erate[skip_array[i]])+"$")
+
+
+        
+            plt.xlabel("$\Theta$")
+            plt.xticks(pi_theta_ticks,pi_theta_tick_labels)
+            plt.yticks(pi_phi_ticks,pi_phi_tick_labels)
+            plt.legend(bbox_to_anchor=(1,0.55),frameon=False)
+
+
+            #plt.yticks(phi_y_ticks)
+
+            # plt.yticks(phi_y_ticks)
+            # plt.xticks(theta_y_ticks)
+
+            # plt.ylabel('Density')
+            # plt.xlim(-np.pi,np.pi)
+            # plt.ylim(0,np.pi/2)
+            #plt.xlim(0,np.pi)
+            plt.tight_layout()
+            #plt.savefig(path_2_log_files+"/plots/theta_dist_.pdf",dpi=1200,bbox_inches='tight')
+            plt.show()
 
   
 #%% different style plot of rho
@@ -971,10 +1022,7 @@ plt.tight_layout()
 
 plt.show()
 #%% plto theta against phi 
-skip_array=[0,3,5,7]
-skip_array=[8,9,10,11]
-skip_array=[12,13,14,15]
-skip_array=[16,17,18,20]
+
 #rho
 markersize=0.0005
 f, axs = plt.subplots(1, 4, figsize=(15, 6),sharey=True,sharex=True)
